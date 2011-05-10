@@ -1,0 +1,42 @@
+# The actual Makefiles produced
+Makefile
+
+# The local aclocal.m4 file
+aclocal.m4
+
+# The output of the configure script
+config.guess
+config.log
+config.status
+config.sub
+
+# The configure script itself
+configure
+
+# Various scripts used for libtool and the like
+install-sh
+libtool
+ltmain.sh
+missing
+depcomp
+
+# Not sure what this one is for
+autom4te.cache/*
+
+!.gitignore
+
+*~
+*.lo
+*.o
+*.a
+*.la
+*.exe
+*.in
+*.m4
+
+*/.libs
+*/.deps
+compile
+
+lib/config.h
+lib/stamp-h1
