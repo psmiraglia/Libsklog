@@ -1,3 +1,40 @@
-Lib SK Log
+libsklog - Make secure logging using Schneier and Kelsey scheme
+===============================================================
 
-rocks!!!
+Copyright (C) 2007-2010 Politecnico di Torino, Italy
+TORSEC group -- http://security.polito.it
+
+Libsklog is copyrighted free software by Politectnico di Torino (TORSEC group).
+You can redistribute it and/or modify it under either the terms of the LGPL
+(see COPYING.LESSER file), or the GPL (see COPYING file).
+
+Installation notes
+------------------
+
+1) Prerequisites
+
+    OpenSSL >= 0.9.8
+    SQLite 3.x
+
+2) Building
+
+    $> tar zxvf libsklog-VERSION.tar.gz
+    $> cd ./libsklog-VERSION
+    $> autoreconf --install
+    $> ./configure --prefix=/usr/local
+    $> make
+    $> make install (as root)
+    
+    You can add to ./configure the options "--enable-trace" to build the
+    library in high verbosity mode and "--enable-quote" to build the library
+    with the TPM_Quote support. For more information run
+    
+    $> ./configure --help
+    
+Usage
+-----
+    Todo!
+    
+    
+
+
