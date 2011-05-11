@@ -32,6 +32,17 @@ typedef enum {
 
 #define     SK_LOGENTRY_TYPE_LEN    sizeof(SKLOG_DATA_TYPE)
 
+#ifdef USE_QUOTE
+typedef struct _sktpmctx SKTPMCTX;
+
+struct _sktpmctx {
+    char *srkpwd;
+    char *aikpwd;
+    int   aikid;
+    int   pcr_to_extend;
+};
+#endif
+
 /**
  * SKCTX
  * 
@@ -41,6 +52,9 @@ typedef struct _skctx SKCTX;
 struct _skctx {
     unsigned char auth_key[SK_AUTH_KEY_LEN];
     unsigned char last_hash_chain[SK_HASH_CHAIN_LEN];
+    #ifdef USE_QUOTE
+    SKTPMCTX tpmctx;
+    #endif
 };
 
 /**********************************************************************/
@@ -86,5 +100,8 @@ write_log_entry(unsigned char *,unsigned int);
 int
 gen_nonce(unsigned char *,SKLOG_DATA_TYPE *,unsigned char *,unsigned int,
           unsigned char *,unsigned char *);
+          
+int
+load_tpm_config(SKTPMCTX *tpmctx);
 
 #endif /* SKLOG_INTERNAL_H */

@@ -9,6 +9,7 @@ config.guess
 config.log
 config.status
 config.sub
+config.h
 
 # The configure script itself
 configure
@@ -19,9 +20,16 @@ libtool
 ltmain.sh
 missing
 depcomp
+stamp-h1
 
 # Not sure what this one is for
 autom4te.cache/*
+
+# Binary files
+example/sk
+
+
+
 
 !.gitignore
 

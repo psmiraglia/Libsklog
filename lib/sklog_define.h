@@ -26,6 +26,7 @@
 #define     SK_ENC_KEY_LEN          SHA256_LEN
 #define     SK_HMAC_LEN             SHA256_LEN
 #define     SK_AUTH_KEY_LEN         SHA256_LEN
+#define     NONCE_LEN               SHA1_LEN
 
 //~ #define     SK_DATABASE_PATH        "./logs.db"
 //~ #define     SK_LOGFILE_PATH         "./logs.txt"
@@ -35,6 +36,8 @@
 
 #define     SK_SUCCESS              0
 #define     SK_FAILURE             -1
+
+#define     TPM_CONFIG_FILE         ETC_PREFIX "/libsklog/tpm.conf"
 
 /*--------------------------------------------------------------------*/
 

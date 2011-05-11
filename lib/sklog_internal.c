@@ -11,6 +11,9 @@
 
 #include "../config.h"
 
+#ifdef USE_QUOTE
+#include <confuse.h>
+#endif
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -578,3 +581,34 @@ gen_nonce(unsigned char *nonce,
 
 /*--------------------------------------------------------------------*/
 /*--------------------------------------------------------------------*/
+
+#ifdef USE_QUOTE
+int
+load_tpm_config(SKTPMCTX *tpmctx)
+{
+    #ifdef TRACE
+    fprintf(stdout,"\tload_tpm_config()\n");
+    #endif
+    
+    tpmctx->srkpwd = NULL;
+    tpmctx->aikpwd = NULL;
+    tpmctx->aikid = 0;
+    tpmctx->pcr_to_extend = 0;
+    
+    
+    cfg_opt_t opts[] = {
+        CFG_SIMPLE_STR("srkpwd", &(tpmctx->srkpwd)),
+        CFG_SIMPLE_STR("aikpwd", &(tpmctx->aikpwd)),
+        CFG_SIMPLE_INT("aikid", &(tpmctx->aikid)),
+        CFG_SIMPLE_INT("pcr_to_extend", &(tpmctx->pcr_to_extend)),
+        CFG_END()
+    };
+    cfg_t *cfg = 0;
+    
+    cfg = cfg_init(opts, 0);
+    cfg_parse(cfg, TPM_CONFIG_FILE);
+    
+    cfg_free(cfg);
+    return 0;
+}
+#endif

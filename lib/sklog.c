@@ -28,14 +28,10 @@
 #include "sklog.h"
 
 #ifdef USE_QUOTE
-
 #include <tpa/TPA_API.h>
 #include <tpa/TPA_Utils.h>
 #include <tpa/TPA_Common.h>
 #include <tpa/TPA_Config.h>
-
-#include "tpa_config.h"
-
 #endif
 
 /**
@@ -65,6 +61,18 @@ SKLOG_InitCtx(SKCTX *ctx)
         for ( i = 0 ; i < SK_HASH_CHAIN_LEN ; i++ )
             fprintf(stdout,"%2.2x",ctx->last_hash_chain[i]);
         fprintf(stdout,"\n");
+        #endif
+        
+        #ifdef USE_QUOTE
+        load_tpm_config(&(ctx->tpmctx));
+        
+        #ifdef TRACE
+        fprintf(stdout,"\tsrkpwd: %s\n",ctx->tpmctx.srkpwd);
+        fprintf(stdout,"\taikpwd: %s\n",ctx->tpmctx.aikpwd);
+        fprintf(stdout,"\taikid: %d\n",ctx->tpmctx.aikid);
+        fprintf(stdout,"\tpcr_to_extend: %d\n",ctx->tpmctx.pcr_to_extend);
+        #endif
+        
         #endif
         
         return SK_SUCCESS;
@@ -433,18 +441,18 @@ SKLOG_Write(SKCTX *ctx,
     
     /* setter */
          
-    if ( TpaHL_TPM_set(tpm,TPM_SRKPWD,strlen(SRKPWD),SRKPWD) != TPA_SUCCESS )
+    if ( TpaHL_TPM_set(tpm,TPM_SRKPWD,strlen(ctx->tpmctx.srkpwd),ctx->tpmctx.srkpwd) != TPA_SUCCESS )
         goto error;
     
-    aik->aik_id = SK_AIK_ID;
+    aik->aik_id = ctx->tpmctx.aikid;
     
-    if ( TpaHL_AIK_set(aik, AIK_AIKSECRET, strlen(AIKPWD), AIKPWD) != TPA_SUCCESS )
+    if ( TpaHL_AIK_set(aik, AIK_AIKSECRET, strlen(ctx->tpmctx.aikpwd), ctx->tpmctx.aikpwd) != TPA_SUCCESS )
         goto error;
     
     if ( TpaHL_PCRSet_initialize(&pcrSet, 1, 20) != TPA_SUCCESS )
         goto error;
         
-    if( TpaHL_PCRSet_pcr(pcrSet,SK_PCR_TO_EXTEND,NULL) != TPA_SUCCESS )
+    if( TpaHL_PCRSet_pcr(pcrSet,ctx->tpmctx.pcr_to_extend,NULL) != TPA_SUCCESS )
         goto error;
     
     /* ra quote */

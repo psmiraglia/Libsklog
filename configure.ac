@@ -44,6 +44,9 @@ fi
 # checking for crypto library
 AC_CHECK_LIB([crypto], [EVP_MD_CTX_init])
 
+# checking for confuse library
+AC_CHECK_LIB([confuse], [cfg_init])
+
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile lib/Makefile include/Makefile example/Makefile])
 
