@@ -1,12 +1,13 @@
 libsklog - Make secure logging using Schneier and Kelsey scheme
 ===============================================================
 
-Copyright (C) 2007-2010 Politecnico di Torino, Italy
-TORSEC group -- http://security.polito.it
+	Copyright (C) 2007-2010 Politecnico di Torino, Italy
+	TORSEC group -- http://security.polito.it
 
-Libsklog is copyrighted free software by Politectnico di Torino (TORSEC group).
-You can redistribute it and/or modify it under either the terms of the LGPL
-(see COPYING.LESSER file), or the GPL (see COPYING file).
+Libsklog is a library for C language that makes possible the
+generation of log entries by following the scheme defined by
+B.Schneier ad J.Kelsey in "Secure Audit Logs to Support
+Computer Forensics".
 
 Installation notes
 ------------------
