@@ -112,7 +112,9 @@ int
 gen_nonce(unsigned char *,SKLOG_DATA_TYPE *,unsigned char *,unsigned int,
           unsigned char *,unsigned char *);
 
+#ifdef USE_QUOTE
 int
 load_tpm_config(SKTPMCTX *tpmctx);
+#endif
 
 #endif /* SKLOG_INTERNAL_H */

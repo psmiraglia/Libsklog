@@ -3,8 +3,7 @@ lib_LTLIBRARIES = libsklog.la
 libsklog_la_SOURCES = \
 	sklog.c sklog.h \
 	sklog_internal.c sklog_internal.h \
-	tpa_config.h \
-	define.h
+	sklog_define.h
 
 libsklog_la_CFLAGS = -Wall -Werror -DETC_PREFIX=\"@sysconfdir@\"
 

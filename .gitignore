@@ -21,6 +21,7 @@ ltmain.sh
 missing
 depcomp
 stamp-h1
+mkinstalldirs
 
 # Not sure what this one is for
 autom4te.cache/*
@@ -41,6 +42,7 @@ example/sk
 *.exe
 *.in
 *.m4
+*.tar.gz
 
 */.libs
 */.deps

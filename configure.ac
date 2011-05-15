@@ -6,6 +6,8 @@ AC_PROG_CC
 AC_PROG_CC_C_O
 AC_PROG_LIBTOOL
 
+AC_SUBST([LIB_VERSION],[0:1:0])
+
 # enable TRACE
 AC_ARG_ENABLE(trace,
     AS_HELP_STRING([--enable-trace],[Enable high verbosity mode for libsklog library [default=no]]),
