@@ -38,17 +38,14 @@
 
 #include "sklog.h"
 
-#ifdef USE_QUOTE
-#include <tpa/TPA_API.h>
-#include <tpa/TPA_Utils.h>
-#include <tpa/TPA_Common.h>
-#include <tpa/TPA_Config.h>
-#endif
+/** @file sklog.c */
 
 /**
  * SKLOG_InitCtx()
- * Initialize the context
- *
+ * @param[in] ctx Pointer to Libsklog context
+ * 
+ * Initialize the Libsklog context. The function returns SK_SUCCESS if all
+ * goes well or SK_FAILURE if something goes wrong.
  */
 int
 SKLOG_InitCtx(SKCTX *ctx)
@@ -98,8 +95,13 @@ SKLOG_InitCtx(SKCTX *ctx)
 
 /**
  * SKLOG_SetAuthKeyZero()
- * Set into the context the auth_key_0
- *
+ * @param[in] ctx Pointer to Libsklog context
+ * @param[in] key String that contains the starting value of the auth_key
+ * @return an integer with value SK_SUCCESS if all goes well or SK_FAILURE if
+ * something goes wrong.
+ * 
+ * Initialize the auth_key value in the Libsklog context. The function returns
+ * SK_SUCCESS if all goes well or SK_FAILURE if something goes wrong.
  */
 int
 SKLOG_SetAuthKeyZero(SKCTX *ctx,
@@ -143,8 +145,10 @@ SKLOG_SetAuthKeyZero(SKCTX *ctx,
 
 /**
  * SKLOG_InitLogEntry()
- * Initialize the log entry
+ * @param[in] skle Pointer to log entry structure
  *
+ * * Initialize the log entry structure. The function returns SK_SUCCESS if all
+ * goes well or SK_FAILURE if something goes wrong.
  */
 int
 SKLOG_InitLogEntry(SKLogEntry *skle)
@@ -205,7 +209,10 @@ SKLOG_ResetLogEntry(SKLogEntry *skle)
 
 /*--------------------------------------------------------------------*/
 /*--------------------------------------------------------------------*/
-
+/**
+ * SKLOG_LogEntryToBlob()
+ * 
+ */
 int
 SKLOG_LogEntryToBlob(unsigned char **blob,
                      unsigned int *blob_len,
@@ -391,6 +398,11 @@ SKLOG_Write(SKCTX *ctx,
     unsigned int data_enc_size = 0;
     unsigned char hash_chain[SK_HASH_CHAIN_LEN] = {0};
     unsigned char hmac[SK_HMAC_LEN] = {0};
+    #ifdef USE_QUOTE
+    unsigned char nonce[NONCE_LEN] = { 0 };
+    unsigned char *quote = 0;
+    unsigned int quote_size = 0;
+    #endif
 
     if ( !ctx ) {
         /* ctx null */
@@ -420,70 +432,84 @@ SKLOG_Write(SKCTX *ctx,
 
     /* re-generate auth_key */
     renew_auth_key(ctx);
-
+    
     #ifdef USE_QUOTE
-    TPA_CONTEXT *tpa_ctx = NULL;
-    TPA_TPM *tpm = NULL;
-    TPA_PCR_SET *pcrSet = NULL;
-    TPA_AIK *aik = NULL;
-    TPA_RA *ra = NULL;
-
-    unsigned char nonce[NONCE_LEN] = { 0 };
-    unsigned char *quote = 0;
-    unsigned int quote_size = 0;
-
-    /* generate nonce */
-
+    /* copute TPM_Quote */
     gen_nonce(nonce,&type,data_enc,data_enc_size,hash_chain,hmac);
-
-    /* this function will allocate all needed objects */
-
-    if ( TpaHL_CTX_allocate(&tpa_ctx) != TPA_SUCCESS )
-        goto error;
-
-    if ( TpaHL_TPM_allocate(&tpm) != TPA_SUCCESS )
-        goto error;
-
-    if ( TpaHL_AIK_allocate(&aik) != TPA_SUCCESS )
-        goto error;
-
-    if ( TpaHL_RA_allocate(&ra) != TPA_SUCCESS )
-        goto error;
-
-    /* setter */
-
-    if ( TpaHL_TPM_set(tpm,TPM_SRKPWD,strlen(ctx->tpmctx.srkpwd),ctx->tpmctx.srkpwd) != TPA_SUCCESS )
-        goto error;
-
-    aik->aik_id = ctx->tpmctx.aikid;
-
-    if ( TpaHL_AIK_set(aik, AIK_AIKSECRET, strlen(ctx->tpmctx.aikpwd), ctx->tpmctx.aikpwd) != TPA_SUCCESS )
-        goto error;
-
-    if ( TpaHL_PCRSet_initialize(&pcrSet, 1, 20) != TPA_SUCCESS )
-        goto error;
-
-    if( TpaHL_PCRSet_pcr(pcrSet,ctx->tpmctx.pcr_to_extend,NULL) != TPA_SUCCESS )
-        goto error;
-
-    /* ra quote */
-
-    if( TpaHL_RA_Quote(tpa_ctx, tpm, aik, pcrSet, nonce, NONCE_LEN, ra) != TPA_SUCCESS )
-        goto error;
-
-    if( TpaHL_RA_Serialize(ra, &quote, &quote_size) != TPA_SUCCESS )
-        goto error;
-
-error: /* Error label */
-    TpaHL_AIK_freeMemory(aik);
-    TpaHL_TPM_freeMemory(tpm);
-    TpaHL_RA_freeMemory(ra);
-    TpaHL_CTX_freeMemory(tpa_ctx);
-    if (pcrSet)
-        TpaHL_PCRSet_freeMemory(pcrSet);
-    if ( quote )
-        free(quote);
+    compute_tpm_quote(ctx,nonce,&quote,&quote_size);
     #endif
+
+    //~ #ifdef USE_QUOTE
+    //~ TPA_CONTEXT *tpa_ctx = NULL;
+    //~ TPA_TPM *tpm = NULL;
+    //~ TPA_PCR_SET *pcrSet = NULL;
+    //~ TPA_AIK *aik = NULL;
+    //~ TPA_RA *ra = NULL;
+//~ 
+    //~ unsigned char nonce[NONCE_LEN] = { 0 };
+    //~ unsigned char *quote = NULL;
+    //~ unsigned int quote_size = 0;
+//~ 
+    //~ /* generate nonce */
+//~ 
+    //~ gen_nonce(nonce,&type,data_enc,data_enc_size,hash_chain,hmac);
+//~ 
+    //~ /* this function will allocate all needed objects */
+//~ 
+    //~ if ( TpaHL_CTX_allocate(&tpa_ctx) != TPA_SUCCESS )
+        //~ goto error;
+//~ 
+    //~ if ( TpaHL_TPM_allocate(&tpm) != TPA_SUCCESS )
+        //~ goto error;
+//~ 
+    //~ if ( TpaHL_AIK_allocate(&aik) != TPA_SUCCESS )
+        //~ goto error;
+//~ 
+    //~ if ( TpaHL_RA_allocate(&ra) != TPA_SUCCESS )
+        //~ goto error;
+//~ 
+    //~ /* setter */
+//~ 
+    //~ if ( TpaHL_TPM_set(tpm,TPM_SRKPWD,strlen(ctx->tpmctx.srkpwd),ctx->tpmctx.srkpwd) != TPA_SUCCESS )
+        //~ goto error;
+//~ 
+    //~ aik->aik_id = ctx->tpmctx.aikid;
+//~ 
+    //~ if ( TpaHL_AIK_set(aik, AIK_AIKSECRET, strlen(ctx->tpmctx.aikpwd), ctx->tpmctx.aikpwd) != TPA_SUCCESS )
+        //~ goto error;
+//~ 
+    //~ if ( TpaHL_PCRSet_initialize(&pcrSet, 1, 20) != TPA_SUCCESS )
+        //~ goto error;
+//~ 
+    //~ if( TpaHL_PCRSet_pcr(pcrSet,ctx->tpmctx.pcr_to_extend,NULL) != TPA_SUCCESS )
+        //~ goto error;
+//~ 
+    //~ /* ra quote */
+    //~ if( TpaHL_RA_Quote(tpa_ctx, tpm, aik, pcrSet, nonce, NONCE_LEN, ra) != TPA_SUCCESS )
+        //~ goto error;
+//~ 
+    //~ if( TpaHL_RA_Serialize(ra, &quote, &quote_size) != TPA_SUCCESS )
+        //~ goto error;
+    //~ 
+    //~ /* insert quote in le */
+    //~ skle->quote = calloc(quote_size,sizeof(char));
+    //~ if ( skle->quote ) {
+        //~ memcpy(skle->quote,quote,quote_size);
+        //~ skle->quote_size = quote_size;
+    //~ } else {
+        //~ fprintf(stderr,"ERR: SKLOG_Write(): calloc() fails!");
+    //~ }
+    //~ 
+//~ error: /* Error label */
+    //~ TpaHL_AIK_freeMemory(aik);
+    //~ TpaHL_TPM_freeMemory(tpm);
+    //~ TpaHL_RA_freeMemory(ra);
+    //~ TpaHL_CTX_freeMemory(tpa_ctx);
+    //~ if (pcrSet)
+        //~ TpaHL_PCRSet_freeMemory(pcrSet);
+    //~ if ( quote )
+        //~ free(quote);
+    //~ #endif
 
     /* compose log entry */
     memcpy(skle->type,&type,SK_LOGENTRY_TYPE_LEN);
@@ -492,17 +518,18 @@ error: /* Error label */
     skle->data_enc_len = data_enc_size;
     memcpy(skle->hash,hash_chain,SK_HASH_CHAIN_LEN);
     memcpy(skle->hmac,hmac,SK_HMAC_LEN);
-
     #ifdef USE_QUOTE
+    skle->quote = calloc(quote_size,sizeof(char));
     memcpy(skle->quote,quote,quote_size);
     skle->quote_size = quote_size;
-    if ( quote )
-        free(quote);
     #endif
 
     /* free allocated buffers */
     free(data_enc);
     free(data);
+    #ifdef USE_QUOTE
+    free(quote);
+    #endif
 
     return SK_SUCCESS;
 }

@@ -108,13 +108,16 @@ gen_log_entry(unsigned char **,unsigned int *,SKLOG_DATA_TYPE,
 int
 write_log_entry(unsigned char *,unsigned int);
 
+#ifdef USE_QUOTE
 int
 gen_nonce(unsigned char *,SKLOG_DATA_TYPE *,unsigned char *,unsigned int,
           unsigned char *,unsigned char *);
 
-#ifdef USE_QUOTE
 int
 load_tpm_config(SKTPMCTX *tpmctx);
+
+int
+compute_tpm_quote(SKCTX *,unsigned char *,unsigned char **,unsigned int *);
 #endif
 
 #endif /* SKLOG_INTERNAL_H */

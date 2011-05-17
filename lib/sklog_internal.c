@@ -24,7 +24,12 @@
 
 #ifdef USE_QUOTE
 #include <confuse.h>
+#include <tpa/TPA_API.h>
+#include <tpa/TPA_Utils.h>
+#include <tpa/TPA_Common.h>
+#include <tpa/TPA_Config.h>
 #endif
+
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -533,6 +538,8 @@ write_log_entry(unsigned char *log_entry,
 /*--------------------------------------------------------------------*/
 /*--------------------------------------------------------------------*/
 
+#ifdef USE_QUOTE
+
 /**
  * gen_nonce()
  *
@@ -593,7 +600,6 @@ gen_nonce(unsigned char *nonce,
 /*--------------------------------------------------------------------*/
 /*--------------------------------------------------------------------*/
 
-#ifdef USE_QUOTE
 int
 load_tpm_config(SKTPMCTX *tpmctx)
 {
@@ -604,14 +610,14 @@ load_tpm_config(SKTPMCTX *tpmctx)
     tpmctx->srkpwd = NULL;
     tpmctx->aikpwd = NULL;
     tpmctx->aikid = 0;
-    tpmctx->pcr_to_extend = 0;
+    tpmctx->pcr_to_extend = 0; /* not used */
 
 
     cfg_opt_t opts[] = {
         CFG_SIMPLE_STR("srkpwd", &(tpmctx->srkpwd)),
         CFG_SIMPLE_STR("aikpwd", &(tpmctx->aikpwd)),
         CFG_SIMPLE_INT("aikid", &(tpmctx->aikid)),
-        CFG_SIMPLE_INT("pcr_to_extend", &(tpmctx->pcr_to_extend)),
+        CFG_SIMPLE_INT("pcr_to_extend", &(tpmctx->pcr_to_extend)), /* not used */
         CFG_END()
     };
     cfg_t *cfg = 0;
@@ -621,5 +627,92 @@ load_tpm_config(SKTPMCTX *tpmctx)
 
     cfg_free(cfg);
     return 0;
+}
+
+/*--------------------------------------------------------------------*/
+/*--------------------------------------------------------------------*/
+
+int
+compute_tpm_quote(SKCTX *ctx,
+                  unsigned char *nonce,
+                  unsigned char **quote,
+                  unsigned int *quote_size)
+{
+    #ifdef TRACE
+    fprintf(stdout,"\tcompute_tpm_quote()\n");
+    #endif
+    
+    TPA_CONTEXT *tpa_ctx = NULL;
+    TPA_TPM *tpm = NULL;
+    TPA_PCR_SET *pcrSet = NULL;
+    TPA_AIK *aik = NULL;
+    TPA_RA *ra = NULL;
+    
+    unsigned char *blob = NULL;
+    unsigned int blob_size = 0;
+    
+    int retval = SK_FAILURE;
+
+    /* this function will allocate all needed objects */
+
+    if ( TpaHL_CTX_allocate(&tpa_ctx) != TPA_SUCCESS )
+        goto error;
+
+    if ( TpaHL_TPM_allocate(&tpm) != TPA_SUCCESS )
+        goto error;
+
+    if ( TpaHL_AIK_allocate(&aik) != TPA_SUCCESS )
+        goto error;
+
+    if ( TpaHL_RA_allocate(&ra) != TPA_SUCCESS )
+        goto error;
+
+    /* setter */
+
+    if ( TpaHL_TPM_set(tpm,TPM_SRKPWD,strlen(ctx->tpmctx.srkpwd),ctx->tpmctx.srkpwd) != TPA_SUCCESS )
+        goto error;
+
+    aik->aik_id = ctx->tpmctx.aikid;
+
+    if ( TpaHL_AIK_set(aik, AIK_AIKSECRET, strlen(ctx->tpmctx.aikpwd), ctx->tpmctx.aikpwd) != TPA_SUCCESS )
+        goto error;
+
+    /* not in use
+    if ( TpaHL_PCRSet_initialize(&pcrSet, 1, 20) != TPA_SUCCESS )
+        goto error;
+
+    if( TpaHL_PCRSet_pcr(pcrSet,ctx->tpmctx.pcr_to_extend,NULL) != TPA_SUCCESS )
+        goto error;
+    */
+
+    /* ra quote */
+    if( TpaHL_RA_Quote(tpa_ctx, tpm, aik, pcrSet, nonce, NONCE_LEN, ra) != TPA_SUCCESS )
+        goto error;
+
+    if( TpaHL_RA_Serialize(ra, &blob, &blob_size) != TPA_SUCCESS )
+        goto error;
+    
+    /* save quote */
+    *quote = calloc(blob_size,sizeof(char));
+    if ( *quote ) {
+        memcpy(*quote,blob,blob_size);
+        *quote_size = blob_size;
+    } else {
+        fprintf(stderr,"ERR: compute_tmp_quote(): calloc() fails!");
+    }
+    
+    retval = SK_SUCCESS;
+    
+error: /* Error label */
+    TpaHL_AIK_freeMemory(aik);
+    TpaHL_TPM_freeMemory(tpm);
+    TpaHL_RA_freeMemory(ra);
+    TpaHL_CTX_freeMemory(tpa_ctx);
+    //~ if (pcrSet)
+        //~ TpaHL_PCRSet_freeMemory(pcrSet);
+    if ( blob )
+        free(blob);
+    
+    return retval;
 }
 #endif

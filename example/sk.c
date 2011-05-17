@@ -39,6 +39,11 @@ void print_le(SKLogEntry le)
     for ( i = 0 ; i < SK_HMAC_LEN ; i++ )
         fprintf(stdout,"%2.2x",le.hmac[i]);
     fprintf(stdout,"\n\n");
+    
+    fprintf(stdout,"   QUOTE: ");
+    for ( i = 0 ; i < le.quote_size ; i++ )
+        fprintf(stdout,"%2.2x",le.quote[i]);
+    fprintf(stdout,"\n\n");
 }   
 
 int save2db(SKLogEntry le,sqlite3 *db)
@@ -162,7 +167,7 @@ le_type TEXT,le_enc_data TEXT,le_hash_chain TEXT,le_hmac TEXT)",0, 0, NULL);
     save2db(le,db);
     print_le(le);
     
-    SKLOG_ResetLogEntry(&le);
+    //~ SKLOG_ResetLogEntry(&le);
     
     sqlite3_close(db);
     
