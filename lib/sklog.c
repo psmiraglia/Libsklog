@@ -29,6 +29,7 @@
 #include <unistd.h>
 
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <sys/types.h>
 
 #include <openssl/blowfish.h>
@@ -38,14 +39,9 @@
 
 #include "sklog.h"
 
-/** @file sklog.c */
-
 /**
  * SKLOG_InitCtx()
- * @param[in] ctx Pointer to Libsklog context
  * 
- * Initialize the Libsklog context. The function returns SK_SUCCESS if all
- * goes well or SK_FAILURE if something goes wrong.
  */
 int
 SKLOG_InitCtx(SKCTX *ctx)
@@ -95,13 +91,7 @@ SKLOG_InitCtx(SKCTX *ctx)
 
 /**
  * SKLOG_SetAuthKeyZero()
- * @param[in] ctx Pointer to Libsklog context
- * @param[in] key String that contains the starting value of the auth_key
- * @return an integer with value SK_SUCCESS if all goes well or SK_FAILURE if
- * something goes wrong.
  * 
- * Initialize the auth_key value in the Libsklog context. The function returns
- * SK_SUCCESS if all goes well or SK_FAILURE if something goes wrong.
  */
 int
 SKLOG_SetAuthKeyZero(SKCTX *ctx,
@@ -145,10 +135,7 @@ SKLOG_SetAuthKeyZero(SKCTX *ctx,
 
 /**
  * SKLOG_InitLogEntry()
- * @param[in] skle Pointer to log entry structure
- *
- * * Initialize the log entry structure. The function returns SK_SUCCESS if all
- * goes well or SK_FAILURE if something goes wrong.
+ * 
  */
 int
 SKLOG_InitLogEntry(SKLogEntry *skle)
@@ -179,8 +166,7 @@ SKLOG_InitLogEntry(SKLogEntry *skle)
 
 /**
  * SKLOG_ResetLogEntry()
- * Reset the log entry
- *
+ * 
  */
 int
 SKLOG_ResetLogEntry(SKLogEntry *skle)
@@ -209,6 +195,7 @@ SKLOG_ResetLogEntry(SKLogEntry *skle)
 
 /*--------------------------------------------------------------------*/
 /*--------------------------------------------------------------------*/
+
 /**
  * SKLOG_LogEntryToBlob()
  * 
@@ -261,7 +248,6 @@ SKLOG_LogEntryToBlob(unsigned char **blob,
         *blob_len = 0;
         return SK_FAILURE;
     }
-
 }
 
 /*--------------------------------------------------------------------*/
@@ -273,51 +259,51 @@ SKLOG_LogEntryToBlob(unsigned char **blob,
  * event.
  *
  */
-int
-SKLOG_Open(SKCTX *ctx,
-           SKLogEntry *skle)
-{
-    #ifdef TRACE
-    fprintf(stdout,"SKLOG_Open()\n");
-    #endif
-
-    unsigned char enc_key[SK_ENC_KEY_LEN] = {0};
-    unsigned char *data_enc = 0;
-    unsigned int data_enc_size = 0;
-    unsigned char hash_chain[SK_HASH_CHAIN_LEN] = {0};
-    unsigned char hmac[SK_HMAC_LEN] = {0};
-
-    SKLOG_DATA_TYPE type = LogfileInitialization;
-    const char data[] = {"LogfileInitialization"};
-    unsigned int data_size = strlen("LogfileInitialization");
-
-    /* generate encryption key K using data type and auth_key */
-    gen_enc_key(ctx,enc_key,type);
-
-    /* encrypt data with generated key K -- done */
-    enc_data_aes256(&data_enc,&data_enc_size,(unsigned char *)data,data_size,enc_key);
-
-    /* generate hash-chain element  */
-    gen_hash_chain(ctx,hash_chain,data_enc,data_enc_size,type);
-
-    /* generate digest of hash-chain using the auth_key A */
-    gen_hmac(ctx,hmac,hash_chain);
-
-    /* re-generate auth_key */
-    renew_auth_key(ctx);
-
-    /* compose log entry */
-    memcpy(skle->type,&type,SK_LOGENTRY_TYPE_LEN);
-    skle->data_enc = calloc(data_enc_size,sizeof(char));
-    memcpy(skle->data_enc,data_enc,data_enc_size);
-    skle->data_enc_len = data_enc_size;
-    memcpy(skle->hash,hash_chain,SK_HASH_CHAIN_LEN);
-    memcpy(skle->hmac,hmac,SK_HMAC_LEN);
-
-    free(data_enc);
-
-    return SK_SUCCESS;
-}
+//~ int
+//~ SKLOG_Open(SKCTX *ctx,
+           //~ SKLogEntry *skle)
+//~ {
+    //~ #ifdef TRACE
+    //~ fprintf(stdout,"SKLOG_Open()\n");
+    //~ #endif
+//~ 
+    //~ unsigned char enc_key[SK_ENC_KEY_LEN] = {0};
+    //~ unsigned char *data_enc = 0;
+    //~ unsigned int data_enc_size = 0;
+    //~ unsigned char hash_chain[SK_HASH_CHAIN_LEN] = {0};
+    //~ unsigned char hmac[SK_HMAC_LEN] = {0};
+//~ 
+    //~ SKLOG_DATA_TYPE type = LogfileInitialization;
+    //~ const char data[] = {"LogfileInitialization"};
+    //~ unsigned int data_size = strlen("LogfileInitialization");
+//~ 
+    //~ /* generate encryption key K using data type and auth_key */
+    //~ gen_enc_key(ctx,enc_key,type);
+//~ 
+    //~ /* encrypt data with generated key K -- done */
+    //~ enc_data_aes256(&data_enc,&data_enc_size,(unsigned char *)data,data_size,enc_key);
+//~ 
+    //~ /* generate hash-chain element  */
+    //~ gen_hash_chain(ctx,hash_chain,data_enc,data_enc_size,type);
+//~ 
+    //~ /* generate digest of hash-chain using the auth_key A */
+    //~ gen_hmac(ctx,hmac,hash_chain);
+//~ 
+    //~ /* re-generate auth_key */
+    //~ renew_auth_key(ctx);
+//~ 
+    //~ /* compose log entry */
+    //~ memcpy(skle->type,&type,SK_LOGENTRY_TYPE_LEN);
+    //~ skle->data_enc = calloc(data_enc_size,sizeof(char));
+    //~ memcpy(skle->data_enc,data_enc,data_enc_size);
+    //~ skle->data_enc_len = data_enc_size;
+    //~ memcpy(skle->hash,hash_chain,SK_HASH_CHAIN_LEN);
+    //~ memcpy(skle->hmac,hmac,SK_HMAC_LEN);
+//~ 
+    //~ free(data_enc);
+//~ 
+    //~ return SK_SUCCESS;
+//~ }
 
 /*--------------------------------------------------------------------*/
 /*--------------------------------------------------------------------*/
@@ -327,51 +313,51 @@ SKLOG_Open(SKCTX *ctx,
  * Generate a log entry that represents the log file closure event.
  *
  */
-int
-SKLOG_Close(SKCTX *ctx,
-            SKLogEntry *skle)
-{
-    #ifdef TRACE
-    fprintf(stdout,"SKLOG_Close()\n");
-    #endif
-
-    unsigned char enc_key[SK_ENC_KEY_LEN] = {0};
-    unsigned char *data_enc = 0;
-    unsigned int data_enc_size = 0;
-    unsigned char hash_chain[SK_HASH_CHAIN_LEN] = {0};
-    unsigned char hmac[SK_HMAC_LEN] = {0};
-
-    SKLOG_DATA_TYPE type = LogfileClosure;
-    unsigned char data[] = {"LogfileClosure"};
-    unsigned int data_size = strlen("LogfileClosure");
-
-    /* generate encryption key K using data type and auth_key */
-    gen_enc_key(ctx,enc_key,type);
-
-    /* encrypt data with generated key K -- done */
-    enc_data_aes256(&data_enc,&data_enc_size,(unsigned char *)data,data_size,enc_key);
-
-    /* generate hash-chain element  */
-    gen_hash_chain(ctx,hash_chain,data_enc,data_enc_size,type);
-
-    /* generate digest of hash-chain using the auth_key A */
-    gen_hmac(ctx,hmac,hash_chain);
-
-    /* re-generate auth_key */
-    renew_auth_key(ctx);
-
-    /* compose log entry */
-    memcpy(skle->type,&type,SK_LOGENTRY_TYPE_LEN);
-    skle->data_enc = calloc(data_enc_size,sizeof(char));
-    memcpy(skle->data_enc,data_enc,data_enc_size);
-    skle->data_enc_len = data_enc_size;
-    memcpy(skle->hash,hash_chain,SK_HASH_CHAIN_LEN);
-    memcpy(skle->hmac,hmac,SK_HMAC_LEN);
-
-    free(data_enc);
-
-    return SK_SUCCESS;
-}
+//~ int
+//~ SKLOG_Close(SKCTX *ctx,
+            //~ SKLogEntry *skle)
+//~ {
+    //~ #ifdef TRACE
+    //~ fprintf(stdout,"SKLOG_Close()\n");
+    //~ #endif
+//~ 
+    //~ unsigned char enc_key[SK_ENC_KEY_LEN] = {0};
+    //~ unsigned char *data_enc = 0;
+    //~ unsigned int data_enc_size = 0;
+    //~ unsigned char hash_chain[SK_HASH_CHAIN_LEN] = {0};
+    //~ unsigned char hmac[SK_HMAC_LEN] = {0};
+//~ 
+    //~ SKLOG_DATA_TYPE type = LogfileClosure;
+    //~ unsigned char data[] = {"LogfileClosure"};
+    //~ unsigned int data_size = strlen("LogfileClosure");
+//~ 
+    //~ /* generate encryption key K using data type and auth_key */
+    //~ gen_enc_key(ctx,enc_key,type);
+//~ 
+    //~ /* encrypt data with generated key K -- done */
+    //~ enc_data_aes256(&data_enc,&data_enc_size,(unsigned char *)data,data_size,enc_key);
+//~ 
+    //~ /* generate hash-chain element  */
+    //~ gen_hash_chain(ctx,hash_chain,data_enc,data_enc_size,type);
+//~ 
+    //~ /* generate digest of hash-chain using the auth_key A */
+    //~ gen_hmac(ctx,hmac,hash_chain);
+//~ 
+    //~ /* re-generate auth_key */
+    //~ renew_auth_key(ctx);
+//~ 
+    //~ /* compose log entry */
+    //~ memcpy(skle->type,&type,SK_LOGENTRY_TYPE_LEN);
+    //~ skle->data_enc = calloc(data_enc_size,sizeof(char));
+    //~ memcpy(skle->data_enc,data_enc,data_enc_size);
+    //~ skle->data_enc_len = data_enc_size;
+    //~ memcpy(skle->hash,hash_chain,SK_HASH_CHAIN_LEN);
+    //~ memcpy(skle->hmac,hmac,SK_HMAC_LEN);
+//~ 
+    //~ free(data_enc);
+//~ 
+    //~ return SK_SUCCESS;
+//~ }
 
 /*--------------------------------------------------------------------*/
 /*--------------------------------------------------------------------*/
@@ -394,6 +380,7 @@ SKLOG_Write(SKCTX *ctx,
     #endif
 
     unsigned char enc_key[SK_ENC_KEY_LEN] = {0};
+    unsigned char *data = 0;
     unsigned char *data_enc = 0;
     unsigned int data_enc_size = 0;
     unsigned char hash_chain[SK_HASH_CHAIN_LEN] = {0};
@@ -414,14 +401,48 @@ SKLOG_Write(SKCTX *ctx,
         return SK_FAILURE;
     }
 
-    unsigned char *data = 0;
-    data = calloc(data_size,sizeof(char));
-    memcpy(data,data_in,data_size);
-
     /* generate encryption key K using data type and auth_key */
     gen_enc_key(ctx,enc_key,type);
 
-    /* encrypt data with generated key K -- done */
+    /* encrypt data with generated key K */
+    switch ( type ) {
+        case LogfileInitialization:
+            /**
+             * this is a simplified version of LogInitializaion log entry
+             */
+            data = calloc(BUFFER_LEN,sizeof(char));
+            if ( data ) {
+                memset(data,0,BUFFER_LEN);
+                struct timeval tv;
+                gettimeofday(&tv,NULL);
+                sprintf((char*)data,"%ld:%ld",tv.tv_sec,tv.tv_usec);
+            } else {
+                /* calloc() error */
+            }
+            break;
+        case LogfileClosure:
+            /**
+             * this is a simplified version of LogClosure log entry
+             */
+            data = calloc(BUFFER_LEN,sizeof(char));
+            if ( data ) {
+                memset(data,0,BUFFER_LEN);
+                struct timeval tv;
+                gettimeofday(&tv,NULL);
+                sprintf((char*)data,"%ld:%ld",tv.tv_sec,tv.tv_usec);
+            } else {
+                /* calloc() error */
+            }
+            break;
+        default:
+            data = calloc(data_size,sizeof(char));
+            if ( data ) {
+                memcpy(data,data_in,data_size);
+            } else {
+                /* calloc() error */
+            }
+            break;
+    }
     enc_data_aes256(&data_enc,&data_enc_size,data,data_size,enc_key);
 
     /* generate hash-chain element  */
@@ -438,78 +459,6 @@ SKLOG_Write(SKCTX *ctx,
     gen_nonce(nonce,&type,data_enc,data_enc_size,hash_chain,hmac);
     compute_tpm_quote(ctx,nonce,&quote,&quote_size);
     #endif
-
-    //~ #ifdef USE_QUOTE
-    //~ TPA_CONTEXT *tpa_ctx = NULL;
-    //~ TPA_TPM *tpm = NULL;
-    //~ TPA_PCR_SET *pcrSet = NULL;
-    //~ TPA_AIK *aik = NULL;
-    //~ TPA_RA *ra = NULL;
-//~ 
-    //~ unsigned char nonce[NONCE_LEN] = { 0 };
-    //~ unsigned char *quote = NULL;
-    //~ unsigned int quote_size = 0;
-//~ 
-    //~ /* generate nonce */
-//~ 
-    //~ gen_nonce(nonce,&type,data_enc,data_enc_size,hash_chain,hmac);
-//~ 
-    //~ /* this function will allocate all needed objects */
-//~ 
-    //~ if ( TpaHL_CTX_allocate(&tpa_ctx) != TPA_SUCCESS )
-        //~ goto error;
-//~ 
-    //~ if ( TpaHL_TPM_allocate(&tpm) != TPA_SUCCESS )
-        //~ goto error;
-//~ 
-    //~ if ( TpaHL_AIK_allocate(&aik) != TPA_SUCCESS )
-        //~ goto error;
-//~ 
-    //~ if ( TpaHL_RA_allocate(&ra) != TPA_SUCCESS )
-        //~ goto error;
-//~ 
-    //~ /* setter */
-//~ 
-    //~ if ( TpaHL_TPM_set(tpm,TPM_SRKPWD,strlen(ctx->tpmctx.srkpwd),ctx->tpmctx.srkpwd) != TPA_SUCCESS )
-        //~ goto error;
-//~ 
-    //~ aik->aik_id = ctx->tpmctx.aikid;
-//~ 
-    //~ if ( TpaHL_AIK_set(aik, AIK_AIKSECRET, strlen(ctx->tpmctx.aikpwd), ctx->tpmctx.aikpwd) != TPA_SUCCESS )
-        //~ goto error;
-//~ 
-    //~ if ( TpaHL_PCRSet_initialize(&pcrSet, 1, 20) != TPA_SUCCESS )
-        //~ goto error;
-//~ 
-    //~ if( TpaHL_PCRSet_pcr(pcrSet,ctx->tpmctx.pcr_to_extend,NULL) != TPA_SUCCESS )
-        //~ goto error;
-//~ 
-    //~ /* ra quote */
-    //~ if( TpaHL_RA_Quote(tpa_ctx, tpm, aik, pcrSet, nonce, NONCE_LEN, ra) != TPA_SUCCESS )
-        //~ goto error;
-//~ 
-    //~ if( TpaHL_RA_Serialize(ra, &quote, &quote_size) != TPA_SUCCESS )
-        //~ goto error;
-    //~ 
-    //~ /* insert quote in le */
-    //~ skle->quote = calloc(quote_size,sizeof(char));
-    //~ if ( skle->quote ) {
-        //~ memcpy(skle->quote,quote,quote_size);
-        //~ skle->quote_size = quote_size;
-    //~ } else {
-        //~ fprintf(stderr,"ERR: SKLOG_Write(): calloc() fails!");
-    //~ }
-    //~ 
-//~ error: /* Error label */
-    //~ TpaHL_AIK_freeMemory(aik);
-    //~ TpaHL_TPM_freeMemory(tpm);
-    //~ TpaHL_RA_freeMemory(ra);
-    //~ TpaHL_CTX_freeMemory(tpa_ctx);
-    //~ if (pcrSet)
-        //~ TpaHL_PCRSet_freeMemory(pcrSet);
-    //~ if ( quote )
-        //~ free(quote);
-    //~ #endif
 
     /* compose log entry */
     memcpy(skle->type,&type,SK_LOGENTRY_TYPE_LEN);

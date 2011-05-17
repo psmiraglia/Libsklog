@@ -53,9 +53,9 @@ int SKLOG_InitCtx(SKCTX *);
 
 int SKLOG_SetAuthKeyZero(SKCTX *,unsigned char *);
 
-int SKLOG_Open(SKCTX *,SKLogEntry*);
+//~ int SKLOG_Open(SKCTX *,SKLogEntry*);
 
-int SKLOG_Close(SKCTX *,SKLogEntry*);
+//~ int SKLOG_Close(SKCTX *,SKLogEntry*);
 
 int SKLOG_Write(SKCTX *,const char *,int,SKLOG_DATA_TYPE,SKLogEntry*);
 

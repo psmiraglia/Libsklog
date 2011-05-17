@@ -7,6 +7,10 @@
 
 #define    NLOGS 7
 #define    SK_DATABASE_PATH        "./logs.db"
+#define     LARGE_BUFLEN        1024
+#define     XSMALL_BUFLEN       128
+#define     XLARGE_BUFLEN       2048
+
 
 /* This is the key used to simulate the key exchange from T and U */
 unsigned char thekey[SK_AUTH_KEY_LEN] = { 
@@ -73,7 +77,7 @@ int save2db(SKLogEntry le,sqlite3 *db)
 
     for ( i=0 , j=0 ; i < SK_HMAC_LEN ; i++ , j+=2 )
         sprintf(&le_hmac[j],"%2.2x",le.hmac[i]);
-
+    
     sprintf(query,"%s ('%s','%s','%s','%s');",
             query_head,le_type,le_enc_data,le_hash_chain,le_hmac);
 
@@ -115,7 +119,7 @@ int main (void)
 
     if ( ret == SQLITE_OK ) { 
         ret = sqlite3_exec(db,"create table le (lekey INTEGER PRIMARY KEY,\
-le_type TEXT,le_enc_data TEXT,le_hash_chain TEXT,le_hmac TEXT)",0, 0, NULL);
+le_type TEXT,le_enc_data TEXT,le_hash_chain TEXT,le_hmac TEXT,tpm_quote TEXT)",0, 0, NULL);
         ret = sqlite3_exec(db,"delete from le",0, 0, NULL);
     }
     else {
@@ -135,7 +139,8 @@ le_type TEXT,le_enc_data TEXT,le_hash_chain TEXT,le_hmac TEXT)",0, 0, NULL);
     SKLOG_InitLogEntry(&le);
     
     /* generate the LogfileOpen logentry */
-    SKLOG_Open(&ctx,&le);
+    //SKLOG_Open(&ctx,&le);
+    SKLOG_Write(&ctx,NULL,0,LogfileInitialization,&le);
     
     save2db(le,db);
     print_le(le);
@@ -162,7 +167,7 @@ le_type TEXT,le_enc_data TEXT,le_hash_chain TEXT,le_hmac TEXT)",0, 0, NULL);
     SKLOG_ResetLogEntry(&le);
     
     /* generate the LogfileClosure logentry */
-    SKLOG_Close(&ctx,&le);
+    SKLOG_Write(&ctx,NULL,0,LogfileClosure,&le);
     
     save2db(le,db);
     print_le(le);
