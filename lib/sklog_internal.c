@@ -1,204 +1,428 @@
-/*
-**    Copyright (C) 2011 Politecnico di Torino, Italy
-**
-**        TORSEC group -- http://security.polito.it
-**        Author: Paolo Smiraglia <paolo.smiraglia@polito.it>
-**
-**    This file is part of Libsklog.
-**
-**    Libsklog is free software: you can redistribute it and/or modify
-**    it under the terms of the GNU General Public License as published by
-**    the Free Software Foundation, either version 3 of the License, or
-**    (at your option) any later version.
-**
-**    Libsklog is distributed in the hope that it will be useful,
-**    but WITHOUT ANY WARRANTY; without even the implied warranty of
-**    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-**    GNU General Public License for more details.
-**
-**    You should have received a copy of the GNU General Public License
-**    along with Libsklog.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
-#include "../config.h"
-
-#ifdef USE_QUOTE
-#include <confuse.h>
-#include <tpa/TPA_API.h>
-#include <tpa/TPA_Utils.h>
-#include <tpa/TPA_Common.h>
-#include <tpa/TPA_Config.h>
-#endif
-
-#include <fcntl.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
-#include <sys/stat.h>
-#include <sys/types.h>
-
-#include <openssl/blowfish.h>
-#include <openssl/des.h>
-#include <openssl/evp.h>
-#include <openssl/hmac.h>
-#include <openssl/sha.h>
-#include <openssl/aes.h>
-
 #include "sklog_internal.h"
 
-/**
- * gen_enc_key()
- * Generate encryption key for the current log entry
- *
- */
-int
-gen_enc_key(SKCTX *ctx,
-            unsigned char *enc_key,
-            SKLOG_DATA_TYPE type)
+#include <string.h>
+
+#include <netinet/in.h> //~ for htonl(), ntohl(), ...
+
+#include <openssl/aes.h>
+#include <openssl/engine.h>
+#include <openssl/err.h>
+
+SKLOG_RETURN
+sign_message(unsigned char    *message,
+             unsigned int     message_len,
+             EVP_PKEY         *signing_key,
+             unsigned char    **signature,
+             unsigned int     *signature_len)
 {
-    #ifdef TRACE
-    fprintf(stdout,"\tgen_enc_key(): ");
+    #ifdef DO_TRACE
+    DEBUG
     #endif
 
-    unsigned char *buffer = 0;
-    unsigned int buflen = 0;
-    unsigned int pos = 0;
+    unsigned long openssl_err = 0;
 
-    buflen = sizeof(type) + SK_AUTH_KEY_LEN;
-    buffer = calloc(buflen,sizeof(unsigned char));
+    EVP_PKEY_CTX *ctx = 0;
+    unsigned char md[SHA256_LEN] = { 0 };
+    unsigned char *sig = 0;
+    size_t md_len = SHA256_LEN;
+    size_t sig_len = 0;
 
-    memcpy(&buffer[pos],&type,sizeof(type));
-    pos+=sizeof(type);
-    memcpy(&buffer[pos],ctx->auth_key,SK_AUTH_KEY_LEN);
-
-    /* make sha1 message digest */
-
+    //~ generate sha256 message digest
     EVP_MD_CTX mdctx;
     EVP_MD_CTX_init(&mdctx);
-    EVP_DigestInit_ex(&mdctx, EVP_sha256(),NULL);
-    EVP_DigestUpdate(&mdctx,buffer,buflen);
-    EVP_DigestFinal_ex(&mdctx,enc_key,&buflen);
+    EVP_DigestInit_ex(&mdctx,EVP_sha256(),NULL);
+    EVP_DigestUpdate(&mdctx,message,message_len);
+    EVP_DigestFinal_ex(&mdctx,md,(unsigned int *)&md_len);
     EVP_MD_CTX_cleanup(&mdctx);
 
-    free(buffer);
+    /*
+     * assumes signing_key, md and mdlen are already set up and that
+     * signing_key is an RSA private key
+     */
 
-    #ifdef TRACE
-    int i = 0;
-    for ( i = 0 ; i < SK_ENC_KEY_LEN ; i++)
-        fprintf(stdout,"%2.2x",enc_key[i]);
-    fprintf(stdout,"\n");
+    //~ why second argument is NULL? To investigate...
+    ctx = EVP_PKEY_CTX_new(signing_key,NULL);
+
+    if ( ctx == NULL ) {
+       ERROR("EVP_PKEY_CTX_new() failure");
+       return SKLOG_FAILURE;
+    }
+
+    if ( EVP_PKEY_sign_init(ctx) <= 0 ) {
+       ERROR("EVP_PKEY_sign_init() failure")
+       EVP_PKEY_CTX_free(ctx);
+       return SKLOG_FAILURE;
+    }
+
+    if ( EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PADDING) <= 0 ) {
+       ERROR("EVP_PKEY_CTX_set_rsa_padding() failure")
+       EVP_PKEY_CTX_free(ctx);
+       return SKLOG_FAILURE;
+    }
+
+    if ( EVP_PKEY_CTX_set_signature_md(ctx, EVP_sha256()) <= 0 ) {
+       ERROR("EVP_PKEY_CTX_set_signature_md() failure")
+       EVP_PKEY_CTX_free(ctx);
+       return SKLOG_FAILURE;
+    }
+
+    //~ determine buffer length
+    if ( EVP_PKEY_sign(ctx, NULL, &sig_len, md, md_len) <= 0 ) {
+       ERROR("EVP_PKEY_sign() failure")
+       EVP_PKEY_CTX_free(ctx);
+       return SKLOG_FAILURE;
+    }
+
+    sig = OPENSSL_malloc(sig_len);
+
+    if ( !sig ) {
+       ERROR("OPENSSL_malloc() failure")
+       EVP_PKEY_CTX_free(ctx);
+       return SKLOG_FAILURE;
+    }
+
+    if ( EVP_PKEY_sign(ctx, sig, &sig_len, md, md_len) <= 0 ) {
+       ERROR("EVP_PKEY_sign() failure")
+       OPENSSL_ERROR(openssl_err)
+       EVP_PKEY_CTX_free(ctx);
+       OPENSSL_free(sig);
+       return SKLOG_FAILURE;
+    }
+
+    /* Signature is sig_len bytes written to buffer sig */
+
+    /*
+    if ( (*signature = calloc(sig_len,sizeof(char))) == NULL ) {
+        ERROR("calloc() failure")
+        OPENSSL_free(sig);
+        EVP_PKEY_CTX_free(ctx);
+        return SKLOG_FAILURE;
+    }
+    */
+
+    SKLOG_CALLOC(*signature,sig_len,char)
+
+    memcpy(*signature,sig,sig_len);
+    *signature_len = sig_len;
+
+    OPENSSL_free(sig);
+    EVP_PKEY_CTX_free(ctx);
+
+    #ifdef HAVE_NOTIFY
+    NOTIFY("signature process successful")
     #endif
 
-    return SK_SUCCESS;
+    return SKLOG_SUCCESS;
 }
 
-/*--------------------------------------------------------------------*/
-/*--------------------------------------------------------------------*/
-
-/**
- * enc_data_aes256()
- * Encrypt data using AES256
- *
- */
-int
-enc_data_aes256(unsigned char **data_enc,
-                unsigned int   *data_enc_size,
-                unsigned char *data,
-                unsigned int   data_size,
-                unsigned char *enc_key)
+SKLOG_RETURN
+sign_verify(EVP_PKEY         *verify_key,
+            unsigned char    *signature,
+            size_t           signature_len,
+            unsigned char    *message,
+            unsigned int     message_len)
 {
-    #ifdef TRACE
-    fprintf(stdout,"\tenc_data_aes256(): ");
+    #ifdef DO_TRACE
+    DEBUG
+    #endif
+
+    //~ generate sha256 message digest
+    unsigned char md[SHA256_LEN] = { 0 };
+    unsigned int md_len = 0;
+    EVP_MD_CTX mdctx;
+
+    EVP_MD_CTX_init(&mdctx);
+    EVP_DigestInit_ex(&mdctx,EVP_sha256(),NULL);
+    EVP_DigestUpdate(&mdctx,message,message_len);
+    EVP_DigestFinal_ex(&mdctx,md,&md_len);
+    EVP_MD_CTX_cleanup(&mdctx);
+
+    //~ verify signature
+    EVP_PKEY_CTX *ctx = NULL;
+    int ret = 0;
+
+    if ( (ctx = EVP_PKEY_CTX_new(verify_key,NULL)) == NULL ) {
+        /* Error occurred */
+        return SKLOG_FAILURE;
+    }
+
+    if ( EVP_PKEY_verify_init(ctx) <= 0 ) {
+        /* Error */
+        return SKLOG_FAILURE;
+    }
+
+    if ( EVP_PKEY_CTX_set_rsa_padding(ctx,RSA_PKCS1_PADDING) <= 0 ) {
+        /* Error */
+        return SKLOG_FAILURE;
+    }
+
+    if ( EVP_PKEY_CTX_set_signature_md(ctx,EVP_sha256()) <= 0 ) {
+        /* Error */
+        return SKLOG_FAILURE;
+    }
+
+    ret = EVP_PKEY_verify(ctx,signature,signature_len,md,md_len);
+
+    if ( ret < 0 ) {
+        //~ error
+        ERROR("EVP_PKEY_verify() failure")
+        return SKLOG_FAILURE;
+    }
+
+    switch ( ret ) {
+        case 1: // success
+            #ifdef HAVE_NOTIFY
+            NOTIFY("signature verification successfull :-D")
+            #endif
+            return SKLOG_SUCCESS;
+            break;
+        case 0: // failure
+            #ifdef HAVE_NOTIFY
+            NOTIFY("signature verification fails :-(")
+            #endif
+            return SKLOG_FAILURE;
+            break;
+        default: // other
+            #ifdef HAVE_NOTIFY
+            NOTIFY("signature verification fails :-S")
+            #endif
+            return SKLOG_FAILURE;
+            break;
+    }
+}
+
+SKLOG_RETURN
+pke_encrypt(X509             *cert,
+            unsigned char    *in,
+            unsigned char    in_len,
+            unsigned char    **out,
+            size_t           *out_len)
+{
+    #ifdef DO_TRACE
+    DEBUG
+    #endif
+
+    unsigned long err = 0;
+    int retval = 0;
+
+    EVP_PKEY *pubkey = 0;
+    EVP_PKEY_CTX *evp_ctx = 0;
+
+    if ( (pubkey = X509_get_pubkey(cert)) == NULL ) {
+        ERROR("X509_get_pubkey() failure")
+        OPENSSL_ERROR(err);
+        return SKLOG_FAILURE;
+    }
+
+    if ( (evp_ctx = EVP_PKEY_CTX_new(pubkey,NULL)) == NULL ) {
+        ERROR("EVP_PKEY_CTX_new() failure")
+        OPENSSL_ERROR(err);
+        return SKLOG_FAILURE;
+    }
+
+    retval = EVP_PKEY_encrypt_init(evp_ctx);
+
+    if ( retval <= 0 ) {
+        EVP_PKEY_CTX_free(evp_ctx);
+        ERROR("EVP_PKEY_encrypt_init() failure")
+        OPENSSL_ERROR(err);
+        return SKLOG_FAILURE;
+    }
+
+    retval = EVP_PKEY_CTX_set_rsa_padding(evp_ctx,RSA_PKCS1_PADDING);
+
+    if ( retval <= 0 ) {
+        EVP_PKEY_CTX_free(evp_ctx);
+        ERROR("EVP_PKEY_CTX_set_rsa_padding() failure")
+        OPENSSL_ERROR(err);
+        return SKLOG_FAILURE;
+    }
+
+    retval = EVP_PKEY_encrypt(evp_ctx,NULL,out_len,in,in_len);
+
+    if ( retval <= 0 ) {
+        EVP_PKEY_CTX_free(evp_ctx);
+        ERROR("EVP_PKEY_encrypt() failure")
+        OPENSSL_ERROR(err);
+        return SKLOG_FAILURE;
+    }
+
+    if ( (*out = OPENSSL_malloc(*out_len)) == NULL ) {
+        EVP_PKEY_CTX_free(evp_ctx);
+        ERROR("OPENSSL_malloc() failure")
+        OPENSSL_ERROR(err);
+        return SKLOG_FAILURE;
+    }
+
+    retval = EVP_PKEY_encrypt(evp_ctx,*out,out_len,in,in_len);
+
+    if ( retval <= 0 )  {
+        OPENSSL_free(*out);
+        EVP_PKEY_CTX_free(evp_ctx);
+        ERROR("EVP_PKEY_encrypt() failure")
+        OPENSSL_ERROR(err);
+        return SKLOG_FAILURE;
+    }
+
+    EVP_PKEY_CTX_free(evp_ctx);
+
+    return SKLOG_SUCCESS;
+}
+
+SKLOG_RETURN
+pke_decrypt(EVP_PKEY         *key,
+            unsigned char    *in,
+            size_t           in_len,
+            unsigned char    **out,
+            size_t           *out_len)
+{
+    #ifdef DO_TRACE
+    DEBUG
+    #endif
+
+    unsigned long err = 0;
+    EVP_PKEY_CTX *ctx = NULL;
+    int retval = 0;
+
+
+    /*
+     * assumes key in, inlen are already set up and that key is an RSA
+     * private key
+     */
+
+    if ( (ctx = EVP_PKEY_CTX_new(key,NULL)) == NULL ) {
+        ERROR("EVP_PKEY_CTX_new() failure")
+        OPENSSL_ERROR(err);
+        return SKLOG_FAILURE;
+    }
+
+    retval = EVP_PKEY_decrypt_init(ctx);
+
+    if ( retval <= 0 ) {
+        EVP_PKEY_CTX_free(ctx);
+        ERROR("EVP_PKEY_decrypt_init() failure")
+        OPENSSL_ERROR(err);
+        return SKLOG_FAILURE;
+    }
+
+    retval = EVP_PKEY_CTX_set_rsa_padding(ctx,RSA_PKCS1_PADDING);
+
+    if ( retval <= 0 ) {
+        EVP_PKEY_CTX_free(ctx);
+        ERROR("EVP_PKEY_CTX_set_rsa_padding() failure")
+        OPENSSL_ERROR(err);
+        return SKLOG_FAILURE;
+    }
+
+    /* Determine buffer length */
+
+    retval = EVP_PKEY_decrypt(ctx, NULL, out_len, in, in_len);
+
+    if ( retval <= 0 ) {
+        EVP_PKEY_CTX_free(ctx);
+        ERROR("EVP_PKEY_decrypt() failure 1")
+        OPENSSL_ERROR(err);
+        return SKLOG_FAILURE;
+    }
+
+    if ( (*out = OPENSSL_malloc(*out_len)) == NULL ) {
+        EVP_PKEY_CTX_free(ctx);
+        ERROR("OPENSSL_malloc() failure")
+        OPENSSL_ERROR(err);
+        return SKLOG_FAILURE;
+    }
+
+    retval = EVP_PKEY_decrypt(ctx, *out, out_len, in, in_len);
+
+    if ( retval <= 0 ) {
+        EVP_PKEY_CTX_free(ctx);
+        free(*out);
+        ERROR("EVP_PKEY_decrypt() failure 2")
+        OPENSSL_ERROR(err);
+        return SKLOG_FAILURE;
+    }
+
+    /* Decrypted data is outlen bytes written to buffer out */
+
+    return SKLOG_SUCCESS;
+}
+
+SKLOG_RETURN
+encrypt_aes256(unsigned char    **data_enc,
+               unsigned int     *data_enc_size,
+               unsigned char    *data,
+               unsigned int     data_size,
+               unsigned char    *enc_key)
+{
+    #ifdef DO_TRACE
+    DEBUG
     #endif
 
     EVP_CIPHER_CTX ctx;
     unsigned char key[32] = { 0 };
     unsigned char iv[32] = { 0 };
-
-    /* to manage better */
-    unsigned char salt[8] = { 0x11,0x22,0x33,0x44,0x55,0x66,0x77,0x88 };
+    unsigned char salt[8] = { 1 }; //~ to refine
 
     int i = 0;
-    int c_len = 0; /* ciphertext len */
-    int f_len = 0; /* final len */
+    int c_len = 0; //~ ciphertext len
+    int f_len = 0; //~ final len
     unsigned char *ciphertext = 0;
 
-    /* init context */
-
+    //~ init context
     i = EVP_BytesToKey(EVP_aes_256_cbc(),EVP_sha256(),salt,enc_key,
-                       SK_AUTH_KEY_LEN,5,key,iv);
+                       SKLOG_AUTH_KEY_LEN,5,key,iv);
     if ( i != 32 ) {
-        fprintf(stderr,"ERR: enc_data_aes256(): Key size is %d bits. \
-It should be 256 bits\n", i*8);
-        return SK_FAILURE;
+        ERROR("key size should be 256 bits")
+        return SKLOG_FAILURE;
     }
 
     EVP_CIPHER_CTX_init(&ctx);
     EVP_EncryptInit_ex(&ctx,EVP_aes_256_cbc(),NULL,key,iv);
 
-    /* do encryption */
+    //~ do encryption
+    c_len = data_size +
+            AES_BLOCK_SIZE ;
 
-    c_len = data_size + AES_BLOCK_SIZE ;
-    ciphertext = calloc(c_len,sizeof(char));
+    SKLOG_CALLOC(ciphertext,c_len,char)
 
     EVP_EncryptInit_ex(&ctx,NULL,NULL,NULL,NULL);
-
     EVP_EncryptUpdate(&ctx,ciphertext,&c_len,data,data_size);
-
     EVP_EncryptFinal_ex(&ctx,ciphertext+c_len,&f_len);
 
     *data_enc_size = c_len + f_len;
-
-    *data_enc = calloc(c_len + f_len,sizeof(char));
+    SKLOG_CALLOC(*data_enc,*data_enc_size,char)
     memcpy(*data_enc,ciphertext,c_len + f_len);
-
-    #ifdef TRACE
-    for ( i = 0 ; i < c_len + f_len ; i++)
-        fprintf(stdout,"%2.2x",ciphertext[i]);
-    fprintf(stdout,"\n");
-    #endif
 
     free(ciphertext);
     EVP_CIPHER_CTX_cleanup(&ctx);
 
-    return SK_SUCCESS;
+    return SKLOG_SUCCESS;
 }
 
-/*--------------------------------------------------------------------*/
-/*--------------------------------------------------------------------*/
-
-/**
- * dec_data_aes256()
- * Decrypt data encrypted using AES256
- *
- */
-int
-dec_data_aes256(unsigned char **data_dec, /* out */
-                unsigned int   *data_dec_size, /* out */
-                unsigned char *data_enc, /* in */
-                unsigned int   data_enc_size, /* in */
-                unsigned char *dec_key) /* in */
+SKLOG_RETURN
+decrypt_aes256(unsigned char    *dec_key,
+               unsigned char    *in,
+               unsigned int     in_len,
+               unsigned char    **out,
+               unsigned int     *out_len)
 {
-    #ifdef TRACE
-    fprintf(stdout,"\tdec_data_aes256():\n");
+    #ifdef DO_TRACE
+    DEBUG
     #endif
 
     EVP_CIPHER_CTX ctx;
     unsigned char key[32] = { 0 };
     unsigned char iv[32] = { 0 };
-    unsigned char salt[8] = { 0x11,0x22,0x33,0x44,0x55,0x66,0x77,0x88 };
+    unsigned char salt[8] = { 1 }; //~ to refine
     int i = 0;
 
     /* init context */
 
-    i = EVP_BytesToKey(EVP_aes_256_cbc(),EVP_sha256(),salt,dec_key,
-                       SK_AUTH_KEY_LEN,5,key,iv);
-    if ( i != 32 ) {
-        fprintf(stderr,"ERR: dec_data_aes256(): Key size is %d bits. \
-It should be 256 bits\n", i*8);
-        return SK_FAILURE;
+    if ( (i = EVP_BytesToKey(EVP_aes_256_cbc(),EVP_sha256(),
+                             salt,dec_key,
+                             SKLOG_AUTH_KEY_LEN,5,key,iv)) != 32 ) {
+        //~ error
+        return SKLOG_FAILURE;
     }
 
     EVP_CIPHER_CTX_init(&ctx);
@@ -206,513 +430,204 @@ It should be 256 bits\n", i*8);
 
     /* do decription */
 
-    int p_len = data_enc_size; /* plaintext len */
+    int p_len = in_len; /* plaintext len */
     int f_len = 0; /* final len */
     unsigned char *plaintext = 0;
 
     plaintext = calloc(p_len,sizeof(char));
 
     EVP_DecryptInit_ex(&ctx, NULL, NULL, NULL, NULL);
-    EVP_DecryptUpdate(&ctx, plaintext, &p_len, data_enc,data_enc_size);
+    EVP_DecryptUpdate(&ctx, plaintext, &p_len, in,in_len);
     EVP_DecryptFinal(&ctx, plaintext+p_len, &f_len);
 
-    *data_dec_size = p_len + f_len;
-    *data_dec = calloc(p_len + f_len,sizeof(char));
-    memcpy(*data_dec,plaintext,p_len + f_len);
+    *out_len = p_len + f_len;
+    *out = calloc(p_len + f_len,sizeof(char));
+    memcpy(*out,plaintext,p_len + f_len);
 
     free(plaintext);
     EVP_CIPHER_CTX_cleanup(&ctx);
 
-    return SK_SUCCESS;
+    return SKLOG_SUCCESS;
 }
 
-/*--------------------------------------------------------------------*/
-/*--------------------------------------------------------------------*/
-
-/**
- * enc_data_des()
- * Encrypt data using DES
- * NOT IN USE
- *
- */
-int /* use aes */
-enc_data_des(unsigned char **data_enc,
-             unsigned int   *data_enc_size,
-             unsigned char *data,
-             unsigned int   data_size,
-             unsigned char *enc_key)
+SKLOG_RETURN
+tlv_create(uint32_t         type,
+           unsigned int     data_len,
+           void             *data,
+           unsigned char    *buffer)
 {
-    #ifdef TRACE
-    fprintf(stdout,"\tenc_data_des()\n");
+    #ifdef DO_TRACE_X
+    DEBUG
     #endif
 
-    DES_cblock ivect;
-    DES_key_schedule schedule;
-    int n = 0;
+    /**
+     * tlv structure:
+     *    4 Bytes: type
+     *    4 Bytes: length
+     *    $length Bytes: content
+     */
 
-    *data_enc = calloc(data_size,sizeof(char));
-    *data_enc_size = data_size;
+    if ( data == NULL ) {
+        ERROR("data must be NOT NULL")
+        return SKLOG_FAILURE;
+    }
 
-    /* Prepare the key for use with DES_cfb64_encrypt */
-    memcpy(ivect,enc_key,8);
-    DES_set_odd_parity( &ivect );
-    DES_set_key_checked( &ivect, &schedule);
+    uint32_t tmp = htonl(type);
+    uint32_t len = htonl(data_len);
 
-    /* Encryption occurs here */
-    DES_cfb64_encrypt(data,*data_enc,data_size,&schedule,
-                      &ivect,&n,DES_ENCRYPT);
+    //~ SKLOG_CALLOC(*tlv,*tlv_len,char)
 
-    return SK_SUCCESS;
+    memcpy(buffer,&tmp,sizeof(uint32_t));
+    memcpy(&buffer[sizeof(uint32_t)],&len,sizeof(uint32_t));
+    memcpy(&buffer[sizeof(uint32_t)+sizeof(uint32_t)],data,data_len);
+
+    return SKLOG_SUCCESS;
 }
 
-/*--------------------------------------------------------------------*/
-/*--------------------------------------------------------------------*/
-
-/**
- * dec_data_des()
- * Decrypt data encrypted using DES
- * NOT IN USE
- *
- */
-int /* use aes */
-dec_data_des(unsigned char **data_dec,
-             unsigned int   *data_dec_size,
-             unsigned char *data_enc,
-             unsigned int   data_enc_size,
-             unsigned char *dec_key)
+SKLOG_RETURN
+tlv_parse(unsigned char    *tlv_msg,
+          uint32_t         type,
+          void             *data,
+          unsigned int     *data_len)
 {
-    #ifdef TRACE
-    fprintf(stdout,"\tdec_data_des()\n");
+    #ifdef DO_TRACE_X
+    DEBUG
     #endif
 
-    DES_cblock ivect;
-    DES_key_schedule schedule;
-    int n = 0;
+    if ( tlv_msg == NULL ) {
+        ERROR("unsigned char *tlv_msg must be NOT NULL")
+        return SKLOG_FAILURE;
+    }
 
-    *data_dec = calloc(data_enc_size,sizeof(char));
-    *data_dec_size = data_enc_size;
-
-    /* Prepare the key for use with DES_cfb64_encrypt */
-    memcpy(ivect,dec_key,8);
-    DES_set_odd_parity( &ivect );
-    DES_set_key_checked( &ivect, &schedule);
-
-    /* Encryption occurs here */
-    DES_cfb64_encrypt(data_enc,*data_dec,data_enc_size,&schedule,
-                      &ivect,&n,DES_DECRYPT);
-
-    return SK_SUCCESS;
-}
-
-/*--------------------------------------------------------------------*/
-/*--------------------------------------------------------------------*/
-
-/**
- * gen_hahs_chain()
- * Generate the hash chain element for the current log entry
- *
- */
-int
-gen_hash_chain(SKCTX *ctx,
-               unsigned char *hash_chain,
-               unsigned char *data_enc,
-               unsigned int data_enc_size,
-               SKLOG_DATA_TYPE type)
-{
-    #ifdef TRACE
-    fprintf(stdout,"\tgen_hash_chain(): ");
-    #endif
-
-    unsigned char *buffer = 0;
-    unsigned int buflen = 0;
-    unsigned int pos = 0;
-
-    buflen = sizeof(type) + data_enc_size + SK_HASH_CHAIN_LEN;
-    buffer = calloc(buflen,sizeof(unsigned char));
-
-    memcpy(&buffer[pos],ctx->last_hash_chain,SK_HASH_CHAIN_LEN);
-    pos+=SK_HASH_CHAIN_LEN;
-    memcpy(&buffer[pos],data_enc,data_enc_size);
-    pos+=data_enc_size;
-    memcpy(&buffer[pos],&type,sizeof(type));
-
-    /* make sha1 message digest */
-
-    EVP_MD_CTX mdctx;
-    EVP_MD_CTX_init(&mdctx);
-    EVP_DigestInit_ex(&mdctx, EVP_sha256(),NULL);
-    EVP_DigestUpdate(&mdctx,buffer,buflen);
-    EVP_DigestFinal_ex(&mdctx,hash_chain,&buflen);
-    EVP_MD_CTX_cleanup(&mdctx);
-
-    /* save hash chain for the next generation */
-    memcpy(ctx->last_hash_chain,hash_chain,SK_HASH_CHAIN_LEN);
-
-    #ifdef TRACE
-    int i = 0;
-    for ( i = 0 ; i < SK_HASH_CHAIN_LEN ; i++)
-        fprintf(stdout,"%2.2x",ctx->last_hash_chain[i]);
-    fprintf(stdout,"\n");
-    #endif
-
-    free(buffer);
-
-    return SK_SUCCESS;
-}
-
-/*--------------------------------------------------------------------*/
-/*--------------------------------------------------------------------*/
-
-/**
- * gen_hmac()
- * Generate the hmac for the current log entry
- *
- */
-int
-gen_hmac(SKCTX *ctx,
-         unsigned char *hmac,
-         unsigned char *hash_chain)
-{
-    //~ #ifdef TRACE
-    //~ int i = 0;
-    //~ fprintf(stdout,"\tgen_hmac(): generating hmac using auth_key: ");
-    //~ for(i = 0 ; i < SK_AUTH_KEY_LEN ; i++)
-        //~ fprintf(stdout,"%2.2x",ctx->auth_key[i]);
-    //~ fprintf(stdout,"\n");
-    //~ #endif
-
-    #ifdef TRACE
-    fprintf(stdout,"\tgen_hmac(): ");
-    #endif
-
-    /* make hmac using sha256 digest */
-
-    unsigned int hmac_len = 0;
-
-    HMAC_CTX mdctx;
-    HMAC_CTX_init(&mdctx);
-    HMAC_Init_ex(&mdctx,ctx->auth_key,SK_AUTH_KEY_LEN,EVP_sha256(),NULL);
-    HMAC_Update(&mdctx,hash_chain,SK_HASH_CHAIN_LEN);
-    HMAC_Final(&mdctx,hmac,&hmac_len);
-    HMAC_CTX_cleanup(&mdctx);
-
-    #ifdef TRACE
-    int i = 0;
-    for(i = 0 ; i < SK_HMAC_LEN ; i++)
-        fprintf(stdout,"%2.2x",hmac[i]);
-    fprintf(stdout,"\n");
-    #endif
-
-    return SK_SUCCESS;
-}
-
-/*--------------------------------------------------------------------*/
-/*--------------------------------------------------------------------*/
-
-/**
- * renew_auth_key()
- * Renew the auth_key
- *
- */
-int
-renew_auth_key(SKCTX *ctx)
-{
-    #ifdef TRACE
-    fprintf(stdout,"\trenew_auth_key(): ");
-    #endif
-
-    unsigned char *buffer = 0;
-    unsigned int buflen = 0;
-
-    buffer = calloc(SK_AUTH_KEY_LEN,sizeof(unsigned char));
-    memcpy(buffer,ctx->auth_key,SK_AUTH_KEY_LEN);
-
-    /* make sha1 message digest */
-
-    EVP_MD_CTX mdctx;
-    EVP_MD_CTX_init(&mdctx);
-    EVP_DigestInit_ex(&mdctx, EVP_sha256(),NULL);
-    EVP_DigestUpdate(&mdctx,buffer,SK_AUTH_KEY_LEN);
-    EVP_DigestFinal_ex(&mdctx,ctx->auth_key,&buflen);
-    EVP_MD_CTX_cleanup(&mdctx);
-
-    free(buffer);
-
-    #ifdef TRACE
-    int i = 0;
-    for(i = 0 ; i < SK_AUTH_KEY_LEN ; i++)
-        fprintf(stdout,"%2.2x",ctx->auth_key[i]);
-    fprintf(stdout,"\n");
-    #endif
-
-    return SK_SUCCESS;
-}
-
-/*--------------------------------------------------------------------*/
-/*--------------------------------------------------------------------*/
-
-/**
- * gen_log_entry()
- * NOT IN USE
- *
- */
-/*
-int
-gen_log_entry(unsigned char **log_entry,
-              unsigned int *log_entry_size,
-              SKLOG_DATA_TYPE type,
-              unsigned char *enc_data,
-              unsigned int enc_data_size,
-              unsigned char *hash_chain,
-              unsigned char *mac)
-{
-    #ifdef TRACE
-    fprintf(stdout,"\tgen_log_entry()\n");
+    #ifdef DO_TRACE_X
+    int y = 0;
+    for ( y = 0 ; y < 4 ; y++ )
+        fprintf(stderr,"%2.2x ",tlv_msg[y]);
+    fprintf(stderr,"\n");
+    for ( ; y < 8 ; y++ )
+        fprintf(stderr,"%2.2x ",tlv_msg[y]);
+    fprintf(stderr,"\n");
     #endif
 
     unsigned int len = 0;
-    unsigned int pos = 0;
 
-    len = sizeof(type) + enc_data_size + SK_HASH_CHAIN_LEN + SK_HMAC_LEN;
+    uint32_t tmp = 0;
 
-    *log_entry = calloc(len,sizeof(char));
+    memcpy(&tmp,tlv_msg,4);
+    tmp = ntohl(tmp);
 
-    if ( *log_entry != 0 ) {
-        memcpy(*log_entry+pos,&type,sizeof(type));
-        pos+=sizeof(type);
-        memcpy(*log_entry+pos,enc_data,enc_data_size);
-        pos+=enc_data_size;
-        memcpy(*log_entry+pos,hash_chain,SK_HASH_CHAIN_LEN);
-        pos+=SK_HASH_CHAIN_LEN;
-        memcpy(*log_entry+pos,mac,SK_HMAC_LEN);
-        pos+=SK_HMAC_LEN;
-
-        *log_entry_size = pos;
-        return SK_SUCCESS;
-    } else {
-        fprintf(stderr,"ERR: gen_log_entry(): calloc() fail!\n");
-        return SK_FAILURE;
+    if ( tmp != type ) {
+        //~ WARNING("Message not well formed!!!")
+        return SKLOG_FAILURE;
     }
+
+    memcpy(&len,&tlv_msg[4],4);
+    len = ntohl(len);
+
+    memcpy(data,&tlv_msg[8],len);
+    *data_len = len;
+
+    return SKLOG_SUCCESS;
 }
-*/
 
-/*--------------------------------------------------------------------*/
-/*--------------------------------------------------------------------*/
-
-/**
- * write_log_entry()
- * NOT IN USE
- *
- */
-/*
-int
-write_log_entry(unsigned char *log_entry,
-                unsigned int log_entry_size)
+SKLOG_RETURN
+tlv_get_type(unsigned char    *tlv_msg,
+             uint32_t         *type)
 {
-    #ifdef TRACE
-    fprintf(stdout,"\twrite_log_entry()\n");
+    uint32_t tmp = 0;
+
+    if ( tlv_msg == 0 ) {
+        ERROR("argument 1 must be not null");
+        return SKLOG_FAILURE;
+    }
+
+    if ( type == 0 ) {
+        ERROR("argument 2 must be not null");
+        return SKLOG_FAILURE;
+    }
+        
+    memcpy(&tmp,tlv_msg,4);
+    *type = ntohl(tmp);
+    
+    return SKLOG_SUCCESS;
+}
+
+SKLOG_RETURN
+tlv_get_len(unsigned char    *tlv_msg,
+            unsigned int     *len)
+{
+    unsigned int  tmp = 0;
+
+    if ( tlv_msg == 0 ) {
+        ERROR("argument 1 must be not null");
+        return SKLOG_FAILURE;
+    }
+
+    if ( len == 0 ) {
+        ERROR("argument 2 must be not null");
+        return SKLOG_FAILURE;
+    }
+        
+    memcpy(&tmp,&tlv_msg[4],4);
+    *len = ntohl(tmp);
+    
+    return SKLOG_SUCCESS;
+}
+
+SKLOG_RETURN
+tlv_get_value(unsigned char    *tlv_msg,
+              unsigned int     len,
+              unsigned char    **value)
+{
+    unsigned char *tmp = 0;
+
+    tmp = calloc(len,sizeof(char));
+    memcpy(tmp,&tlv_msg[8],len);
+    *value = tmp;
+
+    return SKLOG_SUCCESS;
+}
+
+SKLOG_RETURN
+serialize_timeval(struct timeval    *time,
+                  unsigned char     **buf,
+                  unsigned int      *buf_len)
+{
+    #ifdef DO_TRACE
+    DEBUG
     #endif
 
-    int fd = 0;
-    char buffer[BUFLEN] = { 0 };
-    int i = 0;
-    int j = 0;
+    uint64_t sec = 0;
+    uint64_t usec = 0;
 
-    for ( ; i < log_entry_size ; i++ ) {
-        sprintf(&buffer[j],"%2.2x",log_entry[i]);
-        j+=2;
-    }
+    sec = htonl(time->tv_sec);
+    usec = htonl(time->tv_usec);
 
-    fd = open(SK_LOGFILE_PATH,O_WRONLY|O_APPEND|O_CREAT,S_IRWXU);
-
-    if (fd > 0 ) {
-        write(fd,&buffer,log_entry_size*2);
-        write(fd,"\n",1);
-        close(fd);
-        return SK_FAILURE;
-    }
-    return SK_SUCCESS;
+    *buf_len = 2*sizeof(uint64_t);
+    SKLOG_CALLOC(*buf,*buf_len,char)
+    memcpy(*buf,&sec,sizeof(uint64_t));
+    memcpy(*buf+sizeof(uint64_t),&usec,sizeof(uint64_t));
+    
+    return SKLOG_SUCCESS;
 }
-*/
 
-/*--------------------------------------------------------------------*/
-/*--------------------------------------------------------------------*/
-
-#ifdef USE_QUOTE
-
-/**
- * gen_nonce()
- *
- */
-int
-gen_nonce(unsigned char *nonce,
-          SKLOG_DATA_TYPE *type,
-          unsigned char *data_enc,
-          unsigned int data_enc_size,
-          unsigned char *hash_chain,
-          unsigned char *hmac)
+SKLOG_RETURN
+deserialize_timeval(unsigned char     *buf,
+                    unsigned int      buf_len,
+                    struct timeval    *time)
 {
-    #ifdef TRACE
-    fprintf(stdout,"\tgen_nonce()\n");
+    #ifdef DO_TRACE
+    DEBUG
     #endif
 
-    unsigned char *buffer = 0;
-    unsigned int buflen = 0;
-    unsigned int pos = 0;
+    uint64_t sec = 0;
+    uint64_t usec = 0;
 
-    buflen = SK_LOGENTRY_TYPE_LEN +
-             data_enc_size +
-             SK_HASH_CHAIN_LEN +
-             SK_HMAC_LEN;
+    memcpy(&sec,buf,sizeof(uint64_t));
+    memcpy(&usec,&buf[sizeof(uint64_t)],sizeof(uint64_t));
 
-    buffer = calloc(buflen,sizeof(char));
+    time->tv_sec = ntohl(sec);
+    time->tv_usec = ntohl(usec);
 
-    if ( buffer ) {
-        memcpy(buffer+pos,type,SK_LOGENTRY_TYPE_LEN);
-        pos += SK_LOGENTRY_TYPE_LEN;
-        memcpy(buffer+pos,data_enc,data_enc_size);
-        pos += data_enc_size;
-        memcpy(buffer+pos,hash_chain,SK_HASH_CHAIN_LEN);
-        pos += SK_HASH_CHAIN_LEN;
-        memcpy(buffer+pos,hmac,SK_HMAC_LEN);
-        pos += SK_HMAC_LEN;
-
-        /* make sha1 digest */
-
-        EVP_MD_CTX mdctx;
-        EVP_MD_CTX_init(&mdctx);
-        EVP_DigestInit_ex(&mdctx, EVP_sha1(),NULL);
-        EVP_DigestUpdate(&mdctx,buffer,SK_AUTH_KEY_LEN);
-        EVP_DigestFinal_ex(&mdctx,nonce,&buflen);
-        EVP_MD_CTX_cleanup(&mdctx);
-
-        free(buffer);
-
-        return SK_SUCCESS;
-
-    } else {
-        /* calloc error*/
-        fprintf(stderr,"ERR: gen_nonce(): calloc() fail!\n");
-        return SK_FAILURE;
-    }
+    return SKLOG_SUCCESS;
 }
-
-/*--------------------------------------------------------------------*/
-/*--------------------------------------------------------------------*/
-
-int
-load_tpm_config(SKTPMCTX *tpmctx)
-{
-    #ifdef TRACE
-    fprintf(stdout,"\tload_tpm_config()\n");
-    #endif
-
-    tpmctx->srkpwd = NULL;
-    tpmctx->aikpwd = NULL;
-    tpmctx->aikid = 0;
-    tpmctx->pcr_to_extend = 0; /* not used */
-
-
-    cfg_opt_t opts[] = {
-        CFG_SIMPLE_STR("srkpwd", &(tpmctx->srkpwd)),
-        CFG_SIMPLE_STR("aikpwd", &(tpmctx->aikpwd)),
-        CFG_SIMPLE_INT("aikid", &(tpmctx->aikid)),
-        CFG_SIMPLE_INT("pcr_to_extend", &(tpmctx->pcr_to_extend)), /* not used */
-        CFG_END()
-    };
-    cfg_t *cfg = 0;
-
-    cfg = cfg_init(opts, 0);
-    cfg_parse(cfg, TPM_CONFIG_FILE);
-
-    cfg_free(cfg);
-    return 0;
-}
-
-/*--------------------------------------------------------------------*/
-/*--------------------------------------------------------------------*/
-
-int
-compute_tpm_quote(SKCTX *ctx,
-                  unsigned char *nonce,
-                  unsigned char **quote,
-                  unsigned int *quote_size)
-{
-    #ifdef TRACE
-    fprintf(stdout,"\tcompute_tpm_quote()\n");
-    #endif
-    
-    TPA_CONTEXT *tpa_ctx = NULL;
-    TPA_TPM *tpm = NULL;
-    TPA_PCR_SET *pcrSet = NULL;
-    TPA_AIK *aik = NULL;
-    TPA_RA *ra = NULL;
-    
-    unsigned char *blob = NULL;
-    unsigned int blob_size = 0;
-    
-    int retval = SK_FAILURE;
-
-    /* this function will allocate all needed objects */
-
-    if ( TpaHL_CTX_allocate(&tpa_ctx) != TPA_SUCCESS )
-        goto error;
-
-    if ( TpaHL_TPM_allocate(&tpm) != TPA_SUCCESS )
-        goto error;
-
-    if ( TpaHL_AIK_allocate(&aik) != TPA_SUCCESS )
-        goto error;
-
-    if ( TpaHL_RA_allocate(&ra) != TPA_SUCCESS )
-        goto error;
-
-    /* setter */
-
-    if ( TpaHL_TPM_set(tpm,TPM_SRKPWD,strlen(ctx->tpmctx.srkpwd),ctx->tpmctx.srkpwd) != TPA_SUCCESS )
-        goto error;
-
-    aik->aik_id = ctx->tpmctx.aikid;
-
-    if ( TpaHL_AIK_set(aik, AIK_AIKSECRET, strlen(ctx->tpmctx.aikpwd), ctx->tpmctx.aikpwd) != TPA_SUCCESS )
-        goto error;
-
-    /* not in use
-    if ( TpaHL_PCRSet_initialize(&pcrSet, 1, 20) != TPA_SUCCESS )
-        goto error;
-
-    if( TpaHL_PCRSet_pcr(pcrSet,ctx->tpmctx.pcr_to_extend,NULL) != TPA_SUCCESS )
-        goto error;
-    */
-
-    /* ra quote */
-    if( TpaHL_RA_Quote(tpa_ctx, tpm, aik, pcrSet, nonce, NONCE_LEN, ra) != TPA_SUCCESS )
-        goto error;
-
-    if( TpaHL_RA_Serialize(ra, &blob, &blob_size) != TPA_SUCCESS )
-        goto error;
-    
-    /* save quote */
-    *quote = calloc(blob_size,sizeof(char));
-    if ( *quote ) {
-        memcpy(*quote,blob,blob_size);
-        *quote_size = blob_size;
-    } else {
-        fprintf(stderr,"ERR: compute_tmp_quote(): calloc() fails!");
-    }
-    
-    retval = SK_SUCCESS;
-    
-error: /* Error label */
-    TpaHL_AIK_freeMemory(aik);
-    TpaHL_TPM_freeMemory(tpm);
-    TpaHL_RA_freeMemory(ra);
-    TpaHL_CTX_freeMemory(tpa_ctx);
-    //~ if (pcrSet)
-        //~ TpaHL_PCRSet_freeMemory(pcrSet);
-    if ( blob )
-        free(blob);
-    
-    return retval;
-}
-#endif

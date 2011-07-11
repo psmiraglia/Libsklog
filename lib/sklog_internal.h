@@ -1,123 +1,88 @@
-/*
-**    Copyright (C) 2011 Politecnico di Torino, Italy
-**
-**        TORSEC group -- http://security.polito.it
-**        Author: Paolo Smiraglia <paolo.smiraglia@polito.it>
-**
-**    This file is part of Libsklog.
-**
-**    Libsklog is free software: you can redistribute it and/or modify
-**    it under the terms of the GNU General Public License as published by
-**    the Free Software Foundation, either version 3 of the License, or
-**    (at your option) any later version.
-**
-**    Libsklog is distributed in the hope that it will be useful,
-**    but WITHOUT ANY WARRANTY; without even the implied warranty of
-**    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-**    GNU General Public License for more details.
-**
-**    You should have received a copy of the GNU General Public License
-**    along with Libsklog.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 #ifndef SKLOG_INTERNAL_H
 #define SKLOG_INTERNAL_H
 
-#include "../config.h"
+#include "sklog_commons.h"
 
-#include "sklog_define.h"
+#include <stdint.h>
 
-/**
- * SKLOG_DATA_TYPE
- *
- */
-typedef enum {
-    LogfileInitialization =         0x00000000,
-    LogfileClosure =                0xffffffff,
-    TYPE_ONE =                      0x00000001,
-    TYPE_TWO =                      0x00000010,
-    TYPE_THREE =                    0x00000011,
-    TYPE_FOUR =                     0x00000100,
-    TYPE_FIVE =                     0x00000101,
-} SKLOG_DATA_TYPE;
+#include <openssl/evp.h>
+#include <openssl/x509.h>
 
-#define     SK_LOGENTRY_TYPE_LEN    sizeof(SKLOG_DATA_TYPE)
+SKLOG_RETURN
+sign_message(unsigned char    *message,
+             unsigned int     message_len,
+             EVP_PKEY         *signing_key,
+             unsigned char    **signature,
+             unsigned int     *signature_len);
 
-#ifdef USE_QUOTE
-typedef struct _sktpmctx SKTPMCTX;
+SKLOG_RETURN
+sign_verify(EVP_PKEY         *verify_key,
+            unsigned char    *signature,
+            size_t           signature_len,
+            unsigned char    *message,
+            unsigned int     message_len);
 
-struct _sktpmctx {
-    char *srkpwd;
-    char *aikpwd;
-    int   aikid;
-    int   pcr_to_extend;
-};
-#endif
+SKLOG_RETURN
+pke_encrypt(X509             *cert,   
+            unsigned char    *in,
+            unsigned char    in_len,
+            unsigned char    **out,
+            size_t           *out_len);
 
-/**
- * SKCTX
- *
- */
-typedef struct _skctx SKCTX;
+SKLOG_RETURN
+pke_decrypt(EVP_PKEY         *key,
+            unsigned char    *in,
+            size_t           in_len,
+            unsigned char    **out,
+            size_t           *out_len);
 
-struct _skctx {
-    unsigned char auth_key[SK_AUTH_KEY_LEN];
-    unsigned char last_hash_chain[SK_HASH_CHAIN_LEN];
-    #ifdef USE_QUOTE
-    SKTPMCTX tpmctx;
-    #endif
-};
+SKLOG_RETURN
+encrypt_aes256(unsigned char    **data_enc,
+               unsigned int     *data_enc_size,
+               unsigned char    *data,
+               unsigned int     data_size,
+               unsigned char    *enc_key);
 
-/**********************************************************************/
-/**********************************************************************/
+SKLOG_RETURN
+decrypt_aes256(unsigned char    *dec_key,
+               unsigned char    *in,
+               unsigned int     in_len,
+               unsigned char    **out,
+               unsigned int     *out_len);
 
-int
-gen_enc_key(SKCTX *,unsigned char *,SKLOG_DATA_TYPE);
+SKLOG_RETURN
+tlv_create(uint32_t         type,
+           unsigned int     data_len,
+           void             *data,
+           unsigned char    *buffer);
 
-int /* use aes */
-enc_data_des(unsigned char **,unsigned int *,unsigned char *,
-             unsigned int, unsigned char *);
+SKLOG_RETURN
+tlv_parse(unsigned char    *tlv_msg,
+          uint32_t         type,
+          void             *data,
+          unsigned int     *data_len);
 
-int
-enc_data_aes256(unsigned char **,unsigned int *,unsigned char *,
-                unsigned int, unsigned char *);
+SKLOG_RETURN
+tlv_get_type(unsigned char    *tlv_msg,
+             uint32_t         *type);
 
-int /* use aes */
-dec_data_des(unsigned char **,unsigned int *,unsigned char *,
-             unsigned int,unsigned char *);
+SKLOG_RETURN
+tlv_get_len(unsigned char    *tlv_msg,
+            unsigned int     *len);
 
-int
-dec_data_aes256(unsigned char **,unsigned int *,unsigned char *,
-                unsigned int, unsigned char *);
+SKLOG_RETURN
+tlv_get_value(unsigned char    *tlv_msg,
+              unsigned int     len,
+              unsigned char    **value);
 
-int
-gen_hash_chain(SKCTX *,unsigned char *,unsigned char *,unsigned int,
-               SKLOG_DATA_TYPE);
+SKLOG_RETURN
+serialize_timeval(struct timeval    *time,
+                  unsigned char     **buf,
+                  unsigned int      *buf_len);
 
-int
-gen_hmac(SKCTX *,unsigned char *,unsigned char *);
-
-int
-renew_auth_key(SKCTX *);
-
-int
-gen_log_entry(unsigned char **,unsigned int *,SKLOG_DATA_TYPE,
-              unsigned char *,unsigned int,unsigned char *,
-              unsigned char *);
-
-int
-write_log_entry(unsigned char *,unsigned int);
-
-#ifdef USE_QUOTE
-int
-gen_nonce(unsigned char *,SKLOG_DATA_TYPE *,unsigned char *,unsigned int,
-          unsigned char *,unsigned char *);
-
-int
-load_tpm_config(SKTPMCTX *tpmctx);
-
-int
-compute_tpm_quote(SKCTX *,unsigned char *,unsigned char **,unsigned int *);
-#endif
+SKLOG_RETURN
+deserialize_timeval(unsigned char     *buf,
+                    unsigned int      buf_len,
+                    struct timeval    *time);
 
 #endif /* SKLOG_INTERNAL_H */

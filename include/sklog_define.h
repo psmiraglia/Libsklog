@@ -1,1 +1,0 @@
-../lib/sklog_define.h

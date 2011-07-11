@@ -27,10 +27,8 @@ mkinstalldirs
 autom4te.cache/*
 
 # Binary files
-example/sk
-example/logs.db
-
-
+apps/unode
+apps/tnode
 
 
 !.gitignore
