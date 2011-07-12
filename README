@@ -1,13 +1,12 @@
-libsklog - Make secure logging using Schneier and Kelsey scheme
+Libsklog - Make secure logging using Schneier and Kelsey scheme
 ===============================================================
 
 	Copyright (C) 2007-2010 Politecnico di Torino, Italy
 	TORSEC group -- http://security.polito.it
 
-Libsklog is a library for C language that makes possible the
-generation of log entries by following the scheme defined by
-B.Schneier ad J.Kelsey in "Secure Audit Logs to Support
-Computer Forensics".
+Libsklog is a C language library which makes possible the generation
+of log entries by following the scheme defined by B.Schneier ad J.Kelsey
+in "Secure Audit Logs to Support Computer Forensics".
 
 Installation notes
 ------------------
@@ -15,30 +14,54 @@ Installation notes
 1) Prerequisites
 
     OpenSSL >= 0.9.8
-    SQLite 3.x
-	libtool
-	autotool
+    SQLite3.x
+    Libconfuse
+    Libuuid
 
-2) Building
+2) Get sources
 
-    $> tar zxvf libsklog-VERSION.tar.gz
-    $> cd ./libsklog-VERSION
-	$> mkdir m4
-    $> autoreconf --install
-    $> ./configure --prefix=/usr/local
-    $> make
-    $> make install (as root)
+    2.1) Using GIT
+
+        $ git clone <URL> libsklog
     
-    You can add to ./configure the options "--enable-trace" to build the
-    library in high verbosity mode and "--enable-quote" to build the library
-    with the TPM_Quote support. For more information run
+    2.2) Using SVN
+
+        $ svn co <URL> libsklog 
     
-    $> ./configure --help
-    
+    2.2) Download tarball
+
+        $ wget libsklog-<VERSION>.tar.gz
+
+3) Building
+
+    3.1) If GIT or SVN was used
+
+        $ cd <directory where libsklog was cloned/checkout'ed>
+        $ mkdir m4
+        $ autoreconf --verbose --force --install
+        $ ./configure --prefix=/usr/local --enable-debug --enable-trace
+        $ make
+        $ make install (as root)
+
+    3.2) If tarball was downloaded
+
+        $ mkdir temp
+        $ cd temp
+        $ tar zxvf libsklog-<VERSION>.tar.gz
+        $ cd libsklog-<VERSION>
+        $ ./configure --prefix=/usr/local --enable-debug --enable-trace
+        $ make
+        $ make install (as root)
+
 Usage
 -----
-    Todo!
-    
-    
+
+    1) T node
+
+        TODO
+
+    2) U nodes
+
+        TODO
 
 

@@ -18,8 +18,8 @@ AC_ARG_ENABLE(
         [--enable-trace],
         [Enable high verbosity mode for libsklog library [default=no]]
     ),
-    [enable_trace=yes],
-    [enable_trace=no]
+    [enable_trace="yes"],
+    [enable_trace="no"]
 )
 
 AC_MSG_CHECKING(
@@ -76,7 +76,7 @@ AC_ARG_ENABLE(
     debug,
     AC_HELP_STRING(
         [--enable-debug],
-        [enable debug support]),
+        [enable debug support [default=no]]),
     [enable_debug="yes"],
     [enable_debug="no"]
 )
@@ -98,14 +98,16 @@ if test "x${enable_debug}" = "xyes" ; then
 fi
 
 #----------------------------------------------------------------------
-# checking for crypto library
+# checking for libraries
 #----------------------------------------------------------------------
-AC_CHECK_LIB([crypto], [EVP_MD_CTX_init])
+AC_CHECK_LIB([crypto],[EVP_MD_CTX_init])
+AC_CHECK_LIB([ssl],[SSL_CTX_new])
+AC_CHECK_LIB([confuse],[cfg_init])
+AC_CHECK_LIB([uuid],[uuid_generate_random])
+AC_CHECK_LIB([sqlite3],[sqlite3_open])
 
 #----------------------------------------------------------------------
-# checking for confuse library
 #----------------------------------------------------------------------
-AC_CHECK_LIB([confuse], [cfg_init])
 
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile lib/Makefile apps/Makefile include/Makefile])
