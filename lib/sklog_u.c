@@ -35,6 +35,7 @@
 #include <openssl/rand.h>
 #include <openssl/hmac.h>
 
+#include <openssl/evp.h>
 #include <openssl/ssl.h>
 #include <arpa/inet.h>
 
@@ -81,7 +82,7 @@ init_ssl_ctx(SKLOG_U_Ctx    *u_ctx,
          * to the client certificate
          */
         if ( SSL_CTX_use_PrivateKey(ctx,u_ctx->u_privkey) <= 0 ) {
-            ERR_print_errors_fp(stderr);
+            
             goto error;
         }
         
@@ -136,8 +137,8 @@ tcp_connect(const char *address, short int port)
     
     memset (&server_addr,0,sizeof(server_addr));
     server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(port);       /* Server Port number */
-    server_addr.sin_addr.s_addr = inet_addr(address); /* Server IP */
+    server_addr.sin_port = htons(port);
+    server_addr.sin_addr.s_addr = inet_addr(address);
     
     /* Establish a TCP/IP connection to the SSL client */
     
@@ -165,7 +166,8 @@ init_ssl_structure(SSL_CTX *ctx,int socket)
         goto error;
     }
     
-    /* Assign the socket into the SSL structure
+    /*
+     * Assign the socket into the SSL structure
      * (SSL and socket without BIO)
      */
     SSL_set_fd(ssl,socket);
@@ -176,7 +178,7 @@ init_ssl_structure(SSL_CTX *ctx,int socket)
         goto error;
     }
 
-    #ifdef HAVE_NOTIFY
+    #ifdef DO_NOTIFY
 
     char *str = 0;
     X509 *server_cert = 0;
@@ -268,9 +270,14 @@ gen_enc_key(SKLOG_U_Ctx        *ctx,
     DEBUG
     #endif
 
+    int retval = 0;
+
     unsigned char *buffer = 0;
     unsigned int buflen = 0;
     unsigned int pos = 0;
+
+    OpenSSL_add_all_digests();
+    ERR_load_crypto_strings();
 
     buflen = sizeof(type) + SKLOG_AUTH_KEY_LEN;
     SKLOG_CALLOC(buffer,buflen,char)
@@ -282,14 +289,38 @@ gen_enc_key(SKLOG_U_Ctx        *ctx,
     //~ calculate SHA256 message digest
     EVP_MD_CTX mdctx;
     EVP_MD_CTX_init(&mdctx);
-    EVP_DigestInit_ex(&mdctx, EVP_sha256(),NULL);
-    EVP_DigestUpdate(&mdctx,buffer,buflen);
-    EVP_DigestFinal_ex(&mdctx,enc_key,&buflen);
+
+    retval = EVP_DigestInit_ex(&mdctx, EVP_sha256(),NULL);
+
+    if ( retval == 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+
+    retval = EVP_DigestUpdate(&mdctx,buffer,buflen);
+
+    if ( retval == 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+
+    retval = EVP_DigestFinal_ex(&mdctx,enc_key,&buflen);
+
+    if ( retval == 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+
     EVP_MD_CTX_cleanup(&mdctx);
 
-    free(buffer);
-
+    SKLOG_FREE(buffer);
+    ERR_free_strings();
     return SKLOG_SUCCESS;
+
+error:
+    if ( buffer > 0 ) free(buffer);
+    ERR_free_strings();
+    return SKLOG_FAILURE;
 }
 
 static SKLOG_RETURN
@@ -303,9 +334,14 @@ gen_hash_chain(SKLOG_U_Ctx        *ctx,
     DEBUG
     #endif
 
+    int retval = 0;
+
     unsigned char *buffer = 0;
     unsigned int buflen = 0;
     unsigned int pos = 0;
+
+    OpenSSL_add_all_digests();
+    ERR_load_crypto_strings();
 
     buflen = sizeof(type) + data_enc_size + SKLOG_HASH_CHAIN_LEN;
     SKLOG_CALLOC(buffer,buflen,char)
@@ -319,17 +355,41 @@ gen_hash_chain(SKLOG_U_Ctx        *ctx,
     //~ calculate SHA256 message digest
     EVP_MD_CTX mdctx;
     EVP_MD_CTX_init(&mdctx);
-    EVP_DigestInit_ex(&mdctx, EVP_sha256(),NULL);
-    EVP_DigestUpdate(&mdctx,buffer,buflen);
-    EVP_DigestFinal_ex(&mdctx,hash_chain,&buflen);
+
+    retval = EVP_DigestInit_ex(&mdctx, EVP_sha256(),NULL);
+
+    if ( retval == 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+    
+    retval = EVP_DigestUpdate(&mdctx,buffer,buflen);
+
+    if ( retval == 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+
+    retval = EVP_DigestFinal_ex(&mdctx,hash_chain,&buflen);
+
+    if ( retval == 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+
     EVP_MD_CTX_cleanup(&mdctx);
 
     //~ save hash chain for the next generation
     memcpy(ctx->last_hash_chain,hash_chain,SKLOG_HASH_CHAIN_LEN);
 
-    free(buffer);
-
+    SKLOG_FREE(buffer)
+    ERR_free_strings();
     return SKLOG_SUCCESS;
+
+error:
+    if ( buffer > 0 ) free(buffer);
+    ERR_free_strings();
+    return SKLOG_FAILURE;
 }
 
 static SKLOG_RETURN
@@ -341,18 +401,46 @@ gen_hmac(SKLOG_U_Ctx      *ctx,
     DEBUG
     #endif
 
+    int retval = 0;
+    
     unsigned int hmac_len = 0;
+
+    OpenSSL_add_all_digests();
+    ERR_load_crypto_strings();
 
     //~ calculate HMAC using SHA256 message digest
     HMAC_CTX mdctx;
     HMAC_CTX_init(&mdctx);
-    HMAC_Init_ex(&mdctx,ctx->auth_key,SKLOG_AUTH_KEY_LEN,
-                 EVP_sha256(),NULL);
-    HMAC_Update(&mdctx,hash_chain,SKLOG_HASH_CHAIN_LEN);
-    HMAC_Final(&mdctx,hmac,&hmac_len);
-    HMAC_CTX_cleanup(&mdctx);
 
+    retval = HMAC_Init_ex(&mdctx,ctx->auth_key,SKLOG_AUTH_KEY_LEN,
+                 EVP_sha256(),NULL);
+
+    if ( retval == 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+                 
+    retval = HMAC_Update(&mdctx,hash_chain,SKLOG_HASH_CHAIN_LEN);
+
+    if ( retval == 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+
+    retval = HMAC_Final(&mdctx,hmac,&hmac_len);
+
+    if ( retval == 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+
+    HMAC_CTX_cleanup(&mdctx);
+    ERR_free_strings();
     return SKLOG_SUCCESS;
+
+error:
+    ERR_free_strings();
+    return SKLOG_FAILURE;
 }
 
 static SKLOG_RETURN
@@ -362,8 +450,12 @@ renew_auth_key(SKLOG_U_Ctx    *ctx)
     DEBUG
     #endif
 
+    int retval = 0;
     unsigned char *buffer = 0;
     unsigned int buflen = 0;
+
+    OpenSSL_add_all_digests();
+    ERR_load_crypto_strings();
 
     SKLOG_CALLOC(buffer,SKLOG_AUTH_KEY_LEN,char)
     memcpy(buffer,ctx->auth_key,SKLOG_AUTH_KEY_LEN);
@@ -371,14 +463,37 @@ renew_auth_key(SKLOG_U_Ctx    *ctx)
     //~ calculate SHA256 message digest
     EVP_MD_CTX mdctx;
     EVP_MD_CTX_init(&mdctx);
-    EVP_DigestInit_ex(&mdctx, EVP_sha256(),NULL);
-    EVP_DigestUpdate(&mdctx,buffer,SKLOG_AUTH_KEY_LEN);
-    EVP_DigestFinal_ex(&mdctx,ctx->auth_key,&buflen);
+    
+    retval = EVP_DigestInit_ex(&mdctx, EVP_sha256(),NULL);
+
+    if ( retval == 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+    
+    retval = EVP_DigestUpdate(&mdctx,buffer,SKLOG_AUTH_KEY_LEN);
+
+    if ( retval == 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+    
+    retval = EVP_DigestFinal_ex(&mdctx,ctx->auth_key,&buflen);
+
+    if ( retval == 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+
     EVP_MD_CTX_cleanup(&mdctx);
 
-    free(buffer);
-
+    SKLOG_FREE(buffer);
     return SKLOG_SUCCESS;
+
+error:
+    if ( buffer > 0 ) free(buffer);
+    ERR_free_strings();
+    return SKLOG_FAILURE;
 }
 
 static int
@@ -406,7 +521,7 @@ store_logentry(SKLOG_DATA_TYPE    type,
     DEBUG
     #endif
 
-    //~ TODO: store auth_key not in plaintext
+    //~ todo: store auth_key not in plaintext
 
     sqlite3 *db = 0;
     char *err_msg = 0;
@@ -467,6 +582,12 @@ create_logentry(SKLOG_U_Ctx        *u_ctx,
     DEBUG
     #endif
 
+    unsigned char enc_key[SKLOG_ENC_KEY_LEN] = {0};
+    unsigned char *data_enc = 0;
+    unsigned int data_enc_len = 0;
+    unsigned char hash_chain[SKLOG_HASH_CHAIN_LEN] = {0};
+    unsigned char hmac[SKLOG_HMAC_LEN] = {0};
+
     if ( u_ctx == NULL ) {
         ERROR("argument 1 must be not null")
         goto error;
@@ -476,17 +597,12 @@ create_logentry(SKLOG_U_Ctx        *u_ctx,
         WARNING("Data to log is NULL. It's all ok?")
 
     //~ generate encryption key
-    unsigned char enc_key[SKLOG_ENC_KEY_LEN] = {0};
-
     if ( gen_enc_key(u_ctx,enc_key,type) == SKLOG_FAILURE ) {
         ERROR("gen_enc_key() failure")
         goto error;
     }
 
     //~ encrypt data using the generated encryption key
-    unsigned char *data_enc = 0;
-    unsigned int data_enc_len = 0;
-
     if ( encrypt_aes256(&data_enc,&data_enc_len,
                         data,data_len,enc_key) == SKLOG_FAILURE ) {
         ERROR("encrypt_aes256() failure")
@@ -494,8 +610,6 @@ create_logentry(SKLOG_U_Ctx        *u_ctx,
     }
 
     //~ generate hash-chain element
-    unsigned char hash_chain[SKLOG_HASH_CHAIN_LEN] = {0};
-
     if ( gen_hash_chain(u_ctx,hash_chain,data_enc,
                         data_enc_len,type) == SKLOG_FAILURE ) {
         ERROR("gen_hash_chain() failure")
@@ -503,8 +617,6 @@ create_logentry(SKLOG_U_Ctx        *u_ctx,
     }
 
     //~ generate digest of hash-chain using the auth_key A
-    unsigned char hmac[SKLOG_HMAC_LEN] = {0};
-
     if ( gen_hmac(u_ctx,hmac,hash_chain) == SKLOG_FAILURE ) {
         ERROR("gen_hmac() failure")
         goto error;
@@ -529,7 +641,7 @@ create_logentry(SKLOG_U_Ctx        *u_ctx,
     return SKLOG_SUCCESS;
 
 error:
-    if ( data_enc != 0 ) free(data_enc);
+    if ( data_enc > 0 ) free(data_enc);
     return SKLOG_FAILURE;
 }
 
@@ -619,17 +731,16 @@ gen_x0(SKLOG_U_Ctx            *u_ctx,
 
     unsigned char buffer[SKLOG_BUFFER_LEN] = { 0 };
     unsigned int ds = 0;
-
-    //~ serialize timestamp (d)
     unsigned char *dbuf = 0;
     unsigned int dbuf_len = 0;
-    serialize_timeval(d,&dbuf,&dbuf_len);
-
-    //~ serialize U's x509 certificate
     unsigned char *cert = 0;
     unsigned char *cert_tmp = 0;
     unsigned int  cert_size = 0;
 
+    //~ serialize timestamp (d)
+    serialize_timeval(d,&dbuf,&dbuf_len);
+
+    //~ serialize U's x509 certificate
     cert_size = i2d_X509(u_ctx->u_cert,NULL);
 
     if ( cert_size < 0 ) {
@@ -657,7 +768,6 @@ gen_x0(SKLOG_U_Ctx            *u_ctx,
 
     *x0_len = (sizeof(p_net) + 8) +
               (dbuf_len + 8) +
-              //~ ((u_ctx->u_cert_size) + 8) +
               (cert_size + 8) +
               (SKLOG_AUTH_KEY_LEN + 8);
 
@@ -676,12 +786,10 @@ gen_x0(SKLOG_U_Ctx            *u_ctx,
 
     ds += (dbuf_len + 8);
     memset(buffer,0,SKLOG_BUFFER_LEN);
-    free(dbuf);
+    SKLOG_FREE(dbuf);
 
     //~ TLV-ize DER encoded C's certificate
-    //~ tlv_create(CERT_U,u_ctx->u_cert_size,cert,buffer);
     tlv_create(CERT_U,cert_size,cert,buffer);
-    //~ memcpy(*x0+ds,buffer,u_ctx->u_cert_size+8);
     memcpy(*x0+ds,buffer,cert_size+8);
 
     ds += (cert_size + 8);
@@ -692,13 +800,14 @@ gen_x0(SKLOG_U_Ctx            *u_ctx,
     memcpy(*x0+ds,buffer,SKLOG_AUTH_KEY_LEN+8);
 
     OPENSSL_free(cert);
+    cert = 0;
     ERR_free_strings();
     
     return SKLOG_SUCCESS;
 
 error:
-    if ( dbuf ) free(dbuf);
-    if ( cert ) OPENSSL_free(cert);
+    if ( dbuf > 0 ) free(dbuf);
+    if ( cert > 0 ) OPENSSL_free(cert);
     if ( *x0 ) free(*x0);
     ERR_free_strings();
     return SKLOG_FAILURE;
@@ -752,12 +861,12 @@ gen_e_k0(SKLOG_U_Ctx *u_ctx,
         ERROR("encrypt_aes256() failure")
         goto error;
     }
-    free(buffer2);
+    SKLOG_FREE(buffer2);
 
     return SKLOG_SUCCESS;
 
 error:
-    if ( buffer2 ) free(buffer2);
+    if ( buffer2 > 0 ) free(buffer2);
     return SKLOG_FAILURE;
 }
 
@@ -844,30 +953,30 @@ gen_d0(SKLOG_U_Ctx *u_ctx,
     DEBUG
     #endif
 
-    if ( M0 == NULL ) {
-        ERROR("m0 must be NOT NULL")
-        return SKLOG_FAILURE;
-    }
-
     unsigned char buffer[SKLOG_BUFFER_LEN] = { 0 };
     unsigned int ds = 0;
-
-    //~
-    //~ compose D0
-    //~
-
-    //~ serialize timestamp (d)
     unsigned char *dbuf = 0;
     unsigned int dbuf_len = 0;
-    serialize_timeval(d,&dbuf,&dbuf_len);
-
-    //~ serialize timestamp (d_timeout)
     unsigned char *dbuf2 = 0;
     unsigned int dbuf2_len = 0;
 
-    if ( serialize_timeval(d_timeout,&dbuf2,
-                           &dbuf2_len) == SKLOG_FAILURE)
+    if ( M0 == NULL ) {
+        ERROR("m0 must be NOT NULL")
         goto error;
+    }
+
+    //~ serialize timestamp (d)
+    if ( serialize_timeval(d,&dbuf,&dbuf_len) == SKLOG_FAILURE) {
+        ERROR("serialize_timeval() failure")
+        goto error;
+    }
+
+    //~ serialize timestamp (d_timeout)
+    if ( serialize_timeval(d_timeout,&dbuf2,
+                           &dbuf2_len) == SKLOG_FAILURE) {
+        ERROR("serialize_timeval() failure")
+        goto error;
+    }
 
     *D0_len = (dbuf_len + 8) +
               (dbuf2_len + 8) +
@@ -877,35 +986,44 @@ gen_d0(SKLOG_U_Ctx *u_ctx,
     SKLOG_CALLOC(*D0,*D0_len,char)
 
     //~ TLV-ize d
-    if ( tlv_create(TIMESTAMP,dbuf_len,dbuf,buffer) == SKLOG_FAILURE)
+    if ( tlv_create(TIMESTAMP,dbuf_len,dbuf,buffer) == SKLOG_FAILURE) {
+        ERROR("tlv_create() failure")
         goto error;
+    }
+    
     memcpy(*D0+ds,buffer,dbuf_len+8);
 
     ds += dbuf_len+8;
     memset(buffer,0,SKLOG_BUFFER_LEN);
-    free(dbuf);
+    SKLOG_FREE(dbuf);
 
     //~ TLV-ize d_timeout
-    if ( tlv_create(TIMESTAMP,dbuf2_len,dbuf2,buffer) == SKLOG_FAILURE)
+    if ( tlv_create(TIMESTAMP,dbuf2_len,dbuf2,buffer) == SKLOG_FAILURE) {
+        ERROR("tlv_create() failure")
         goto error;
+    }
     memcpy(*D0+ds,buffer,dbuf2_len+8);
 
     ds += dbuf2_len+8;
     memset(buffer,0,SKLOG_BUFFER_LEN);
-    free(dbuf2);
+    SKLOG_FREE(dbuf2);
 
     //~ TLV-ize log_id
     if ( tlv_create(ID_LOG,SKLOG_LOG_ID_LEN,&u_ctx->logfile_id,
-                    buffer) == SKLOG_FAILURE)
+                    buffer) == SKLOG_FAILURE) {
+        ERROR("tlv_create() failure")
         goto error;
+    }
     memcpy(*D0+ds,buffer,SKLOG_LOG_ID_LEN+8);
 
     ds += SKLOG_LOG_ID_LEN+8;
     memset(buffer,0,SKLOG_BUFFER_LEN);
 
     //~ TLV-ize M0
-    if ( tlv_create(M0_MSG,M0_len,M0,buffer) == SKLOG_FAILURE)
+    if ( tlv_create(M0_MSG,M0_len,M0,buffer) == SKLOG_FAILURE) {
+        ERROR("tlv_create() failure")
         goto error;
+    }
     memcpy(*D0+ds,buffer,M0_len+8);
 
     ds += M0_len+8;
@@ -936,8 +1054,10 @@ send_m0(SKLOG_U_Ctx *u_ctx,
     unsigned char buffer[SKLOG_BUFFER_LEN] = { 0 };
     int nwrite = 0;
 
-    if ( tlv_create(M0_MSG,M0_len,M0,buffer) == SKLOG_FAILURE )
+    if ( tlv_create(M0_MSG,M0_len,M0,buffer) == SKLOG_FAILURE ) {
+        ERROR("tlv_create() failure")
         goto error;
+    }
 
     nwrite = SSL_write(ssl,buffer,M0_len+8);
 
@@ -945,10 +1065,12 @@ send_m0(SKLOG_U_Ctx *u_ctx,
         ERR_print_errors_fp(stderr);
         goto error;
     } 
-    
+
+    ERR_free_strings();
     return SKLOG_SUCCESS;
 
 error:
+    ERR_free_strings();
     return SKLOG_FAILURE;
 }
 
@@ -960,6 +1082,7 @@ receive_m1(SSL *ssl,
     #ifdef DO_TRACE
     DEBUG
     #endif
+
     SSL_load_error_strings();
     
     unsigned char buf1[SKLOG_BUFFER_LEN] = { 0 };
@@ -981,11 +1104,12 @@ receive_m1(SSL *ssl,
 
     SKLOG_CALLOC(*M1,*M1_len,char)
     memcpy(*M1,buf2,*M1_len);
-
+    ERR_free_strings();
     return SKLOG_SUCCESS;
 
 error:
-    if ( *M1 ) free(*M1); 
+    if ( *M1 > 0 ) free(*M1);
+    ERR_free_strings();
     return SKLOG_FAILURE;
 }
 
@@ -1053,8 +1177,8 @@ parse_m1(unsigned char    *M1,
     return SKLOG_SUCCESS;
 
 error:
-    if (*pke_u_k1) free(*pke_u_k1);
-    if (*e_k1) free(*e_k1);
+    if (*pke_u_k1 > 0 ) free(*pke_u_k1);
+    if (*e_k1 > 0 ) free(*e_k1);
     return SKLOG_FAILURE;
 }
 
@@ -1105,8 +1229,8 @@ parse_e_k1_content(unsigned char    *in,
     return SKLOG_SUCCESS;
 
 error:
-    if ( *x1 ) free(*x1);
-    if ( *x1_sign ) free(*x1_sign);
+    if ( *x1 > 0 ) free(*x1);
+    if ( *x1_sign > 0  ) free(*x1_sign);
     return SKLOG_FAILURE;
 }
 
@@ -1118,17 +1242,34 @@ verify_m1(SKLOG_U_Ctx      *ctx,
     #ifdef DO_TRACE
     DEBUG
     #endif
-    
-    /* TODO: define how to verify the message */
 
-    //~ parse M1 message
     SKLOG_PROTOCOL_STEP p = 0;
     unsigned char t_id[512] = { 0 };
     unsigned char *pke_u_k1 = 0;
     unsigned int pke_u_k1_len = 0;
     unsigned char *e_k1 = 0;
     unsigned int e_k1_len = 0;
+
+    unsigned char *k1 = 0;
+    size_t k1_len = 0;
+    size_t len = pke_u_k1_len;
+
+    unsigned char *plain = 0;
+    unsigned int plain_len = 0;
+    len = e_k1_len;
+
+    unsigned char *x1 = 0;
+    unsigned int x1_len = 0;
+    unsigned char *x1_sign = 0;
+    unsigned int x1_sign_len = 0;
+
+    EVP_PKEY *t_pubkey = NULL;
     
+    /* TODO: define how to verify the message */
+
+    ERR_load_crypto_strings();
+
+    //~ parse M1 message
     if ( parse_m1(M1,M1_len,&p,t_id,&pke_u_k1,&pke_u_k1_len,&e_k1,
                   &e_k1_len) == SKLOG_FAILURE ) {
         ERROR("parse_m1() failure")
@@ -1136,10 +1277,6 @@ verify_m1(SKLOG_U_Ctx      *ctx,
     }
 
     //~ decrypt k1 using U's private key
-    unsigned char *k1 = 0;
-    size_t k1_len = 0;
-    size_t len = pke_u_k1_len;
-
     if ( pke_decrypt(ctx->u_privkey,pke_u_k1,len,&k1,
                      &k1_len) == SKLOG_FAILURE ) {
         ERROR("pke_decrypt() failure")
@@ -1147,10 +1284,6 @@ verify_m1(SKLOG_U_Ctx      *ctx,
     }
 
     //~ decrypt {x1,x1_sign} using k1 key 
-    unsigned char *plain = 0;
-    unsigned int plain_len = 0;
-    len = e_k1_len;
-
     if ( decrypt_aes256(k1,e_k1,len,&plain,
                         &plain_len) == SKLOG_FAILURE ) {
         ERROR("decrypt_aes256() failure")
@@ -1158,11 +1291,6 @@ verify_m1(SKLOG_U_Ctx      *ctx,
     }
 
     //~ parse plain
-    unsigned char *x1 = 0;
-    unsigned int x1_len = 0;
-    unsigned char *x1_sign = 0;
-    unsigned int x1_sign_len = 0;
-
     if ( parse_e_k1_content(plain,plain_len,&x1,&x1_len,&x1_sign,
                             &x1_sign_len) == SKLOG_FAILURE ) {
         ERROR("parse_plain() failure")
@@ -1170,11 +1298,7 @@ verify_m1(SKLOG_U_Ctx      *ctx,
     }
 
     //~ verify x1_sign
-    //~ TODO: enhance the verification process
-    EVP_PKEY *t_pubkey = NULL;
-
-    ERR_load_crypto_strings();
-
+    //~ todo: enhance the verification process
     if ( (t_pubkey = X509_get_pubkey(ctx->t_cert)) == NULL ) {
         ERR_print_errors_fp(stderr);
         goto error;
@@ -1191,13 +1315,13 @@ verify_m1(SKLOG_U_Ctx      *ctx,
     return SKLOG_SUCCESS;
 
 error:
-    if ( pke_u_k1 ) free(pke_u_k1);
-    if ( e_k1 ) free(e_k1);
-    if ( k1 ) free(k1);
-    if ( plain ) free(plain);
-    if ( x1 ) free(x1);
-    if ( x1_sign ) free(x1_sign);
-    if ( t_pubkey ) EVP_PKEY_free(t_pubkey); 
+    if ( pke_u_k1 > 0 ) free(pke_u_k1);
+    if ( e_k1 > 0 ) free(e_k1);
+    if ( k1 > 0 ) free(k1);
+    if ( plain > 0 ) free(plain);
+    if ( x1 > 0 ) free(x1);
+    if ( x1_sign > 0 ) free(x1_sign);
+    if ( t_pubkey > 0 ) EVP_PKEY_free(t_pubkey); 
 
     ERR_free_strings();
 
@@ -1221,6 +1345,9 @@ verify_timeout_expiration(struct timeval *d_timeout)
     t2 = (d_timeout->tv_sec*1000000)+(d_timeout->tv_usec);
 
     if ( t2 < t1 ) {
+        #ifdef DO_NOTIFY
+        NOTIFY("timeout expired")
+        #endif
         return SKLOG_FAILURE;
     } else {
         return SKLOG_SUCCESS;
@@ -1245,13 +1372,13 @@ initialize_context(SKLOG_U_Ctx    *u_ctx)
 
     FILE *fp = 0;
 
+    OpenSSL_add_all_algorithms();
+    ERR_load_crypto_strings();
+
     if ( u_ctx == NULL ) {
         ERROR("argument 1 must be not NULL")
         goto error;
     }
-
-    OpenSSL_add_all_algorithms();
-    ERR_load_crypto_strings();
 
     parse_config_file(t_cert,t_address,&t_port,u_cert,u_id,u_privkey,
                       &u_timeout,&logfile_size);
@@ -1347,10 +1474,10 @@ initialize_context(SKLOG_U_Ctx    *u_ctx)
     return SKLOG_SUCCESS;
 
 error:
-    if ( fp ) fclose(fp);
-    if ( u_ctx->u_cert ) X509_free(u_ctx->u_cert);
-    if ( u_ctx->t_cert ) X509_free(u_ctx->t_cert);
-    if ( u_ctx->u_privkey ) EVP_PKEY_free(u_ctx->u_privkey);
+    if ( fp > 0 ) fclose(fp);
+    if ( u_ctx->u_cert > 0 ) X509_free(u_ctx->u_cert);
+    if ( u_ctx->t_cert > 0 ) X509_free(u_ctx->t_cert);
+    if ( u_ctx->u_privkey > 0 ) EVP_PKEY_free(u_ctx->u_privkey);
 
     memset(u_ctx,0,sizeof(u_ctx));
 
@@ -1365,10 +1492,24 @@ initialize_logging_session(SKLOG_U_Ctx    *u_ctx)
     DEBUG
     #endif
 
+    int retval = 0;
+
     struct timeval d;
     struct timeval d_timeout;
     struct timeval now;
+
+    unsigned char *X0 = 0;
+    unsigned int X0_len = 0;
     SKLOG_PROTOCOL_STEP p = 0;
+
+    unsigned char *pke_t_k0 = 0;
+    size_t pke_t_k0_len = 0;
+
+    unsigned char *X0_sign = 0;
+    unsigned int X0_sign_len = 0;
+
+    unsigned char *e_k0 = 0;
+    unsigned int e_k0_len = 0;
 
     unsigned char *M0 = 0;
     unsigned int M0_len = 0;
@@ -1376,8 +1517,26 @@ initialize_logging_session(SKLOG_U_Ctx    *u_ctx)
     unsigned char *D0 = 0;
     unsigned int D0_len = 0;
 
+    EVP_MD_CTX mdctx;
+
+    SKLOG_CONNECTION conn = {0,0,0};
+
     unsigned char *M1 = 0;
     unsigned int M1_len = 0;
+    
+    const char *reason = 0;
+
+    unsigned char *ts = 0;
+    unsigned int ts_len = 0;
+    
+    char data[4096] = { 0 };
+    unsigned int data_len = 0;
+
+    int i = 0;
+    int j = 0;
+
+    OpenSSL_add_all_digests();
+    ERR_load_crypto_strings();
 
     //~ get current time
     gettimeofday(&d,NULL);
@@ -1387,18 +1546,12 @@ initialize_logging_session(SKLOG_U_Ctx    *u_ctx)
     d_timeout.tv_sec += u_ctx->u_timeout;
 
     //~ generate X0
-    unsigned char *X0 = 0;
-    unsigned int X0_len = 0;
-
     if ( gen_x0(u_ctx,p,&d,&X0,&X0_len) == SKLOG_FAILURE ) {
         ERROR("gen_x0() failure")
         goto error;
     }
 
     //~ encrypt k0 using T's public key
-    unsigned char *pke_t_k0 = 0;
-    size_t pke_t_k0_len = 0;
-
     if ( pke_encrypt(u_ctx->t_cert,u_ctx->session_key,
                      SKLOG_SESSION_KEY_LEN,&pke_t_k0,
                      &pke_t_k0_len) == SKLOG_FAILURE ) {
@@ -1407,9 +1560,6 @@ initialize_logging_session(SKLOG_U_Ctx    *u_ctx)
     }
 
     //~ sign X0 using U's private key
-    unsigned char *X0_sign = 0;
-    unsigned int X0_sign_len = 0;
-
     if ( sign_message(X0,X0_len,u_ctx->u_privkey,
                       &X0_sign,&X0_sign_len) == SKLOG_FAILURE ) {
         ERROR("sign_message() failure")
@@ -1417,9 +1567,6 @@ initialize_logging_session(SKLOG_U_Ctx    *u_ctx)
     }
 
     //~ encrypt (XO,sign_u_X0) using k0 key
-    unsigned char *e_k0 = 0;
-    unsigned int e_k0_len = 0;
-
     if ( gen_e_k0(u_ctx,X0,X0_len,X0_sign,X0_sign_len,
                   &e_k0,&e_k0_len) == SKLOG_FAILURE ) {
         ERROR("gen_e_k0() failure")
@@ -1427,8 +1574,6 @@ initialize_logging_session(SKLOG_U_Ctx    *u_ctx)
     }
 
     //~ generate M0
-    
-
     if ( gen_m0(u_ctx,p,pke_t_k0,pke_t_k0_len,e_k0,e_k0_len,
                 &M0,&M0_len) == SKLOG_FAILURE ) {
         ERROR("gen_m0() failure")
@@ -1436,8 +1581,6 @@ initialize_logging_session(SKLOG_U_Ctx    *u_ctx)
     }
 
     //~ generate D0
-
-
     if ( gen_d0(u_ctx,&d,&d_timeout,M0,M0_len,
                 &D0,&D0_len) == SKLOG_FAILURE ) {
         ERROR("gen_d0() failure")
@@ -1445,14 +1588,31 @@ initialize_logging_session(SKLOG_U_Ctx    *u_ctx)
     }
 
     //~ store X0
-    EVP_MD_CTX mdctx;
     EVP_MD_CTX_init(&mdctx);
-    EVP_DigestInit_ex(&mdctx, EVP_sha256(),NULL);
-    EVP_DigestUpdate(&mdctx,X0,X0_len);
-    EVP_DigestFinal_ex(&mdctx,u_ctx->x0_hash,NULL)  ;
+    retval = EVP_DigestInit_ex(&mdctx, EVP_sha256(),NULL);
+
+    if ( retval == 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+    
+    retval = EVP_DigestUpdate(&mdctx,X0,X0_len);
+
+    if ( retval == 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+    
+    retval = EVP_DigestFinal_ex(&mdctx,u_ctx->x0_hash,NULL);
+
+    if ( retval == 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+    
     EVP_MD_CTX_cleanup(&mdctx);
 
-    free(X0);
+    SKLOG_FREE(X0)
 
     //~ create firts log entry
     if ( create_logentry(u_ctx,LogfileInitializationType,
@@ -1462,8 +1622,6 @@ initialize_logging_session(SKLOG_U_Ctx    *u_ctx)
     }
 
     //~ open connection
-    SKLOG_CONNECTION conn = {0,0,0};
-
     if ( conn_open(u_ctx,&conn) == SKLOG_FAILURE ) {
         ERROR("conn_open() failure")
         goto error;
@@ -1474,12 +1632,9 @@ initialize_logging_session(SKLOG_U_Ctx    *u_ctx)
         ERROR("send_m0() failure")
         goto error;
     }
-    
-    free(M0);
+    SKLOG_FREE(M0)
 
     //~ receive m1 from T
-
-
     if ( receive_m1(conn.ssl,&M1,&M1_len) == SKLOG_FAILURE ) {
         ERROR("receive_m1() failure")
         goto error;
@@ -1492,8 +1647,6 @@ initialize_logging_session(SKLOG_U_Ctx    *u_ctx)
     }
 
     //~ verify timeout expiration
-    const char *reason = 0;
-    
     if ( verify_timeout_expiration(&d_timeout) == SKLOG_FAILURE ) {
         NOTIFY("timeout expired")
         reason = "Timeout Expiration";
@@ -1507,25 +1660,20 @@ initialize_logging_session(SKLOG_U_Ctx    *u_ctx)
         goto failure;
     }
 
+    //~ create log entry
     if ( create_logentry(u_ctx,ResponseMessageType,
                          M1,M1_len) == SKLOG_FAILURE ) {
         ERROR("create_logentry() failure")
         goto error;
     }
-    
+
+    ERR_free_strings();
     return SKLOG_SUCCESS;
 
 failure:
     gettimeofday(&now,NULL);
-    unsigned char *ts = 0;
-    unsigned int ts_len = 0;
-    
-    char data[4096] = { 0 };
-    unsigned int data_len = 0;
-    int i = 0;
-    int j = 0;
-
     ts_len = sizeof(now);
+
     SKLOG_CALLOC(ts,ts_len,char)
     memcpy(ts,&now,ts_len);
 
@@ -1541,8 +1689,8 @@ failure:
         ERROR("create_logentry() failure")
         goto error;
     }
-    free(ts);
-    
+    SKLOG_FREE(ts);
+    ERR_free_strings();
     return SKLOG_FAILURE;
 
 error:
@@ -1554,6 +1702,7 @@ error:
     if ( D0 > 0 ) free(D0);
     if ( M1 > 0 ) free(M1);
 
+    ERR_free_strings();
     return SKLOG_FAILURE;
 }
 
@@ -1564,8 +1713,10 @@ error:
 static SKLOG_RETURN
 flush_logfile_init(SSL *ssl)
 {
-    SSL_load_error_strings();
-    
+    #ifdef DO_TRACE
+    DEBUG
+    #endif
+
     unsigned char msg[512] = { 0 };
     unsigned char data[512] = { 0 };
     unsigned int data_len = 0;
@@ -1573,11 +1724,15 @@ flush_logfile_init(SSL *ssl)
     int nread = 0;
     int nwrite = 0;
 
+    SSL_load_error_strings();
+
     data_len = strlen("LOGFILE_FLUSH_START");
     memcpy(data,"LOGFILE_FLUSH_START",data_len);
 
-    if ( tlv_create(LE_FLUSH_START,data_len,data,msg) == SKLOG_FAILURE )
+    if ( tlv_create(LE_FLUSH_START,data_len,data,msg) == SKLOG_FAILURE ) {
+        ERROR("tlv_create() failure");
         goto error;
+    }
 
     nwrite = SSL_write(ssl,msg,data_len+8);
 
@@ -1596,6 +1751,7 @@ flush_logfile_init(SSL *ssl)
     } 
 
     if ( memcmp(msg,"LE_ACK",6) == 0 ) {
+        ERR_free_strings();
         return SKLOG_SUCCESS;
     } else if ( memcmp(msg,"LE_NACK",7) == 0 ) {
         WARNING("received NACK")
@@ -1606,6 +1762,7 @@ flush_logfile_init(SSL *ssl)
     }
     
 error:
+    ERR_free_strings();
     return SKLOG_FAILURE;
 }
 

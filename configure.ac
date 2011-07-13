@@ -37,6 +37,34 @@ if test "x${enable_trace}" = "xyes" ; then
 fi
 
 #----------------------------------------------------------------------
+# enable DO_NOTIFY
+#----------------------------------------------------------------------
+
+AC_ARG_ENABLE(
+    notify,
+    AS_HELP_STRING(
+        [--enable-notify],
+        [Enable notify messages for libsklog library [default=no]]
+    ),
+    [enable_trace="yes"],
+    [enable_trace="no"]
+)
+
+AC_MSG_CHECKING(
+    [whether to build with notify messages]
+)
+
+AC_MSG_RESULT(${enable_notify})
+
+if test "x${enable_notify}" = "xyes" ; then
+    AC_DEFINE(
+        [DO_NOTIFY],
+        [],
+        [Enable notify messages for libsklog library]
+    )
+fi
+
+#----------------------------------------------------------------------
 # enable USE_QUOTE
 #----------------------------------------------------------------------
 

@@ -163,7 +163,7 @@ init_ssl_structure(SSL_CTX    *ctx,
                                     0,0);
             
             if ( str == NULL ) {
-                //~ error
+                ERROR("X509_NAME_oneline() failure")
                 return NULL;
             }
             
@@ -203,17 +203,22 @@ tcp_bind(const char    *address,
     struct sockaddr_in sa_serv;
     
     /* Set up a TCP socket */
+
     if ( (skt = socket(PF_INET,SOCK_STREAM,IPPROTO_TCP)) < 0 ) {
-        //~ error
+        ERROR("socket() failure")
+        return -1;
     }
+
     setsockopt(skt,SOL_SOCKET,SO_REUSEADDR,&optval,sizeof(optval));
 
     memset(&sa_serv,0,sizeof(sa_serv));
     sa_serv.sin_family = AF_INET;
     sa_serv.sin_addr.s_addr = inet_addr(address);
     sa_serv.sin_port = htons(port);
+
     if ( bind(skt,(struct sockaddr*)&sa_serv,sizeof(sa_serv)) < 0 ) {
-        //~ error
+        ERROR("bind() failure")
+        return -1;
     }
 
     return skt;
@@ -223,13 +228,15 @@ tcp_bind(const char    *address,
 /* logging session initialization                                     */
 /*--------------------------------------------------------------------*/
 
-static SKLOG_RETURN // todo
+static SKLOG_RETURN // todo: to implement
 parse_config_file(void)
 {
     #ifdef DO_TRACE
     DEBUG
     #endif
-    NOTIFY("To implement...")
+    
+    NOTIFY("\n\nTO IMPLEMENT\n\n")
+
     return SKLOG_TO_IMPLEMENT;
 }
 
@@ -300,12 +307,14 @@ parse_m0(SKLOG_T_Ctx            *t_ctx,
 }
 
 static SKLOG_RETURN
-verify_m0(void) // todo
+verify_m0(void) // todo: to implement
 {
     #ifdef DO_TRACE
     DEBUG
     #endif
-    NOTIFY("To implement...")
+    
+    NOTIFY("\n\nTO IMPLEMENT\n\n")
+    
     return SKLOG_TO_IMPLEMENT;
 }
 
@@ -357,7 +366,7 @@ parse_e_k0_content(unsigned char    *in,
     return SKLOG_SUCCESS;
 }
 
-static SKLOG_RETURN // to refine
+static SKLOG_RETURN // todo: to refine
 parse_x0( unsigned char    *x0,
          unsigned int      x0_len,
          X509              **u_cert,
@@ -630,7 +639,7 @@ sql_callback(void    *NotUsed,
     return 0;
 }
 
-static SKLOG_RETURN //~ to refine
+static SKLOG_RETURN //~ todo: to refine
 store_auth_key(unsigned char    *u_id,
                unsigned char    *auth_key)
 {
@@ -691,73 +700,90 @@ manage_logsession_init(SKLOG_T_Ctx      *t_ctx,
     #endif
 
     SKLOG_PROTOCOL_STEP p = 0;
+    
     unsigned char u_id[HOST_NAME_MAX] = { 0 };
-    unsigned char *pke_t_k0 = 0;
-    unsigned int pke_t_k0_len = 0;
+
     unsigned char *e_k0 = 0;
     unsigned int e_k0_len = 0;
-
-    unsigned char *x1 = 0;
-    unsigned int x1_len = 0;
-
-    if ( parse_m0(t_ctx,&m0[8],m0_len,&p,u_id,&pke_t_k0,
-                  &pke_t_k0_len,&e_k0,&e_k0_len) == SKLOG_FAILURE ) {
-        ERROR("parse_m0() failure")
-        goto failure;
-    }
-    free(m0);
-
-    //~ decrypt k0 using T's private key
+    unsigned char *pke_t_k0 = 0;
+    unsigned int pke_t_k0_len = 0;
+    
     unsigned char *k0 = 0;
     unsigned int k0_len = 0;
-    size_t len = 0;
-    
-    if ( pke_decrypt(t_ctx->t_priv_key,pke_t_k0,
-                     pke_t_k0_len,&k0,&len) == SKLOG_FAILURE ) {
-        ERROR("pke_decrypt() failure")
-        goto failure;
-    }
-    k0_len = len;
-    free(pke_t_k0);
 
-    //~ decrypt e_k0 using k0 key
     unsigned char *plain = 0;
     unsigned int plain_len = 0;
 
-    if ( decrypt_aes256(k0,e_k0,e_k0_len,&plain,
-                        &plain_len) == SKLOG_FAILURE ) {
-        ERROR("decrypt_aes256() failure")
-        goto failure;
-    }
-    free(e_k0);
-    free(k0);
-
-    //~ parse plain
     unsigned char *x0 = 0;
     unsigned int x0_len = 0;
     unsigned char *x0_sign = 0;
     unsigned int x0_sign_len = 0;
 
-    if ( parse_e_k0_content(plain,plain_len,&x0,&x0_len,
-                            &x0_sign,&x0_sign_len) == SKLOG_FAILURE ) {
-        ERROR("parse_plain() failure")
-        goto failure;
-    }
-    free(plain);
-
-    //~ parse x0
     X509 *u_cert = 0;
     unsigned char auth_key[SKLOG_AUTH_KEY_LEN] = { 0 };
 
+    unsigned char *x1 = 0;
+    unsigned int x1_len = 0;
+
+    unsigned char k1[SKLOG_SESSION_KEY_LEN] = { 0 };
+
+    unsigned char *x1_sign = 0;
+    unsigned int x1_sign_len = 0;
+
+    unsigned char *e_k1 = 0;
+    unsigned int e_k1_len = 0;
+
+    unsigned char *pke_u_k1 = 0;
+
+    unsigned char *m1 = 0;
+    unsigned int m1_len = 0;
+
+
+    //~ parse m0
+    if ( parse_m0(t_ctx,&m0[8],m0_len,&p,u_id,&pke_t_k0,
+                  &pke_t_k0_len,&e_k0,&e_k0_len) == SKLOG_FAILURE ) {
+        ERROR("parse_m0() failure")
+        goto error;
+    }
+    SKLOG_FREE(m0)
+
+    //~ decrypt k0 using T's private key
+    size_t len = 0;
+    if ( pke_decrypt(t_ctx->t_priv_key,pke_t_k0,
+                     pke_t_k0_len,&k0,&len) == SKLOG_FAILURE ) {
+        ERROR("pke_decrypt() failure")
+        goto error;
+    }
+    k0_len = len;
+    SKLOG_FREE(pke_t_k0);
+
+    //~ decrypt e_k0 using k0 key
+    if ( decrypt_aes256(k0,e_k0,e_k0_len,&plain,
+                        &plain_len) == SKLOG_FAILURE ) {
+        ERROR("decrypt_aes256() failure")
+        goto error;
+    }
+    SKLOG_FREE(e_k0);
+    SKLOG_FREE(k0);
+
+    //~ parse plain
+    if ( parse_e_k0_content(plain,plain_len,&x0,&x0_len,
+                            &x0_sign,&x0_sign_len) == SKLOG_FAILURE ) {
+        ERROR("parse_plain() failure")
+        goto error;
+    }
+    SKLOG_FREE(plain);
+
+    //~ parse x0
     if ( parse_x0(x0,x0_len,&u_cert,auth_key) == SKLOG_FAILURE ) {
         ERROR("parse_x0() failure")
-        goto failure;
+        goto error;
     }
 
     //~ store auth_key
     if ( store_auth_key(u_id,auth_key) == SKLOG_FAILURE ) {
         ERROR("store_auth_key() failure")
-        goto failure;
+        goto error;
     }
     
     //~ remove auth_key from memory
@@ -766,83 +792,68 @@ manage_logsession_init(SKLOG_T_Ctx      *t_ctx,
     //~ verify m0:
     if ( verify_m0() == SKLOG_FAILURE ) {
         ERROR("verify_m0() failure")
-        goto failure;
+        goto error;
     }
-    free(x0_sign);
+    SKLOG_FREE(x0_sign);
 
     /*----------------------------------------------------------------*/
     /*----------------------------------------------------------------*/
 
     //~ generate x1
-    //~ unsigned char *x1 = 0;
-    //~ unsigned int x1_len = 0;
-    
     if ( gen_x1(&p,x0,x0_len,&x1,&x1_len) == SKLOG_FAILURE ) {
         ERROR("gen_x1() failure")
-        goto failure;
+        goto error;
     }
-    free(x0);
+    SKLOG_FREE(x0);
 
     //~ generate a random session key k1
-    unsigned char k1[SKLOG_SESSION_KEY_LEN] = { 0 };
     RAND_bytes(k1,SKLOG_SESSION_KEY_LEN);
 
     //~ sign x1 using T's private key
-    unsigned char *x1_sign = 0;
-    unsigned int x1_sign_len = 0;
-
     if ( sign_message(x1,x1_len,t_ctx->t_priv_key,
                       &x1_sign,&x1_sign_len) == SKLOG_FAILURE ) {
         ERROR("sign_message() failure")
-        goto failure;
+        goto error;
     }
 
     //~ encrypt {x1,x1_sign} using k1 key
-    unsigned char *e_k1 = 0;
-    unsigned int e_k1_len = 0;
-
     if ( gen_e_k1(t_ctx,k1,x1,x1_len,x1_sign,x1_sign_len,
                   &e_k1,&e_k1_len) == SKLOG_FAILURE ) {
         ERROR("gen_e_k1() failure")
-        goto failure;
+        goto error;
     }
-    free(x1_sign);
-    free(x1);
+    SKLOG_FREE(x1_sign);
+    SKLOG_FREE(x1);
 
     //~ encrypt k1 using U's public key
-    unsigned char *pke_u_k1 = 0;
     size_t pke_u_k1_len = 0;
-    
     if ( pke_encrypt(u_cert,k1,SKLOG_SESSION_KEY_LEN,
                      &pke_u_k1,&pke_u_k1_len) == SKLOG_FAILURE ) {
         ERROR("pke_encrypt() failure")
-        goto failure;
+        goto error;
     }
     X509_free(u_cert);
     memset(k1,0,SKLOG_SESSION_KEY_LEN);
     
     //~ generate m1
-    unsigned char *m1 = 0;
-    unsigned int m1_len = 0;
-
     if ( gen_m1(t_ctx,p,pke_u_k1,pke_u_k1_len,e_k1,
                 e_k1_len,&m1,&m1_len) == SKLOG_FAILURE ) {
         ERROR("gen_m1() failure")
-        goto failure;
+        goto error;
     }
-    free(e_k1);
-    free(pke_u_k1);
+    SKLOG_FREE(e_k1);
+    SKLOG_FREE(pke_u_k1);
 
     //~ send m1 to U
     if ( send_m1(t_ctx,ssl,m1,m1_len) == SKLOG_FAILURE ) {
         ERROR("send_m1() failure")
-        goto failure;
+        goto error;
     }
-    free(m1);
+    SKLOG_FREE(m1);
     
     return SKLOG_SUCCESS;
 
-failure:
+error:
     if ( m0 ) free(m0);
     if ( pke_t_k0 ) free(pke_t_k0); 
     if ( e_k0 ) free(e_k0);
@@ -877,6 +888,8 @@ manage_logfile_flush(SKLOG_T_Ctx    *t_ctx,
     
     if ( SSL_write(ssl,"LE_ACK",6) < 0 ) {
         //~ todo: manage error
+        ERROR("SSL_write() failure")
+        goto error;
     } 
 
     while ( more ) {
@@ -884,32 +897,33 @@ manage_logfile_flush(SKLOG_T_Ctx    *t_ctx,
         nread = SSL_read(ssl,buffer,SKLOG_BUFFER_LEN);
 
         if ( nread <= 0 ) {
-            //~ todo: manage error
+            NOTIFY("SSL_read() failure")
+            goto error;
         }
 
         if ( tlv_parse(buffer,LOGENTRY,msg,
                        &msg_len) == SKLOG_SUCCESS ) {
-
             NOTIFY("Storing log entry...")
 
         } else if ( tlv_parse(buffer,LE_FLUSH_END,msg,
                               &msg_len) == SKLOG_SUCCESS ) {
-
             NOTIFY("Logfile fush terminated!")
             more = 0;
-            
         } else {
             //~ todo: manage error
             NOTIFY("Something goes wrong!")
+            goto error;
         }
 
         if ( SSL_write(ssl,"LE_ACK",6) < 0 ) {
             //~ todo: manage error
+            ERROR("SSL_write() failure")
+            goto error;
         }
-
         memset(buffer,0,SKLOG_BUFFER_LEN);
     }
-
+    
+error:
     return SKLOG_SUCCESS;
 }
 
@@ -1081,6 +1095,7 @@ SKLOG_T_Run(SKLOG_T_Ctx    *t_ctx)
             SKLOG_TLV_TYPE type = 0;
 
             if ( tlv_get_type(buffer,&type) == SKLOG_FAILURE ) {
+                ERROR("tlv_get_type() failure")
                 goto failure;
             }
 
@@ -1117,7 +1132,7 @@ failure:
             while ( childcount ) {
                 pid = waitpid((pid_t)-1,NULL,WNOHANG);
                 if ( pid < 0 ) {
-                    //~ error
+                    ERROR("waitpid() failure")
                 } else if ( pid == 0 ) {
                     break;
                 } else {

@@ -73,6 +73,11 @@
     }\
 }
 
+#define SKLOG_FREE(mem_ptr) {\
+    free(mem_ptr);\
+    mem_ptr = 0;\
+}
+
 /* libsklog defines --------------------------------------------------*/
 
 #define     SHA1_LEN        20
