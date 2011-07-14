@@ -41,20 +41,40 @@ sign_message(unsigned char    *message,
     DEBUG
     #endif
 
-    unsigned long openssl_err = 0;
+    int retval = 0;
 
     EVP_PKEY_CTX *ctx = 0;
     unsigned char md[SHA256_LEN] = { 0 };
     unsigned char *sig = 0;
     size_t md_len = SHA256_LEN;
     size_t sig_len = 0;
+    EVP_MD_CTX mdctx;
+
+    OpenSSL_add_all_digests();
+    ERR_load_crypto_strings();
 
     //~ generate sha256 message digest
-    EVP_MD_CTX mdctx;
+    
     EVP_MD_CTX_init(&mdctx);
-    EVP_DigestInit_ex(&mdctx,EVP_sha256(),NULL);
-    EVP_DigestUpdate(&mdctx,message,message_len);
-    EVP_DigestFinal_ex(&mdctx,md,(unsigned int *)&md_len);
+
+    retval = EVP_DigestInit_ex(&mdctx,EVP_sha256(),NULL);
+    if ( retval == 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+    
+    retval = EVP_DigestUpdate(&mdctx,message,message_len);
+    if ( retval == 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+    
+    retval = EVP_DigestFinal_ex(&mdctx,md,(unsigned int *)&md_len);
+    if ( retval == 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+    
     EVP_MD_CTX_cleanup(&mdctx);
 
     /*
@@ -66,62 +86,44 @@ sign_message(unsigned char    *message,
     ctx = EVP_PKEY_CTX_new(signing_key,NULL);
 
     if ( ctx == NULL ) {
-       ERROR("EVP_PKEY_CTX_new() failure");
-       return SKLOG_FAILURE;
+        ERR_print_errors_fp(stderr);
+        goto error;
     }
 
     if ( EVP_PKEY_sign_init(ctx) <= 0 ) {
-       ERROR("EVP_PKEY_sign_init() failure")
-       EVP_PKEY_CTX_free(ctx);
-       return SKLOG_FAILURE;
+        ERR_print_errors_fp(stderr);
+        goto error;
     }
 
     if ( EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PADDING) <= 0 ) {
-       ERROR("EVP_PKEY_CTX_set_rsa_padding() failure")
-       EVP_PKEY_CTX_free(ctx);
-       return SKLOG_FAILURE;
+       ERR_print_errors_fp(stderr);
+       goto error;
     }
 
     if ( EVP_PKEY_CTX_set_signature_md(ctx, EVP_sha256()) <= 0 ) {
-       ERROR("EVP_PKEY_CTX_set_signature_md() failure")
-       EVP_PKEY_CTX_free(ctx);
-       return SKLOG_FAILURE;
+       ERR_print_errors_fp(stderr);
+       goto error;
     }
 
     //~ determine buffer length
     if ( EVP_PKEY_sign(ctx, NULL, &sig_len, md, md_len) <= 0 ) {
-       ERROR("EVP_PKEY_sign() failure")
-       EVP_PKEY_CTX_free(ctx);
-       return SKLOG_FAILURE;
+       ERR_print_errors_fp(stderr);
+       goto error;
     }
 
     sig = OPENSSL_malloc(sig_len);
 
     if ( !sig ) {
-       ERROR("OPENSSL_malloc() failure")
-       EVP_PKEY_CTX_free(ctx);
-       return SKLOG_FAILURE;
+       ERR_print_errors_fp(stderr);
+       goto error;
     }
 
     if ( EVP_PKEY_sign(ctx, sig, &sig_len, md, md_len) <= 0 ) {
-       ERROR("EVP_PKEY_sign() failure")
-       OPENSSL_ERROR(openssl_err)
-       EVP_PKEY_CTX_free(ctx);
-       OPENSSL_free(sig);
-       return SKLOG_FAILURE;
+       ERR_print_errors_fp(stderr);
+       goto error;
     }
 
     /* Signature is sig_len bytes written to buffer sig */
-
-    /*
-    if ( (*signature = calloc(sig_len,sizeof(char))) == NULL ) {
-        ERROR("calloc() failure")
-        OPENSSL_free(sig);
-        EVP_PKEY_CTX_free(ctx);
-        return SKLOG_FAILURE;
-    }
-    */
-
     SKLOG_CALLOC(*signature,sig_len,char)
 
     memcpy(*signature,sig,sig_len);
@@ -129,12 +131,19 @@ sign_message(unsigned char    *message,
 
     OPENSSL_free(sig);
     EVP_PKEY_CTX_free(ctx);
+    ERR_free_strings();
 
     #ifdef HAVE_NOTIFY
     NOTIFY("signature process successful")
     #endif
 
     return SKLOG_SUCCESS;
+
+error:
+    if ( sig > 0 ) OPENSSL_free(sig);
+    if ( ctx > 0 ) EVP_PKEY_CTX_free(ctx);
+    ERR_free_strings();
+    return SKLOG_FAILURE;
 }
 
 SKLOG_RETURN
@@ -148,69 +157,79 @@ sign_verify(EVP_PKEY         *verify_key,
     DEBUG
     #endif
 
-    //~ generate sha256 message digest
+    int retval = 0;
+    
     unsigned char md[SHA256_LEN] = { 0 };
     unsigned int md_len = 0;
     EVP_MD_CTX mdctx;
 
+    EVP_PKEY_CTX *ctx = NULL;
+
+    OpenSSL_add_all_digests();
+    ERR_load_crypto_strings();
+    
+    //~ generate sha256 message digest
     EVP_MD_CTX_init(&mdctx);
-    EVP_DigestInit_ex(&mdctx,EVP_sha256(),NULL);
-    EVP_DigestUpdate(&mdctx,message,message_len);
-    EVP_DigestFinal_ex(&mdctx,md,&md_len);
+    
+    retval = EVP_DigestInit_ex(&mdctx,EVP_sha256(),NULL);
+    if ( retval == 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+    
+    retval = EVP_DigestUpdate(&mdctx,message,message_len);
+    if ( retval == 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+    
+    retval = EVP_DigestFinal_ex(&mdctx,md,&md_len);
+    if ( retval == 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+    
     EVP_MD_CTX_cleanup(&mdctx);
 
     //~ verify signature
-    EVP_PKEY_CTX *ctx = NULL;
-    int ret = 0;
-
     if ( (ctx = EVP_PKEY_CTX_new(verify_key,NULL)) == NULL ) {
-        /* Error occurred */
-        return SKLOG_FAILURE;
+        ERR_print_errors_fp(stderr);
+        goto error;
     }
 
     if ( EVP_PKEY_verify_init(ctx) <= 0 ) {
-        /* Error */
-        return SKLOG_FAILURE;
+        ERR_print_errors_fp(stderr);
+        goto error;
     }
 
     if ( EVP_PKEY_CTX_set_rsa_padding(ctx,RSA_PKCS1_PADDING) <= 0 ) {
-        /* Error */
-        return SKLOG_FAILURE;
+        ERR_print_errors_fp(stderr);
+        goto error;
     }
 
     if ( EVP_PKEY_CTX_set_signature_md(ctx,EVP_sha256()) <= 0 ) {
-        /* Error */
-        return SKLOG_FAILURE;
+        ERR_print_errors_fp(stderr);
+        goto error;
     }
 
-    ret = EVP_PKEY_verify(ctx,signature,signature_len,md,md_len);
+    retval = EVP_PKEY_verify(ctx,signature,signature_len,md,md_len);
 
-    if ( ret < 0 ) {
-        //~ error
-        ERROR("EVP_PKEY_verify() failure")
-        return SKLOG_FAILURE;
+    if ( retval < 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
     }
 
-    switch ( ret ) {
-        case 1: // success
-            #ifdef HAVE_NOTIFY
-            NOTIFY("signature verification successfull :-D")
-            #endif
-            return SKLOG_SUCCESS;
-            break;
-        case 0: // failure
-            #ifdef HAVE_NOTIFY
-            NOTIFY("signature verification fails :-(")
-            #endif
-            return SKLOG_FAILURE;
-            break;
-        default: // other
-            #ifdef HAVE_NOTIFY
-            NOTIFY("signature verification fails :-S")
-            #endif
-            return SKLOG_FAILURE;
-            break;
+    if ( retval > 0 ) {
+        NOTIFY("signature verification successfull :-D")
+        ERR_free_strings();
+        return SKLOG_SUCCESS;
+    } else {
+        NOTIFY("signature verification fails :-(")
     }
+
+error:
+    ERR_free_strings();
+    return SKLOG_FAILURE;
 }
 
 SKLOG_RETURN
@@ -224,71 +243,66 @@ pke_encrypt(X509             *cert,
     DEBUG
     #endif
 
-    unsigned long err = 0;
     int retval = 0;
 
     EVP_PKEY *pubkey = 0;
     EVP_PKEY_CTX *evp_ctx = 0;
 
+    OpenSSL_add_all_digests();
+    ERR_load_crypto_strings();
+
     if ( (pubkey = X509_get_pubkey(cert)) == NULL ) {
-        ERROR("X509_get_pubkey() failure")
-        OPENSSL_ERROR(err);
-        return SKLOG_FAILURE;
+        ERR_print_errors_fp(stderr);
+        goto error;
     }
 
     if ( (evp_ctx = EVP_PKEY_CTX_new(pubkey,NULL)) == NULL ) {
-        ERROR("EVP_PKEY_CTX_new() failure")
-        OPENSSL_ERROR(err);
-        return SKLOG_FAILURE;
+        ERR_print_errors_fp(stderr);
+        goto error;
     }
 
     retval = EVP_PKEY_encrypt_init(evp_ctx);
 
     if ( retval <= 0 ) {
-        EVP_PKEY_CTX_free(evp_ctx);
-        ERROR("EVP_PKEY_encrypt_init() failure")
-        OPENSSL_ERROR(err);
-        return SKLOG_FAILURE;
+        ERR_print_errors_fp(stderr);
+        goto error;
     }
 
     retval = EVP_PKEY_CTX_set_rsa_padding(evp_ctx,RSA_PKCS1_PADDING);
 
     if ( retval <= 0 ) {
-        EVP_PKEY_CTX_free(evp_ctx);
-        ERROR("EVP_PKEY_CTX_set_rsa_padding() failure")
-        OPENSSL_ERROR(err);
-        return SKLOG_FAILURE;
+        ERR_print_errors_fp(stderr);
+        goto error;
     }
 
     retval = EVP_PKEY_encrypt(evp_ctx,NULL,out_len,in,in_len);
 
     if ( retval <= 0 ) {
-        EVP_PKEY_CTX_free(evp_ctx);
-        ERROR("EVP_PKEY_encrypt() failure")
-        OPENSSL_ERROR(err);
-        return SKLOG_FAILURE;
+        ERR_print_errors_fp(stderr);
+        goto error;
     }
 
     if ( (*out = OPENSSL_malloc(*out_len)) == NULL ) {
-        EVP_PKEY_CTX_free(evp_ctx);
-        ERROR("OPENSSL_malloc() failure")
-        OPENSSL_ERROR(err);
-        return SKLOG_FAILURE;
+        ERR_print_errors_fp(stderr);
+        goto error;
     }
 
     retval = EVP_PKEY_encrypt(evp_ctx,*out,out_len,in,in_len);
 
     if ( retval <= 0 )  {
-        OPENSSL_free(*out);
-        EVP_PKEY_CTX_free(evp_ctx);
-        ERROR("EVP_PKEY_encrypt() failure")
-        OPENSSL_ERROR(err);
-        return SKLOG_FAILURE;
+        ERR_print_errors_fp(stderr);
+        goto error;
     }
 
     EVP_PKEY_CTX_free(evp_ctx);
-
+    ERR_free_strings();
     return SKLOG_SUCCESS;
+
+error:
+    if ( evp_ctx > 0 ) EVP_PKEY_CTX_free(evp_ctx);
+    if ( *out > 0 ) OPENSSL_free(*out);
+    ERR_free_strings();
+    return SKLOG_FAILURE;
 }
 
 SKLOG_RETURN
@@ -302,10 +316,12 @@ pke_decrypt(EVP_PKEY         *key,
     DEBUG
     #endif
 
-    unsigned long err = 0;
-    EVP_PKEY_CTX *ctx = NULL;
     int retval = 0;
+    
+    EVP_PKEY_CTX *ctx = NULL;
 
+    OpenSSL_add_all_digests();
+    ERR_load_crypto_strings();
 
     /*
      * assumes key in, inlen are already set up and that key is an RSA
@@ -313,27 +329,22 @@ pke_decrypt(EVP_PKEY         *key,
      */
 
     if ( (ctx = EVP_PKEY_CTX_new(key,NULL)) == NULL ) {
-        ERROR("EVP_PKEY_CTX_new() failure")
-        OPENSSL_ERROR(err);
-        return SKLOG_FAILURE;
+        ERR_print_errors_fp(stderr);
+        goto error;
     }
 
     retval = EVP_PKEY_decrypt_init(ctx);
 
     if ( retval <= 0 ) {
-        EVP_PKEY_CTX_free(ctx);
-        ERROR("EVP_PKEY_decrypt_init() failure")
-        OPENSSL_ERROR(err);
-        return SKLOG_FAILURE;
+        ERR_print_errors_fp(stderr);
+        goto error;
     }
 
     retval = EVP_PKEY_CTX_set_rsa_padding(ctx,RSA_PKCS1_PADDING);
 
     if ( retval <= 0 ) {
-        EVP_PKEY_CTX_free(ctx);
-        ERROR("EVP_PKEY_CTX_set_rsa_padding() failure")
-        OPENSSL_ERROR(err);
-        return SKLOG_FAILURE;
+        ERR_print_errors_fp(stderr);
+        goto error;
     }
 
     /* Determine buffer length */
@@ -341,32 +352,32 @@ pke_decrypt(EVP_PKEY         *key,
     retval = EVP_PKEY_decrypt(ctx, NULL, out_len, in, in_len);
 
     if ( retval <= 0 ) {
-        EVP_PKEY_CTX_free(ctx);
-        ERROR("EVP_PKEY_decrypt() failure 1")
-        OPENSSL_ERROR(err);
-        return SKLOG_FAILURE;
+        ERR_print_errors_fp(stderr);
+        goto error;
     }
 
     if ( (*out = OPENSSL_malloc(*out_len)) == NULL ) {
-        EVP_PKEY_CTX_free(ctx);
-        ERROR("OPENSSL_malloc() failure")
-        OPENSSL_ERROR(err);
-        return SKLOG_FAILURE;
+        ERR_print_errors_fp(stderr);
+        goto error;
     }
 
     retval = EVP_PKEY_decrypt(ctx, *out, out_len, in, in_len);
 
     if ( retval <= 0 ) {
-        EVP_PKEY_CTX_free(ctx);
         free(*out);
-        ERROR("EVP_PKEY_decrypt() failure 2")
-        OPENSSL_ERROR(err);
-        return SKLOG_FAILURE;
+        ERR_print_errors_fp(stderr);
+        goto error;
     }
 
     /* Decrypted data is outlen bytes written to buffer out */
 
+    ERR_free_strings();
     return SKLOG_SUCCESS;
+
+error:
+    if ( ctx > 0 ) EVP_PKEY_CTX_free(ctx);
+    ERR_free_strings();
+    return SKLOG_FAILURE;
 }
 
 SKLOG_RETURN
@@ -380,6 +391,8 @@ encrypt_aes256(unsigned char    **data_enc,
     DEBUG
     #endif
 
+    int retval = 0;
+
     EVP_CIPHER_CTX ctx;
     unsigned char key[32] = { 0 };
     unsigned char iv[32] = { 0 };
@@ -390,16 +403,24 @@ encrypt_aes256(unsigned char    **data_enc,
     int f_len = 0; //~ final len
     unsigned char *ciphertext = 0;
 
+    OpenSSL_add_all_digests();
+    ERR_load_crypto_strings();
+
     //~ init context
     i = EVP_BytesToKey(EVP_aes_256_cbc(),EVP_sha256(),salt,enc_key,
                        SKLOG_AUTH_KEY_LEN,5,key,iv);
     if ( i != 32 ) {
         ERROR("key size should be 256 bits")
-        return SKLOG_FAILURE;
+        goto error;
     }
 
     EVP_CIPHER_CTX_init(&ctx);
-    EVP_EncryptInit_ex(&ctx,EVP_aes_256_cbc(),NULL,key,iv);
+    retval = EVP_EncryptInit_ex(&ctx,EVP_aes_256_cbc(),NULL,key,iv);
+
+    if ( retval == 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
 
     //~ do encryption
     c_len = data_size +
@@ -407,18 +428,38 @@ encrypt_aes256(unsigned char    **data_enc,
 
     SKLOG_CALLOC(ciphertext,c_len,char)
 
-    EVP_EncryptInit_ex(&ctx,NULL,NULL,NULL,NULL);
-    EVP_EncryptUpdate(&ctx,ciphertext,&c_len,data,data_size);
-    EVP_EncryptFinal_ex(&ctx,ciphertext+c_len,&f_len);
+    retval = EVP_EncryptInit_ex(&ctx,NULL,NULL,NULL,NULL);
+    if ( retval == 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+    
+    retval = EVP_EncryptUpdate(&ctx,ciphertext,&c_len,data,data_size);
+    if ( retval == 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+    
+    retval = EVP_EncryptFinal_ex(&ctx,ciphertext+c_len,&f_len);
+    if ( retval == 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
 
     *data_enc_size = c_len + f_len;
     SKLOG_CALLOC(*data_enc,*data_enc_size,char)
     memcpy(*data_enc,ciphertext,c_len + f_len);
 
-    free(ciphertext);
+    SKLOG_FREE(ciphertext);
     EVP_CIPHER_CTX_cleanup(&ctx);
 
+    ERR_free_strings();
     return SKLOG_SUCCESS;
+error:
+    if ( ciphertext > 0 ) free(ciphertext); 
+    EVP_CIPHER_CTX_cleanup(&ctx);
+    ERR_free_strings();
+    return SKLOG_FAILURE;
 }
 
 SKLOG_RETURN
@@ -432,11 +473,20 @@ decrypt_aes256(unsigned char    *dec_key,
     DEBUG
     #endif
 
+    int retval = 0;
+
     EVP_CIPHER_CTX ctx;
     unsigned char key[32] = { 0 };
     unsigned char iv[32] = { 0 };
     unsigned char salt[8] = { 1 }; //~ to refine
     int i = 0;
+
+    int p_len = in_len; /* plaintext len */
+    int f_len = 0; /* final len */
+    unsigned char *plaintext = 0;
+
+    OpenSSL_add_all_digests();
+    ERR_load_crypto_strings();
 
     /* init context */
 
@@ -444,23 +494,37 @@ decrypt_aes256(unsigned char    *dec_key,
                              salt,dec_key,
                              SKLOG_AUTH_KEY_LEN,5,key,iv)) != 32 ) {
         //~ error
-        return SKLOG_FAILURE;
+        goto error;
     }
 
     EVP_CIPHER_CTX_init(&ctx);
-    EVP_DecryptInit_ex(&ctx,EVP_aes_256_cbc(),NULL,key,iv);
+    retval = EVP_DecryptInit_ex(&ctx,EVP_aes_256_cbc(),NULL,key,iv);
+
+    if ( retval == 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
 
     /* do decription */
-
-    int p_len = in_len; /* plaintext len */
-    int f_len = 0; /* final len */
-    unsigned char *plaintext = 0;
-
     plaintext = calloc(p_len,sizeof(char));
 
-    EVP_DecryptInit_ex(&ctx, NULL, NULL, NULL, NULL);
-    EVP_DecryptUpdate(&ctx, plaintext, &p_len, in,in_len);
-    EVP_DecryptFinal(&ctx, plaintext+p_len, &f_len);
+    retval = EVP_DecryptInit_ex(&ctx, NULL, NULL, NULL, NULL);
+    if ( retval == 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+    
+    retval = EVP_DecryptUpdate(&ctx, plaintext, &p_len, in,in_len);
+    if ( retval == 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+    
+    retval = EVP_DecryptFinal(&ctx, plaintext+p_len, &f_len);
+    if ( retval == 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
 
     *out_len = p_len + f_len;
     *out = calloc(p_len + f_len,sizeof(char));
@@ -468,8 +532,14 @@ decrypt_aes256(unsigned char    *dec_key,
 
     free(plaintext);
     EVP_CIPHER_CTX_cleanup(&ctx);
+    ERR_free_strings();
 
     return SKLOG_SUCCESS;
+
+error:
+    EVP_CIPHER_CTX_cleanup(&ctx);
+    ERR_free_strings();
+    return SKLOG_FAILURE;
 }
 
 SKLOG_RETURN

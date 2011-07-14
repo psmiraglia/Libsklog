@@ -1788,28 +1788,40 @@ flush_logfile_send_logentry(SSL                    *ssl,
     int nread = 0;
     int nwrite = 0;
 
+    SSL_load_error_strings();
+
     if ( tlv_create(LOGENTRY_TYPE,type_len,(void *)type,
-                    &buf[displacement]) == SKLOG_FAILURE )
+                    &buf[displacement]) == SKLOG_FAILURE ) {
+        ERROR("tlv_create() failure")
         goto error;
+    }
     displacement += type_len+8;
     
     if ( tlv_create(LOGENTRY_DATA,data_enc_len,(void *)data_enc,
-                    &buf[displacement]) == SKLOG_FAILURE )
+                    &buf[displacement]) == SKLOG_FAILURE ) {
+        ERROR("tlv_create() failure")
         goto error;
+    }
     displacement += data_enc_len+8;
     
     if ( tlv_create(LOGENTRY_HASH,y_len,(void *)y,
-                    &buf[displacement]) == SKLOG_FAILURE )
+                    &buf[displacement]) == SKLOG_FAILURE ) {
+        ERROR("tlv_create() failure")
         goto error;
+    }
     displacement += y_len+8;
     
     if ( tlv_create(LOGENTRY_HMAC,z_len,(void *)z,
-                    &buf[displacement]) == SKLOG_FAILURE )
+                    &buf[displacement]) == SKLOG_FAILURE ) {
+        ERROR("tlv_create() failure")
         goto error;
+    }
     displacement += z_len+8;
 
-    if ( tlv_create(LOGENTRY,displacement,buf,msg) == SKLOG_FAILURE )
+    if ( tlv_create(LOGENTRY,displacement,buf,msg) == SKLOG_FAILURE ) {
+        ERROR("tlv_create() failure")
         goto error;
+    }
 
     nwrite = SSL_write(ssl,msg,displacement+8);
     
@@ -1827,6 +1839,7 @@ flush_logfile_send_logentry(SSL                    *ssl,
     } 
 
     if ( memcmp(msg,"LE_ACK",6) == 0 ) {
+        ERR_free_strings();
         return SKLOG_SUCCESS;
     } else if ( memcmp(msg,"LE_NACK",7) == 0 ) {
         WARNING("received NACK")
@@ -1837,6 +1850,7 @@ flush_logfile_send_logentry(SSL                    *ssl,
     }
     
 error:
+    ERR_free_strings();
     return SKLOG_FAILURE;
 }
 
@@ -1851,11 +1865,15 @@ flush_logfile_terminate(SSL *ssl)
     int nread = 0;
     int nwrite = 0;
 
+    SSL_load_error_strings();
+
     data_len = strlen("LOGFILE_FLUSH_END");
     memcpy(data,"LOGFILE_FLUSH_END",data_len);
 
-    if ( tlv_create(LE_FLUSH_END,data_len,data,msg) == SKLOG_FAILURE )
+    if ( tlv_create(LE_FLUSH_END,data_len,data,msg) == SKLOG_FAILURE ) {
+        ERROR("tlv_create() failure")
         goto error;
+    }
 
     nwrite = SSL_write(ssl,msg,data_len+8);
 
@@ -1873,6 +1891,7 @@ flush_logfile_terminate(SSL *ssl)
     } 
 
     if ( memcmp(msg,"LE_ACK",6) == 0 ) {
+        ERR_free_strings();
         return SKLOG_SUCCESS;
     } else if ( memcmp(msg,"LE_NACK",7) == 0 ) {
         WARNING("received NACK")
@@ -1883,6 +1902,7 @@ flush_logfile_terminate(SSL *ssl)
     }
 
 error:
+    ERR_free_strings();
     return SKLOG_FAILURE;
 }
 
@@ -1898,6 +1918,16 @@ flush_logfile(SKLOG_U_Ctx    *u_ctx)
     const char *query = 0;
     char *err_msg = 0;
     int sql_step = 0;
+
+    const unsigned char *type = 0;
+    unsigned int type_len = 0;
+    const unsigned char *enc_data = 0;
+    unsigned int enc_data_len = 0;
+    const unsigned char *y = 0;
+    unsigned int y_len = 0;
+    const unsigned char *z = 0;
+    unsigned int z_len = 0;
+    int go_next = 1;
     
     sqlite3_open(SKLOG_U_DB,&db);
     
@@ -1933,16 +1963,6 @@ flush_logfile(SKLOG_U_Ctx    *u_ctx)
     }
 
     //~ flush logfile
-    int go_next = 1;
-    const unsigned char *type = 0;
-    unsigned int type_len = 0;
-    const unsigned char *enc_data = 0;
-    unsigned int enc_data_len = 0;
-    const unsigned char *y = 0;
-    unsigned int y_len = 0;
-    const unsigned char *z = 0;
-    unsigned int z_len = 0;
-    
     while ( go_next ) {
         sql_step = sqlite3_step(stmt);
 
@@ -1963,9 +1983,10 @@ flush_logfile(SKLOG_U_Ctx    *u_ctx)
                 if ( flush_logfile_send_logentry(conn.ssl,type,type_len,
                                                  enc_data,enc_data_len,
                                                  y,y_len,z,z_len)
-                                                    == SKLOG_FAILURE )
+                                                    == SKLOG_FAILURE ) {
+                    ERROR("flush_logfile_send_logentry() failure")
                     goto error;
-
+                }
                 break;
             case SQLITE_DONE:
                 go_next = 0;
@@ -2001,7 +2022,7 @@ flush_logfile(SKLOG_U_Ctx    *u_ctx)
 error:
     if ( db ) sqlite3_close(db);
     if ( err_msg ) sqlite3_free(err_msg);
-    
+
     return SKLOG_FAILURE;
 }
 
@@ -2095,9 +2116,10 @@ SKLOG_U_CreateLogentry(SKLOG_U_Ctx        *u_ctx,
         u_ctx->context_state = SKLOG_U_CTX_NOT_INITIALIZED;
     }
 
+    free(data_blob);
     return SKLOG_SUCCESS;
 
 error:
-    if ( data_blob ) free(data_blob);
+    if ( data_blob > 0 ) free(data_blob);
     return SKLOG_FAILURE;
 }
