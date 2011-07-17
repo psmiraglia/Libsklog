@@ -603,8 +603,10 @@ create_logentry(SKLOG_U_Ctx        *u_ctx,
     }
 
     //~ encrypt data using the generated encryption key
-    if ( encrypt_aes256(&data_enc,&data_enc_len,
-                        data,data_len,enc_key) == SKLOG_FAILURE ) {
+    //~ if ( aes256_encrypt(&data_enc,&data_enc_len,
+                        //~ data,data_len,enc_key) == SKLOG_FAILURE ) {
+    if ( aes256_encrypt(data,data_len,enc_key,SKLOG_SESSION_KEY_LEN,
+                        &data_enc,&data_enc_len) == SKLOG_FAILURE ) {
         ERROR("encrypt_aes256() failure")
         goto error;
     }
@@ -650,18 +652,21 @@ error:
 /*--------------------------------------------------------------------*/
 
 static SKLOG_RETURN
-parse_config_file(char            *t_cert,
-                  char            *t_address,
+parse_config_file(char            **t_cert,
+                  char            **t_address,
                   int             *t_port,
-                  char            *u_cert,
-                  char            *u_id,
-                  char            *u_privkey,
+                  char            **u_cert,
+                  char            **u_id,
+                  char            **u_privkey,
                   unsigned int    *u_timeout,
                   unsigned int    *logfile_size)
 {
     #ifdef DO_TRACE
     DEBUG
     #endif
+
+    char buffer[1024] = { 0 };
+    int len = 0;
 
     cfg_opt_t opts[] = {
         CFG_STR("t_cert",SKLOG_DEF_T_CERT_PATH,CFGF_NONE),
@@ -684,22 +689,43 @@ parse_config_file(char            *t_cert,
     }
 
     //~ load t_cert
-    sprintf(t_cert,"%s",cfg_getstr(cfg,"t_cert"));
-
+    len = sprintf(buffer,"%s",cfg_getstr(cfg,"t_cert"));
+    *t_cert = calloc(len+1,sizeof(char));
+    memcpy(*t_cert,buffer,len);
+    (*t_cert)[len] = '\0';
+    memset(buffer,0,1024);
+    
     //~ load t_address
-    sprintf(t_address,"%s",cfg_getstr(cfg,"t_address"));
+    len = sprintf(buffer,"%s",cfg_getstr(cfg,"t_address"));
+    *t_address = calloc(len+1,sizeof(char));
+    memcpy(*t_address,buffer,len);
+    (*t_address)[len] = '\0';
+    memset(buffer,0,1024);
+    
 
     //~ load t_port
     *t_port = cfg_getint(cfg,"t_port");
 
     //~ load u_cert
-    sprintf(u_cert,"%s",cfg_getstr(cfg,"u_cert"));
-
+    len = sprintf(buffer,"%s",cfg_getstr(cfg,"u_cert"));
+    *u_cert = calloc(len+1,sizeof(char));
+    memcpy(*u_cert,buffer,len);
+    (*u_cert)[len] = '\0';
+    memset(buffer,0,1024);
+    
     //~ load u_id
-    sprintf(u_id,"%s",cfg_getstr(cfg,"u_id"));
+    len = sprintf(buffer,"%s",cfg_getstr(cfg,"u_id"));
+    *u_id = calloc(len+1,sizeof(char));
+    memcpy(*u_id,buffer,len);
+    (*u_id)[len] = '\0';
+    memset(buffer,0,1024);
 
     //~ load u_privkey
-    sprintf(u_privkey,"%s",cfg_getstr(cfg,"u_privkey"));
+    len = sprintf(buffer,"%s",cfg_getstr(cfg,"u_privkey"));
+    *u_privkey = calloc(len+1,sizeof(char));
+    memcpy(*u_privkey,buffer,len);
+    (*u_privkey)[len] = '\0';
+    memset(buffer,0,1024);
 
     //~ load u_timeout
     *u_timeout = cfg_getint(cfg,"u_timeout");
@@ -856,8 +882,10 @@ gen_e_k0(SKLOG_U_Ctx *u_ctx,
         goto error;
     memcpy(&buffer2[ds],buffer,X0_sign_len+8);
 
-    if ( encrypt_aes256(e_k0,e_k0_len,buffer2,buffer2_len,
-                        u_ctx->session_key) == SKLOG_FAILURE ) {
+    //~ if ( encrypt_aes256(e_k0,e_k0_len,buffer2,buffer2_len,
+                        //~ u_ctx->session_key) == SKLOG_FAILURE ) {
+    if ( aes256_encrypt(buffer2,buffer2_len,u_ctx->session_key,
+            SKLOG_SESSION_KEY_LEN,e_k0,e_k0_len) == SKLOG_FAILURE ) {
         ERROR("encrypt_aes256() failure")
         goto error;
     }
@@ -1277,14 +1305,16 @@ verify_m1(SKLOG_U_Ctx      *ctx,
     }
 
     //~ decrypt k1 using U's private key
-    if ( pke_decrypt(ctx->u_privkey,pke_u_k1,len,&k1,
+    if ( pke_decrypt(ctx->u_privkey,pke_u_k1,pke_u_k1_len,&k1,
                      &k1_len) == SKLOG_FAILURE ) {
         ERROR("pke_decrypt() failure")
         goto error;
     }
 
     //~ decrypt {x1,x1_sign} using k1 key 
-    if ( decrypt_aes256(k1,e_k1,len,&plain,
+    //~ if ( decrypt_aes256(k1,e_k1,len,&plain,
+                        //~ &plain_len) == SKLOG_FAILURE ) {
+    if ( aes256_decrypt(e_k1,e_k1_len,k1,SKLOG_SESSION_KEY_LEN,&plain,
                         &plain_len) == SKLOG_FAILURE ) {
         ERROR("decrypt_aes256() failure")
         goto error;
@@ -1361,12 +1391,18 @@ initialize_context(SKLOG_U_Ctx    *u_ctx)
     DEBUG
     #endif
 
-    char            t_cert[SKLOG_SMALL_BUFFER_LEN] = { 0 };
-    char            t_address[SKLOG_SMALL_BUFFER_LEN] = { 0 };
+    //~ char            t_cert[SKLOG_SMALL_BUFFER_LEN] = { 0 };
+    char            *t_cert = 0;
+    //~ char            t_address[SKLOG_SMALL_BUFFER_LEN] = { 0 };
+    char            *t_address = 0;
     int             t_port = 0;
-    char            u_cert[SKLOG_SMALL_BUFFER_LEN] = { 0 };
-    char            u_id[HOST_NAME_MAX+1] = { 0 };
-    char            u_privkey[SKLOG_SMALL_BUFFER_LEN] = { 0 };
+    //~ char            u_cert[SKLOG_SMALL_BUFFER_LEN] = { 0 };
+    char            *u_cert = 0;
+    //~ char            u_id[HOST_NAME_MAX+1] = { 0 };
+    char            *u_id = 0;
+    //~ char            u_privkey[SKLOG_SMALL_BUFFER_LEN] = { 0 };
+    char            *u_privkey = 0;
+
     unsigned int    u_timeout = 0;
     unsigned int    logfile_size = 0;
 
@@ -1380,7 +1416,7 @@ initialize_context(SKLOG_U_Ctx    *u_ctx)
         goto error;
     }
 
-    parse_config_file(t_cert,t_address,&t_port,u_cert,u_id,u_privkey,
+    parse_config_file(&t_cert,&t_address,&t_port,&u_cert,&u_id,&u_privkey,
                       &u_timeout,&logfile_size);
 
     //~ set u_id
@@ -1392,6 +1428,8 @@ initialize_context(SKLOG_U_Ctx    *u_ctx)
 
     //~ set u_timeout
     u_ctx->u_timeout = u_timeout;
+
+    
 
     //~ set u_cert
     u_ctx->u_cert = X509_new();
@@ -2031,20 +2069,22 @@ error:
 /*--------------------------------------------------------------------*/
 /*--------------------------------------------------------------------*/
 
-SKLOG_U_Ctx
+SKLOG_U_Ctx*
 SKLOG_U_NewCtx(void)
 {
     #ifdef DO_TRACE
     DEBUG
     #endif
     
-    SKLOG_U_Ctx ctx = {
-        SKLOG_U_CTX_NOT_INITIALIZED,
-        {0},0,0,0,0,
-        0,{0},{0},0,
-        0,0,{0},
-        {0},{0},{0},{0}
-    };
+    //~ SKLOG_U_Ctx ctx = {
+        //~ SKLOG_U_CTX_NOT_INITIALIZED,
+        //~ {0},0,0,0,0,
+        //~ 0,{0},{0},0,
+        //~ 0,0,{0},
+        //~ {0},{0},{0},{0}
+    //~ };
+
+    SKLOG_U_Ctx *ctx = calloc(1,sizeof(SKLOG_U_Ctx));
 
     return ctx;
 }
@@ -2061,7 +2101,8 @@ SKLOG_U_CreateLogentry(SKLOG_U_Ctx        *u_ctx,
 
     unsigned char *data_blob = 0;
     unsigned int data_blob_len = 0;
-    SKLOG_CALLOC(data_blob,data_len,char)
+
+    SKLOG_CALLOC(data_blob,data_len,unsigned char)
     memcpy(data_blob,data,data_len);
 
     //~ check the state of the logging session

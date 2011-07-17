@@ -9,5 +9,3 @@ unode_LDADD = ../lib/libsklog.la
 
 tnode_SOURCES = tnode.c
 tnode_LDADD = ../lib/libsklog.la
-
-

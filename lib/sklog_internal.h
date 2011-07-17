@@ -59,18 +59,30 @@ pke_decrypt(EVP_PKEY         *key,
             size_t           *out_len);
 
 SKLOG_RETURN
-encrypt_aes256(unsigned char    **data_enc,
-               unsigned int     *data_enc_size,
-               unsigned char    *data,
-               unsigned int     data_size,
-               unsigned char    *enc_key);
+aes256_encrypt(unsigned char    *plain,
+               unsigned int     plain_len,
+               unsigned char    *key,
+               unsigned int     key_len,
+               unsigned char    **cipher,
+               unsigned int     *cipher_len);
+               //~ unsigned char    **data_enc,
+               //~ unsigned int     *data_enc_size,
+               //~ unsigned char    *data,
+               //~ unsigned int     data_size,
+               //~ unsigned char    *enc_key);
 
 SKLOG_RETURN
-decrypt_aes256(unsigned char    *dec_key,
-               unsigned char    *in,
-               unsigned int     in_len,
-               unsigned char    **out,
-               unsigned int     *out_len);
+aes256_decrypt(unsigned char    *cipher,
+               unsigned int     cipher_len,
+               unsigned char    *key,
+               unsigned int     key_len,
+               unsigned char    **plain,
+               unsigned int     *plain_len);
+               //~ unsigned char    *dec_key,
+               //~ unsigned char    *in,
+               //~ unsigned int     in_len,
+               //~ unsigned char    **out,
+               //~ unsigned int     *out_len);
 
 SKLOG_RETURN
 tlv_create(uint32_t         type,

@@ -229,13 +229,25 @@ tcp_bind(const char    *address,
 /*--------------------------------------------------------------------*/
 
 static SKLOG_RETURN // todo: to implement
-parse_config_file(void)
+parse_config_file(char    **t_cert,
+                  char    **t_privkey,
+                  char    **t_privkey_passphrase,
+                  char    **t_id,
+                  char    **t_address,
+                  int     *t_port)
 {
     #ifdef DO_TRACE
     DEBUG
     #endif
-    
+
     NOTIFY("\n\nTO IMPLEMENT\n\n")
+
+    *t_cert = SKLOG_DEF_T_CERT_PATH;
+    *t_privkey = SKLOG_DEF_T_RSA_KEY_PATH;
+    *t_privkey_passphrase = SKLOG_DEF_T_RSA_KEY_PASSPHRASE;
+    *t_id = SKLOG_DEF_T_ID;
+    *t_address = SKLOG_DEF_T_ADDRESS;
+    *t_port = SKLOG_DEF_T_PORT;
 
     return SKLOG_TO_IMPLEMENT;
 }
@@ -530,8 +542,10 @@ gen_e_k1(SKLOG_T_Ctx      *t_ctx,
     tlv_create(X1_SIGN_T,x1_sign_len,x1_sign,buffer);
     memcpy(&buffer2[ds],buffer,x1_sign_len+8);
 
-    if ( encrypt_aes256(e_k1,e_k1_len,buffer2,buffer2_len,
-                        k1) == SKLOG_FAILURE ) {
+    //~ if ( aes256_encrypt(e_k1,e_k1_len,buffer2,buffer2_len,
+                        //~ k1) == SKLOG_FAILURE ) {
+    if ( aes256_encrypt(buffer2,buffer2_len,k1,SKLOG_SESSION_KEY_LEN,
+                        e_k1,e_k1_len) == SKLOG_FAILURE ) {
         free(buffer2);
         ERROR("encrypt_aes256() failure")
         return SKLOG_FAILURE;
@@ -758,7 +772,9 @@ manage_logsession_init(SKLOG_T_Ctx      *t_ctx,
     SKLOG_FREE(pke_t_k0);
 
     //~ decrypt e_k0 using k0 key
-    if ( decrypt_aes256(k0,e_k0,e_k0_len,&plain,
+    //~ if ( decrypt_aes256(k0,e_k0,e_k0_len,&plain,
+                        //~ &plain_len) == SKLOG_FAILURE ) {
+    if ( aes256_decrypt(e_k0,e_k0_len,k0,SKLOG_SESSION_KEY_LEN,&plain,
                         &plain_len) == SKLOG_FAILURE ) {
         ERROR("decrypt_aes256() failure")
         goto error;
@@ -947,22 +963,30 @@ SKLOG_T_InitCtx(SKLOG_T_Ctx    *t_ctx)
     
         FILE *fp = NULL;
 
-        parse_config_file();
-
         //~ simulate config file parsing
-        char cert_path[] = SKLOG_DEF_T_CERT_PATH;
-        char privkey_path[] = SKLOG_DEF_T_RSA_KEY_PATH;
-        char privkey_passphrase[] = SKLOG_DEF_T_RSA_KEY_PASSPHRASE;
+        //~ char cert_path[] = SKLOG_DEF_T_CERT_PATH;
+        //~ char privkey_path[] = SKLOG_DEF_T_RSA_KEY_PATH;
+        //~ char privkey_passphrase[] = SKLOG_DEF_T_RSA_KEY_PASSPHRASE;
+
+        char *t_cert = 0;
+        char *t_privkey = 0;
+        char *t_privkey_passphrase = 0;
+        char *t_id = 0;
+        char *t_address = 0;
+        int t_port = 0;
+
+        //~ parse configuration file
+        parse_config_file(&t_cert,&t_privkey,&t_privkey_passphrase,\
+                          &t_id,&t_address,&t_port);
 
         //~ load t_id from config file
-        //~ TODO: parse config file
-        t_ctx->t_id_len = strlen("t.example.com");     // temporary
-        sprintf(t_ctx->t_id,"t.example.com");          // temporary
+        t_ctx->t_id_len = strlen(t_id);
+        snprintf(t_ctx->t_id,strlen(t_id),t_id);
 
         //~ load T's X509 certificate
         t_ctx->t_cert = 0;
         t_ctx->t_cert_size = 0;
-        if ( (fp = fopen(cert_path,"r")) != NULL ) {
+        if ( (fp = fopen(t_cert,"r")) != NULL ) {
             if ( !PEM_read_X509(fp,&t_ctx->t_cert,NULL,NULL) ) {
                 ERROR("PEM_read_X509() failure")
                 OPENSSL_ERROR(openssl_err)
@@ -973,17 +997,17 @@ SKLOG_T_InitCtx(SKLOG_T_Ctx    *t_ctx)
             return SKLOG_FAILURE;
         }
 
-        t_ctx->t_cert_path = SKLOG_DEF_T_CERT_PATH;
-        t_ctx->t_priv_key_path = SKLOG_DEF_T_RSA_KEY_PATH;
-        t_ctx->t_address = "127.0.0.1";
-        t_ctx->t_port = 5555;
+        t_ctx->t_cert_path = t_cert;
+        t_ctx->t_priv_key_path = t_privkey;
+        t_ctx->t_address = t_address;
+        t_ctx->t_port = t_port;
         
 
         //~ load T's rsa privkey
         t_ctx->t_priv_key = EVP_PKEY_new();
-        if ( (fp = fopen(privkey_path,"r")) != NULL ) {
+        if ( (fp = fopen(t_privkey,"r")) != NULL ) {
             if ( !PEM_read_PrivateKey(fp,&t_ctx->t_priv_key,
-                                      NULL,privkey_passphrase) ) {
+                                      NULL,t_privkey_passphrase) ) {
                 ERROR("PEM_read_PrivateKey() failure")
                 OPENSSL_ERROR(openssl_err)
                 return SKLOG_FAILURE;

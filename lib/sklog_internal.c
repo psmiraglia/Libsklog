@@ -321,6 +321,7 @@ pke_decrypt(EVP_PKEY         *key,
     EVP_PKEY_CTX *ctx = NULL;
 
     OpenSSL_add_all_digests();
+    OpenSSL_add_all_algorithms();
     ERR_load_crypto_strings();
 
     /*
@@ -343,6 +344,7 @@ pke_decrypt(EVP_PKEY         *key,
     retval = EVP_PKEY_CTX_set_rsa_padding(ctx,RSA_PKCS1_PADDING);
 
     if ( retval <= 0 ) {
+        WARNING("EVP_PKEY_CTX_set_rsa_padding")
         ERR_print_errors_fp(stderr);
         goto error;
     }
@@ -351,7 +353,11 @@ pke_decrypt(EVP_PKEY         *key,
 
     retval = EVP_PKEY_decrypt(ctx, NULL, out_len, in, in_len);
 
+
     if ( retval <= 0 ) {
+        WARNING("EVP_PKEY_decrypt 1")
+        if ( retval == -2 )
+            WARNING("unsupported")
         ERR_print_errors_fp(stderr);
         goto error;
     }
@@ -364,7 +370,10 @@ pke_decrypt(EVP_PKEY         *key,
     retval = EVP_PKEY_decrypt(ctx, *out, out_len, in, in_len);
 
     if ( retval <= 0 ) {
-        free(*out);
+        WARNING("EVP_PKEY_decrypt 2")
+        if ( retval == -2 )
+            WARNING("unsupported")
+        SKLOG_FREE(*out);
         ERR_print_errors_fp(stderr);
         goto error;
     }
@@ -381,165 +390,177 @@ error:
 }
 
 SKLOG_RETURN
-encrypt_aes256(unsigned char    **data_enc,
-               unsigned int     *data_enc_size,
-               unsigned char    *data,
-               unsigned int     data_size,
-               unsigned char    *enc_key)
+aes256_encrypt(unsigned char    *plain,
+               unsigned int     plain_len,
+               unsigned char    *key,
+               unsigned int     key_len,
+               unsigned char    **cipher,
+               unsigned int     *cipher_len)
 {
     #ifdef DO_TRACE
     DEBUG
     #endif
 
-    int retval = 0;
+    int ret = 0;
+    
+    int rounds = 5;
+    unsigned char enc_key[AES_KEYSIZE_256] = { 0 };
+    unsigned char iv[AES_BLOCK_SIZE] = { 0 };
+    unsigned char salt[8] = {0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07};
 
     EVP_CIPHER_CTX ctx;
-    unsigned char key[32] = { 0 };
-    unsigned char iv[32] = { 0 };
-    unsigned char salt[8] = { 1 }; //~ to refine
-
-    int i = 0;
-    int c_len = 0; //~ ciphertext len
-    int f_len = 0; //~ final len
-    unsigned char *ciphertext = 0;
+    int c_len = 0;
+    int f_len = 0;
 
     OpenSSL_add_all_digests();
     ERR_load_crypto_strings();
 
-    //~ init context
-    i = EVP_BytesToKey(EVP_aes_256_cbc(),EVP_sha256(),salt,enc_key,
-                       SKLOG_AUTH_KEY_LEN,5,key,iv);
-    if ( i != 32 ) {
-        ERROR("key size should be 256 bits")
-        goto error;
+
+    //~ derive encryption key
+    
+    ret = EVP_BytesToKey(EVP_aes_256_cbc(),EVP_sha256(),
+                         salt,
+                         key,key_len,
+                         rounds,
+                         enc_key,iv);
+    
+    if ( ret != AES_KEYSIZE_256 ) {
+        fprintf(stderr,
+            "ERROR: EVP_BytesToKey(): key len is %d Bytes (it shloud be 32 Bytes)\n",
+            ret);
+        return SKLOG_FAILURE;
     }
+
+    //~ initialize EVP context
 
     EVP_CIPHER_CTX_init(&ctx);
-    retval = EVP_EncryptInit_ex(&ctx,EVP_aes_256_cbc(),NULL,key,iv);
 
-    if ( retval == 0 ) {
+    if ( !EVP_EncryptInit_ex(&ctx,EVP_aes_256_cbc(),NULL,enc_key,iv) ) {
         ERR_print_errors_fp(stderr);
-        goto error;
+        EVP_CIPHER_CTX_cleanup(&ctx);
+        return SKLOG_FAILURE;
     }
 
-    //~ do encryption
-    c_len = data_size +
-            AES_BLOCK_SIZE ;
-
-    SKLOG_CALLOC(ciphertext,c_len,char)
-
-    retval = EVP_EncryptInit_ex(&ctx,NULL,NULL,NULL,NULL);
-    if ( retval == 0 ) {
-        ERR_print_errors_fp(stderr);
-        goto error;
-    }
+    //~ allocate memory for the cipher-text
     
-    retval = EVP_EncryptUpdate(&ctx,ciphertext,&c_len,data,data_size);
-    if ( retval == 0 ) {
-        ERR_print_errors_fp(stderr);
-        goto error;
+    c_len = plain_len+EVP_CIPHER_CTX_block_size(&ctx);
+    *cipher = calloc(c_len,sizeof(char));
+
+    if ( *cipher == NULL ) {
+        fprintf(stderr,
+            "ERROR: calloc(): failure");
+        return SKLOG_FAILURE;
     }
+
+    //~ encrypt plain-text
+
+    if ( !EVP_EncryptUpdate(&ctx,*cipher,&c_len,plain,plain_len)) {
+        ERR_print_errors_fp(stderr);
+        EVP_CIPHER_CTX_cleanup(&ctx);
+        return SKLOG_FAILURE;
+    }
+
+    if ( !EVP_EncryptFinal_ex(&ctx,*cipher+c_len,&f_len) ) {
+        ERR_print_errors_fp(stderr);
+        EVP_CIPHER_CTX_cleanup(&ctx);
+        return SKLOG_FAILURE;
+    }
+
+    *cipher_len = c_len + f_len;
+
+    //~ some free's
     
-    retval = EVP_EncryptFinal_ex(&ctx,ciphertext+c_len,&f_len);
-    if ( retval == 0 ) {
-        ERR_print_errors_fp(stderr);
-        goto error;
-    }
-
-    *data_enc_size = c_len + f_len;
-    SKLOG_CALLOC(*data_enc,*data_enc_size,char)
-    memcpy(*data_enc,ciphertext,c_len + f_len);
-
-    SKLOG_FREE(ciphertext);
     EVP_CIPHER_CTX_cleanup(&ctx);
-
     ERR_free_strings();
+
     return SKLOG_SUCCESS;
-error:
-    if ( ciphertext > 0 ) free(ciphertext); 
-    EVP_CIPHER_CTX_cleanup(&ctx);
-    ERR_free_strings();
-    return SKLOG_FAILURE;
 }
 
 SKLOG_RETURN
-decrypt_aes256(unsigned char    *dec_key,
-               unsigned char    *in,
-               unsigned int     in_len,
-               unsigned char    **out,
-               unsigned int     *out_len)
+aes256_decrypt(unsigned char    *cipher,
+               unsigned int     cipher_len,
+               unsigned char    *key,
+               unsigned int     key_len,
+               unsigned char    **plain,
+               unsigned int     *plain_len)
 {
     #ifdef DO_TRACE
     DEBUG
     #endif
 
-    int retval = 0;
+    int ret = 0;
+    
+    int rounds = 5;
+    unsigned char enc_key[AES_KEYSIZE_256] = { 0 };
+    unsigned char iv[AES_BLOCK_SIZE] = { 0 };
+    unsigned char salt[8] = {0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07};
 
     EVP_CIPHER_CTX ctx;
-    unsigned char key[32] = { 0 };
-    unsigned char iv[32] = { 0 };
-    unsigned char salt[8] = { 1 }; //~ to refine
-    int i = 0;
 
-    int p_len = in_len; /* plaintext len */
-    int f_len = 0; /* final len */
-    unsigned char *plaintext = 0;
+    int p_len = 0;
+    int f_len = 0;
 
     OpenSSL_add_all_digests();
     ERR_load_crypto_strings();
 
-    /* init context */
+    //~ derive decryption key
 
-    if ( (i = EVP_BytesToKey(EVP_aes_256_cbc(),EVP_sha256(),
-                             salt,dec_key,
-                             SKLOG_AUTH_KEY_LEN,5,key,iv)) != 32 ) {
-        //~ error
-        goto error;
+    ret = EVP_BytesToKey(EVP_aes_256_cbc(),EVP_sha256(),
+                         salt,
+                         key,key_len,
+                         rounds,
+                         enc_key,iv);
+    
+    if ( ret != AES_KEYSIZE_256 ) {
+        fprintf(stderr,
+            "ERROR: EVP_BytesToKey(): key len is %d Bytes (it shloud be 32 Bytes)\n",
+            ret);
+        return SKLOG_FAILURE;
     }
+
+    //~ initialize EVP context
 
     EVP_CIPHER_CTX_init(&ctx);
-    retval = EVP_DecryptInit_ex(&ctx,EVP_aes_256_cbc(),NULL,key,iv);
 
-    if ( retval == 0 ) {
+    if ( !EVP_DecryptInit_ex(&ctx,EVP_aes_256_cbc(),NULL,enc_key,iv) ) {
         ERR_print_errors_fp(stderr);
-        goto error;
+        EVP_CIPHER_CTX_cleanup(&ctx);
+        return SKLOG_FAILURE;
     }
 
-    /* do decription */
-    plaintext = calloc(p_len,sizeof(char));
-
-    retval = EVP_DecryptInit_ex(&ctx, NULL, NULL, NULL, NULL);
-    if ( retval == 0 ) {
-        ERR_print_errors_fp(stderr);
-        goto error;
-    }
+    //~ allocate memory for the plain-text
     
-    retval = EVP_DecryptUpdate(&ctx, plaintext, &p_len, in,in_len);
-    if ( retval == 0 ) {
-        ERR_print_errors_fp(stderr);
-        goto error;
+    p_len = cipher_len;
+    *plain = calloc(p_len,sizeof(char));
+
+    if ( *plain == NULL ) {
+        fprintf(stderr,
+            "ERROR: calloc(): failure");
+        return SKLOG_FAILURE;
     }
+
+    //~ decrypt cipher-text
+
+    if ( !EVP_DecryptUpdate(&ctx,*plain,&p_len,cipher,cipher_len)) {
+        ERR_print_errors_fp(stderr);
+        EVP_CIPHER_CTX_cleanup(&ctx);
+        return SKLOG_FAILURE;
+    }
+
+    if ( !EVP_DecryptFinal_ex(&ctx,*plain+p_len,&f_len) ) {
+        ERR_print_errors_fp(stderr);
+        EVP_CIPHER_CTX_cleanup(&ctx);
+        return SKLOG_FAILURE;
+    }
+
+    *plain_len = p_len + f_len;
+
+    //~ some free's
     
-    retval = EVP_DecryptFinal(&ctx, plaintext+p_len, &f_len);
-    if ( retval == 0 ) {
-        ERR_print_errors_fp(stderr);
-        goto error;
-    }
-
-    *out_len = p_len + f_len;
-    *out = calloc(p_len + f_len,sizeof(char));
-    memcpy(*out,plaintext,p_len + f_len);
-
-    free(plaintext);
     EVP_CIPHER_CTX_cleanup(&ctx);
     ERR_free_strings();
 
     return SKLOG_SUCCESS;
-
-error:
-    EVP_CIPHER_CTX_cleanup(&ctx);
-    ERR_free_strings();
-    return SKLOG_FAILURE;
 }
 
 SKLOG_RETURN

@@ -40,6 +40,9 @@
 #define  SKLOG_DEF_T_CERT_PATH  ETC_PREFIX"/libsklog/certs/ca/ca_cert.pem"
 #define  SKLOG_DEF_T_RSA_KEY_PASSPHRASE  "123456"
 #define  SKLOG_DEF_T_RSA_KEY_PATH  ETC_PREFIX"/libsklog/certs/private/ca_key.pem"
+#define  SKLOG_DEF_T_ADDRESS  "127.0.0.1"
+#define  SKLOG_DEF_T_ID  "t.example.com"
+#define  SKLOG_DEF_T_PORT  5555
 
 #define  SKLOG_T_DB  VAR_PREFIX"/libsklog/db/t.db"
 

@@ -7,3 +7,7 @@ t_privkey_passphrase="123456"
 
 # T's identificator
 t_id = "t.example.com"
+
+#
+t_address = "127.0.0.1"
+t_port = 5555

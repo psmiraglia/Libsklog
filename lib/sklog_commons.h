@@ -85,6 +85,7 @@
 #define     UUID_LEN        16
 #define     UUID_STR_LEN    32
 #define     HOST_NAME_MAX   64
+#define     AES_KEYSIZE_256 32
 
 #define     SKLOG_BUFFER_LEN          10240  // 10KB
 #define     SKLOG_SMALL_BUFFER_LEN    1024   // 1KB
