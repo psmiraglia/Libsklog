@@ -142,6 +142,8 @@ tcp_connect(const char *address, short int port)
     
     /* Establish a TCP/IP connection to the SSL client */
     
+    NOTIFY(address)
+    
     if ( connect(skt, (struct sockaddr*) &server_addr,
                  sizeof(server_addr)) < 0 ) {
         ERROR("connect() failure")
@@ -670,8 +672,8 @@ parse_config_file(char            **t_cert,
 
     cfg_opt_t opts[] = {
         CFG_STR("t_cert",SKLOG_DEF_T_CERT_PATH,CFGF_NONE),
-        CFG_STR("t_address",NULL,CFGF_NONE),
-        CFG_INT("t_port",0,CFGF_NONE),
+        CFG_STR("t_address",SKLOG_DEF_T_ADDRESS,CFGF_NONE),
+        CFG_INT("t_port",SKLOG_DEF_T_PORT,CFGF_NONE),
         CFG_STR("u_cert",SKLOG_DEF_U_CERT_PATH,CFGF_NONE),
         CFG_STR("u_id",NULL,CFGF_NONE),
         CFG_STR("u_privkey",SKLOG_DEF_U_RSA_KEY_PATH,CFGF_NONE),
@@ -1391,16 +1393,11 @@ initialize_context(SKLOG_U_Ctx    *u_ctx)
     DEBUG
     #endif
 
-    //~ char            t_cert[SKLOG_SMALL_BUFFER_LEN] = { 0 };
     char            *t_cert = 0;
-    //~ char            t_address[SKLOG_SMALL_BUFFER_LEN] = { 0 };
     char            *t_address = 0;
     int             t_port = 0;
-    //~ char            u_cert[SKLOG_SMALL_BUFFER_LEN] = { 0 };
     char            *u_cert = 0;
-    //~ char            u_id[HOST_NAME_MAX+1] = { 0 };
     char            *u_id = 0;
-    //~ char            u_privkey[SKLOG_SMALL_BUFFER_LEN] = { 0 };
     char            *u_privkey = 0;
 
     unsigned int    u_timeout = 0;
@@ -1434,7 +1431,8 @@ initialize_context(SKLOG_U_Ctx    *u_ctx)
     //~ set u_cert
     u_ctx->u_cert = X509_new();
 
-    if ( (fp = fopen(u_cert,"r")) != NULL ) {
+    fp = fopen(u_cert,"r");
+    if ( fp != NULL ) {
         if ( !PEM_read_X509(fp,&u_ctx->u_cert,NULL,NULL) ) {
             ERR_print_errors_fp(stderr);
             goto error;
@@ -1448,7 +1446,9 @@ initialize_context(SKLOG_U_Ctx    *u_ctx)
     //~ set u_privkey
     u_ctx->u_privkey = EVP_PKEY_new();
 
-    if ( (fp = fopen(u_privkey,"r")) != NULL ) {
+    
+    fp = fopen(u_privkey,"r");
+    if ( fp != NULL ) {
         if ( !PEM_read_PrivateKey(fp,&u_ctx->u_privkey,NULL,NULL) ) {
             ERR_print_errors_fp(stderr);
             goto error;

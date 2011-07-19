@@ -36,9 +36,11 @@
 
 #define  SKLOG_U_CONFIG_FILE_PATH  ETC_PREFIX"/libsklog/libsklog-u.conf"
 #define  SKLOG_DEF_LOGFILE_SIZE  10
-#define  SKLOG_DEF_T_CERT_PATH  ETC_PREFIX"/libsklog/ca_cert.pem"
-#define  SKLOG_DEF_U_CERT_PATH  ETC_PREFIX"/libsklog/u1_cert.pem"
-#define  SKLOG_DEF_U_RSA_KEY_PATH  ETC_PREFIX"/libsklog/u1_key.pem"
+#define  SKLOG_DEF_T_CERT_PATH  ETC_PREFIX"/libsklog/certs/ca/ca_cert.pem"
+#define  SKLOG_DEF_T_ADDRESS  "127.0.0.1"
+#define  SKLOG_DEF_T_PORT  5555
+#define  SKLOG_DEF_U_CERT_PATH  ETC_PREFIX"/libsklog/certs/u1_cert.pem"
+#define  SKLOG_DEF_U_RSA_KEY_PATH  ETC_PREFIX"/libsklog/certs/private/u1_key.pem"
 #define  SKLOG_DEF_U_TIMEOUT  60
 
 #define  SKLOG_U_DB  VAR_PREFIX"/libsklog/db/u.db"
