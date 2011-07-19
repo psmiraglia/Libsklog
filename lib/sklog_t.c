@@ -240,7 +240,7 @@ parse_config_file(char    **t_cert,
     DEBUG
     #endif
 
-    NOTIFY("\n\nTO IMPLEMENT\n\n")
+    TO_IMPLEMENT
 
     *t_cert = SKLOG_DEF_T_CERT_PATH;
     *t_privkey = SKLOG_DEF_T_RSA_KEY_PATH;
@@ -324,8 +324,8 @@ verify_m0(void) // todo: to implement
     #ifdef DO_TRACE
     DEBUG
     #endif
-    
-    NOTIFY("\n\nTO IMPLEMENT\n\n")
+
+    TO_IMPLEMENT;
     
     return SKLOG_TO_IMPLEMENT;
 }
@@ -388,7 +388,6 @@ parse_x0( unsigned char    *x0,
     DEBUG
     #endif
 
-    unsigned long openssl_err = 0;
     unsigned char buffer[SKLOG_BUFFER_LEN] = { 0 };
     
     unsigned int ds = 0;
@@ -397,11 +396,13 @@ parse_x0( unsigned char    *x0,
     unsigned char *u_cert_buf = 0;
     const unsigned char *u_cert_buf_tmp = 0;
 
+    ERR_load_crypto_strings();
+
     //~ get protocol step
     if ( tlv_parse(&x0[ds],PROTOCOL_STEP,buffer,
             &len) == SKLOG_FAILURE ) {
         ERROR("X0 buffer is bad structured: expected PROTOCOLO_STEP");
-        return SKLOG_FAILURE;
+        goto error;
     }
     
     ds += len+8;
@@ -411,7 +412,7 @@ parse_x0( unsigned char    *x0,
     //~ get timestamp
     if ( tlv_parse(&x0[ds],TIMESTAMP,buffer,&len) == SKLOG_FAILURE ) {
         ERROR("X0 buffer is bad structured: expected TIMESTAMP");
-        return SKLOG_FAILURE;
+        goto error;
     }
 
     ds += len+8;
@@ -421,7 +422,7 @@ parse_x0( unsigned char    *x0,
     //~ get U's certificate
     if ( tlv_parse(&x0[ds],CERT_U,buffer,&len) == SKLOG_FAILURE ) {
         ERROR("X0 buffer is bad structured: expected CERT_U");
-        return SKLOG_FAILURE;
+        goto error;
     }
 
     u_cert_buf = OPENSSL_malloc(len);
@@ -430,8 +431,8 @@ parse_x0( unsigned char    *x0,
     u_cert_buf_tmp = u_cert_buf;
 
     if ( d2i_X509(u_cert,&u_cert_buf_tmp,len) == NULL ) {
-        ERROR("d2i_X509() failure")
-        OPENSSL_ERROR(openssl_err)
+        ERR_print_errors_fp(stderr);
+        goto error;
     }
     
     ds += len+8;
@@ -441,12 +442,17 @@ parse_x0( unsigned char    *x0,
     //~ get U's a0
     if (tlv_parse(&x0[ds],A0_KEY,auth_key,&len) == SKLOG_FAILURE ) {
         ERROR("X0 buffer is bad structured: expected A0_KEY");
-        return SKLOG_FAILURE;
+        goto error;
     }
     
     OPENSSL_free(u_cert_buf);
 
     return SKLOG_SUCCESS;
+    
+error:
+    if ( u_cert_buf > 0 ) free( u_cert_buf );
+    ERR_free_strings();
+    return SKLOG_FAILURE;
 }
 
 static SKLOG_RETURN
@@ -955,74 +961,78 @@ SKLOG_T_InitCtx(SKLOG_T_Ctx    *t_ctx)
     DEBUG
     #endif
 
-    if ( t_ctx != NULL ) {
+    SKLOG_RETURN retval = SKLOG_SUCCESS;
 
-        unsigned long openssl_err = 0;
+    FILE *fp = NULL;
 
-        OpenSSL_add_all_algorithms();
-    
-        FILE *fp = NULL;
+    char *t_cert = 0;
+    char *t_privkey = 0;
+    char *t_privkey_passphrase = 0;
+    char *t_id = 0;
+    char *t_address = 0;
+    int t_port = 0;
 
-        //~ simulate config file parsing
-        //~ char cert_path[] = SKLOG_DEF_T_CERT_PATH;
-        //~ char privkey_path[] = SKLOG_DEF_T_RSA_KEY_PATH;
-        //~ char privkey_passphrase[] = SKLOG_DEF_T_RSA_KEY_PASSPHRASE;
+    OpenSSL_add_all_algorithms();
+    ERR_load_crypto_strings();
 
-        char *t_cert = 0;
-        char *t_privkey = 0;
-        char *t_privkey_passphrase = 0;
-        char *t_id = 0;
-        char *t_address = 0;
-        int t_port = 0;
+    if ( t_ctx == NULL ) {
+        ERROR("t_ctx must be not null");
+        goto error;
+    }    
 
-        //~ parse configuration file
-        parse_config_file(&t_cert,&t_privkey,&t_privkey_passphrase,\
-                          &t_id,&t_address,&t_port);
+    //~ parse configuration file (to implement)
+    retval = parse_config_file(&t_cert,&t_privkey,&t_privkey_passphrase,
+                               &t_id,&t_address,&t_port);
 
-        //~ load t_id from config file
-        t_ctx->t_id_len = strlen(t_id);
-        snprintf(t_ctx->t_id,strlen(t_id),t_id);
-
-        //~ load T's X509 certificate
-        t_ctx->t_cert = 0;
-        t_ctx->t_cert_size = 0;
-        if ( (fp = fopen(t_cert,"r")) != NULL ) {
-            if ( !PEM_read_X509(fp,&t_ctx->t_cert,NULL,NULL) ) {
-                ERROR("PEM_read_X509() failure")
-                OPENSSL_ERROR(openssl_err)
-            }
-            fclose(fp);
-        } else {
-            ERROR("unable to read T's certificate file")
-            return SKLOG_FAILURE;
-        }
-
-        t_ctx->t_cert_path = t_cert;
-        t_ctx->t_priv_key_path = t_privkey;
-        t_ctx->t_address = t_address;
-        t_ctx->t_port = t_port;
-        
-
-        //~ load T's rsa privkey
-        t_ctx->t_priv_key = EVP_PKEY_new();
-        if ( (fp = fopen(t_privkey,"r")) != NULL ) {
-            if ( !PEM_read_PrivateKey(fp,&t_ctx->t_priv_key,
-                                      NULL,t_privkey_passphrase) ) {
-                ERROR("PEM_read_PrivateKey() failure")
-                OPENSSL_ERROR(openssl_err)
-                return SKLOG_FAILURE;
-            }
-            fclose(fp);
-        } else {
-            ERROR("unable to read T's private key file")
-            return SKLOG_FAILURE;
-        }
-    } else {
-        ERROR("u_ctx must be NOT NULL")
-        return SKLOG_FAILURE;
+    if ( retval == SKLOG_FAILURE ) {
+        ERROR("parse_config_file() failure");
+        goto error;
     }
 
+    //~ load t_id from config file
+    t_ctx->t_id_len = strlen(t_id);
+    snprintf(t_ctx->t_id,strlen(t_id),t_id);
+
+    //~ load T's X509 certificate
+    t_ctx->t_cert = 0;
+    t_ctx->t_cert_size = 0;
+    if ( (fp = fopen(t_cert,"r")) != NULL ) {
+        if ( !PEM_read_X509(fp,&t_ctx->t_cert,NULL,NULL) ) {
+            ERR_print_errors_fp(stderr);
+            goto error;
+        }
+        fclose(fp); fp = 0;
+    } else {
+        ERROR("unable to read T's certificate file")
+        goto error;
+    }
+
+    t_ctx->t_cert_path = t_cert;
+    t_ctx->t_priv_key_path = t_privkey;
+    t_ctx->t_address = t_address;
+    t_ctx->t_port = t_port;
+    
+    //~ load T's rsa privkey
+    t_ctx->t_priv_key = EVP_PKEY_new();
+    if ( (fp = fopen(t_privkey,"r")) != NULL ) {
+        if ( !PEM_read_PrivateKey(fp,&t_ctx->t_priv_key,
+                                  NULL,t_privkey_passphrase) ) {
+            ERROR("PEM_read_PrivateKey() failure")
+            goto error;
+        }
+        fclose(fp); fp = 0;
+    } else {
+        ERROR("unable to read T's private key file")
+        goto error;
+    }
+
+    ERR_free_strings();
     return SKLOG_SUCCESS;
+
+error:
+    if ( fp > 0 ) fclose(fp);
+    ERR_free_strings();
+    return SKLOG_FAILURE;
 }
 
 SKLOG_RETURN

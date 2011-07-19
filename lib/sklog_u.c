@@ -790,7 +790,7 @@ gen_x0(SKLOG_U_Ctx            *u_ctx,
     //~ convert p in network order
     uint32_t p_net = htonl(p);
 
-    //~ compose X0 in tlv form
+    //~ compose x0 in tlv form
 
     *x0_len = (sizeof(p_net) + 8) +
               (dbuf_len + 8) +
@@ -841,10 +841,10 @@ error:
 
 static SKLOG_RETURN
 gen_e_k0(SKLOG_U_Ctx *u_ctx,
-         unsigned char *X0,
-         unsigned int X0_len,
-         unsigned char *X0_sign,
-         unsigned int X0_sign_len,
+         unsigned char *x0,
+         unsigned int x0_len,
+         unsigned char *x0_sign,
+         unsigned int x0_sign_len,
          unsigned char **e_k0,
          unsigned int *e_k0_len)
 {
@@ -860,8 +860,8 @@ gen_e_k0(SKLOG_U_Ctx *u_ctx,
     unsigned int ds = 0;
 
     unsigned char *buffer2 = 0;
-    unsigned int buffer2_len = X0_len + 8 +
-                               X0_sign_len + 8;
+    unsigned int buffer2_len = x0_len + 8 +
+                               x0_sign_len + 8;
 
     SKLOG_CALLOC(buffer2,buffer2_len,char)
 
@@ -869,18 +869,18 @@ gen_e_k0(SKLOG_U_Ctx *u_ctx,
     memset(buffer,0,SKLOG_BUFFER_LEN);
 
     //~ TLV-ize x0
-    if ( tlv_create(X0_BUF,X0_len,X0,buffer) == SKLOG_FAILURE )
+    if ( tlv_create(X0_BUF,x0_len,x0,buffer) == SKLOG_FAILURE )
         goto error;
-    memcpy(&buffer2[ds],buffer,X0_len+8);
+    memcpy(&buffer2[ds],buffer,x0_len+8);
 
-    ds += (X0_len + 8);
+    ds += (x0_len + 8);
     memset(buffer,0,SKLOG_BUFFER_LEN);
 
     //~ TLV-ize x0_signature
-    if ( tlv_create(X0_SIGN_U,X0_sign_len,
-                    X0_sign,buffer) == SKLOG_FAILURE )
+    if ( tlv_create(X0_SIGN_U,x0_sign_len,
+                    x0_sign,buffer) == SKLOG_FAILURE )
         goto error;
-    memcpy(&buffer2[ds],buffer,X0_sign_len+8);
+    memcpy(&buffer2[ds],buffer,x0_sign_len+8);
 
     //~ if ( encrypt_aes256(e_k0,e_k0_len,buffer2,buffer2_len,
                         //~ u_ctx->session_key) == SKLOG_FAILURE ) {
@@ -905,8 +905,8 @@ gen_m0(SKLOG_U_Ctx *u_ctx,
        unsigned int pke_t_k0_len,
        unsigned char *e_k0,
        unsigned int e_k0_len,
-       unsigned char **M0,
-       unsigned int *M0_len)
+       unsigned char **m0,
+       unsigned int *m0_len)
 {
     #ifdef DO_TRACE
     DEBUG
@@ -919,18 +919,18 @@ gen_m0(SKLOG_U_Ctx *u_ctx,
     uint32_t p_net = htonl(p);
 
     //~ compose M0 in tlv format
-    *M0_len = (sizeof(p_net) + 8) +
+    *m0_len = (sizeof(p_net) + 8) +
               (u_ctx->u_id_len + 8) +
               (pke_t_k0_len + 8) +
               (e_k0_len + 8);
 
-    SKLOG_CALLOC(*M0,*M0_len,char)
+    SKLOG_CALLOC(*m0,*m0_len,char)
 
     //~ TLV-ize p
     if ( tlv_create(PROTOCOL_STEP,sizeof(p_net),&p_net,\
                     buffer) == SKLOG_FAILURE )
         goto error;
-    memcpy(*M0+ds,buffer,sizeof(p_net)+8);
+    memcpy(*m0+ds,buffer,sizeof(p_net)+8);
 
     ds += sizeof(p_net)+8;
     memset(buffer,0,SKLOG_BUFFER_LEN);
@@ -939,7 +939,7 @@ gen_m0(SKLOG_U_Ctx *u_ctx,
     if ( tlv_create(ID_U,u_ctx->u_id_len,u_ctx->u_id,
                     buffer) == SKLOG_FAILURE )
         goto error;
-    memcpy(*M0+ds,buffer,u_ctx->u_id_len+8);
+    memcpy(*m0+ds,buffer,u_ctx->u_id_len+8);
 
     ds += u_ctx->u_id_len+8;
     memset(buffer,0,SKLOG_BUFFER_LEN);
@@ -948,7 +948,7 @@ gen_m0(SKLOG_U_Ctx *u_ctx,
     if ( tlv_create(PKE_PUB_T,pke_t_k0_len,pke_t_k0,
                     buffer) == SKLOG_FAILURE )
         goto error;
-    memcpy(*M0+ds,buffer,pke_t_k0_len+8);
+    memcpy(*m0+ds,buffer,pke_t_k0_len+8);
 
     ds += pke_t_k0_len+8;
     memset(buffer,0,SKLOG_BUFFER_LEN);
@@ -956,7 +956,7 @@ gen_m0(SKLOG_U_Ctx *u_ctx,
     //~ TLV-ize e_k0
     if ( tlv_create(ENC_K0,e_k0_len,e_k0,buffer) == SKLOG_FAILURE )
         goto error;
-    memcpy(*M0+ds,buffer,e_k0_len+8);
+    memcpy(*m0+ds,buffer,e_k0_len+8);
 
     ds += e_k0_len+8;
     memset(buffer,0,SKLOG_BUFFER_LEN);
@@ -964,7 +964,7 @@ gen_m0(SKLOG_U_Ctx *u_ctx,
     return SKLOG_SUCCESS;
 
 error:
-    if ( *M0 ) free(*M0);
+    if ( *m0 ) free(*m0);
     return SKLOG_FAILURE;
 }
 
@@ -972,10 +972,10 @@ static SKLOG_RETURN
 gen_d0(SKLOG_U_Ctx *u_ctx,
        struct timeval *d,
        struct timeval *d_timeout,
-       unsigned char *M0,
-       unsigned int M0_len,
-       unsigned char **D0,
-       unsigned int *D0_len)
+       unsigned char *m0,
+       unsigned int m0_len,
+       unsigned char **d0,
+       unsigned int *d0_len)
 {
     #ifdef DO_TRACE
     DEBUG
@@ -988,7 +988,7 @@ gen_d0(SKLOG_U_Ctx *u_ctx,
     unsigned char *dbuf2 = 0;
     unsigned int dbuf2_len = 0;
 
-    if ( M0 == NULL ) {
+    if ( m0 == NULL ) {
         ERROR("m0 must be NOT NULL")
         goto error;
     }
@@ -1006,12 +1006,12 @@ gen_d0(SKLOG_U_Ctx *u_ctx,
         goto error;
     }
 
-    *D0_len = (dbuf_len + 8) +
+    *d0_len = (dbuf_len + 8) +
               (dbuf2_len + 8) +
               (SKLOG_LOG_ID_LEN + 8) +
-              (M0_len + 8);
+              (m0_len + 8);
 
-    SKLOG_CALLOC(*D0,*D0_len,char)
+    SKLOG_CALLOC(*d0,*d0_len,char)
 
     //~ TLV-ize d
     if ( tlv_create(TIMESTAMP,dbuf_len,dbuf,buffer) == SKLOG_FAILURE) {
@@ -1019,7 +1019,7 @@ gen_d0(SKLOG_U_Ctx *u_ctx,
         goto error;
     }
     
-    memcpy(*D0+ds,buffer,dbuf_len+8);
+    memcpy(*d0+ds,buffer,dbuf_len+8);
 
     ds += dbuf_len+8;
     memset(buffer,0,SKLOG_BUFFER_LEN);
@@ -1030,7 +1030,7 @@ gen_d0(SKLOG_U_Ctx *u_ctx,
         ERROR("tlv_create() failure")
         goto error;
     }
-    memcpy(*D0+ds,buffer,dbuf2_len+8);
+    memcpy(*d0+ds,buffer,dbuf2_len+8);
 
     ds += dbuf2_len+8;
     memset(buffer,0,SKLOG_BUFFER_LEN);
@@ -1042,19 +1042,19 @@ gen_d0(SKLOG_U_Ctx *u_ctx,
         ERROR("tlv_create() failure")
         goto error;
     }
-    memcpy(*D0+ds,buffer,SKLOG_LOG_ID_LEN+8);
+    memcpy(*d0+ds,buffer,SKLOG_LOG_ID_LEN+8);
 
     ds += SKLOG_LOG_ID_LEN+8;
     memset(buffer,0,SKLOG_BUFFER_LEN);
 
-    //~ TLV-ize M0
-    if ( tlv_create(M0_MSG,M0_len,M0,buffer) == SKLOG_FAILURE) {
+    //~ TLV-ize m0
+    if ( tlv_create(M0_MSG,m0_len,m0,buffer) == SKLOG_FAILURE) {
         ERROR("tlv_create() failure")
         goto error;
     }
-    memcpy(*D0+ds,buffer,M0_len+8);
+    memcpy(*d0+ds,buffer,m0_len+8);
 
-    ds += M0_len+8;
+    ds += m0_len+8;
     memset(buffer,0,SKLOG_BUFFER_LEN);
 
     return SKLOG_SUCCESS;
@@ -1062,7 +1062,7 @@ gen_d0(SKLOG_U_Ctx *u_ctx,
 error:
     if ( dbuf ) free(dbuf); 
     if ( dbuf2 ) free(dbuf2); 
-    if ( *D0 ) free(*D0);
+    if ( *d0 ) free(*d0);
     return SKLOG_FAILURE; 
 }
 
@@ -1070,8 +1070,8 @@ static SKLOG_RETURN
 send_m0(SKLOG_U_Ctx *u_ctx,
         //~ void *zmq_requester,
         SSL *ssl,
-        unsigned char *M0,
-        unsigned int M0_len)
+        unsigned char *m0,
+        unsigned int m0_len)
 {
     #ifdef DO_TRACE
     DEBUG
@@ -1082,12 +1082,12 @@ send_m0(SKLOG_U_Ctx *u_ctx,
     unsigned char buffer[SKLOG_BUFFER_LEN] = { 0 };
     int nwrite = 0;
 
-    if ( tlv_create(M0_MSG,M0_len,M0,buffer) == SKLOG_FAILURE ) {
+    if ( tlv_create(M0_MSG,m0_len,m0,buffer) == SKLOG_FAILURE ) {
         ERROR("tlv_create() failure")
         goto error;
     }
 
-    nwrite = SSL_write(ssl,buffer,M0_len+8);
+    nwrite = SSL_write(ssl,buffer,m0_len+8);
 
     if ( nwrite < 0 ) {
         ERR_print_errors_fp(stderr);
@@ -1104,8 +1104,8 @@ error:
 
 static SKLOG_RETURN
 receive_m1(SSL *ssl,
-           unsigned char **M1,
-           unsigned int *M1_len)
+           unsigned char **m1,
+           unsigned int *m1_len)
 {
     #ifdef DO_TRACE
     DEBUG
@@ -1125,25 +1125,25 @@ receive_m1(SSL *ssl,
     } 
 
     //~ get m1 from tlv message
-    if ( tlv_parse(buf1,M1_MSG,buf2,M1_len) == SKLOG_FAILURE ) {
+    if ( tlv_parse(buf1,M1_MSG,buf2,m1_len) == SKLOG_FAILURE ) {
         ERROR("Message is bad structured: expected M1_MSG");
         goto error;
     }
 
-    SKLOG_CALLOC(*M1,*M1_len,char)
-    memcpy(*M1,buf2,*M1_len);
+    SKLOG_CALLOC(*m1,*m1_len,char)
+    memcpy(*m1,buf2,*m1_len);
     ERR_free_strings();
     return SKLOG_SUCCESS;
 
 error:
-    if ( *M1 > 0 ) free(*M1);
+    if ( *m1 > 0 ) free(*m1);
     ERR_free_strings();
     return SKLOG_FAILURE;
 }
 
 static SKLOG_RETURN
-parse_m1(unsigned char    *M1,
-         unsigned int     M1_len,
+parse_m1(unsigned char    *m1,
+         unsigned int     m1_len,
          SKLOG_PROTOCOL_STEP *p,
          unsigned char *t_id,
          unsigned char **pke_u_k1,
@@ -1160,7 +1160,7 @@ parse_m1(unsigned char    *M1,
     unsigned int ds = 0;
     unsigned int len = 0;
 
-    if ( tlv_parse(&M1[ds],PROTOCOL_STEP,p,&len) == SKLOG_FAILURE ) {
+    if ( tlv_parse(&m1[ds],PROTOCOL_STEP,p,&len) == SKLOG_FAILURE ) {
         ERROR("M1 message is bad structured: expected PROTOCOLO_STEP");
         goto error;
     }
@@ -1168,7 +1168,7 @@ parse_m1(unsigned char    *M1,
     ds += len+8;
     len = 0;
 
-    if ( tlv_parse(&M1[ds],ID_T,t_id,&len) == SKLOG_FAILURE ) {
+    if ( tlv_parse(&m1[ds],ID_T,t_id,&len) == SKLOG_FAILURE ) {
         ERROR("M1 message is bad structured: expected ID_T");
         goto error;
     }
@@ -1176,7 +1176,7 @@ parse_m1(unsigned char    *M1,
     ds += len+8;
     len = 0;
 
-    if ( tlv_parse(&M1[ds],PKE_PUB_U,buffer,&len) == SKLOG_FAILURE ) {
+    if ( tlv_parse(&m1[ds],PKE_PUB_U,buffer,&len) == SKLOG_FAILURE ) {
         ERROR("M1 message is bad structured: expected PKE_PUB_U");
         goto error;
     }
@@ -1189,7 +1189,7 @@ parse_m1(unsigned char    *M1,
     len = 0;
     memset(buffer,0,SKLOG_BUFFER_LEN);
 
-    if ( tlv_parse(&M1[ds],ENC_K1,buffer,&len) == SKLOG_FAILURE ) {
+    if ( tlv_parse(&m1[ds],ENC_K1,buffer,&len) == SKLOG_FAILURE ) {
         ERROR("M1 message is bad structured: expected ENC_K1");
         goto error;
     }
@@ -1264,8 +1264,8 @@ error:
 
 static SKLOG_RETURN
 verify_m1(SKLOG_U_Ctx      *ctx,
-          unsigned char    *M1,
-          unsigned int     M1_len)
+          unsigned char    *m1,
+          unsigned int     m1_len)
 {
     #ifdef DO_TRACE
     DEBUG
@@ -1297,8 +1297,8 @@ verify_m1(SKLOG_U_Ctx      *ctx,
 
     ERR_load_crypto_strings();
 
-    //~ parse M1 message
-    if ( parse_m1(M1,M1_len,&p,t_id,&pke_u_k1,&pke_u_k1_len,&e_k1,
+    //~ parse m1 message
+    if ( parse_m1(m1,m1_len,&p,t_id,&pke_u_k1,&pke_u_k1_len,&e_k1,
                   &e_k1_len) == SKLOG_FAILURE ) {
         ERROR("parse_m1() failure")
         goto error;
@@ -1536,31 +1536,31 @@ initialize_logging_session(SKLOG_U_Ctx    *u_ctx)
     struct timeval d_timeout;
     struct timeval now;
 
-    unsigned char *X0 = 0;
-    unsigned int X0_len = 0;
+    unsigned char *x0 = 0;
+    unsigned int x0_len = 0;
     SKLOG_PROTOCOL_STEP p = 0;
 
     unsigned char *pke_t_k0 = 0;
     size_t pke_t_k0_len = 0;
 
-    unsigned char *X0_sign = 0;
-    unsigned int X0_sign_len = 0;
+    unsigned char *x0_sign = 0;
+    unsigned int x0_sign_len = 0;
 
     unsigned char *e_k0 = 0;
     unsigned int e_k0_len = 0;
 
-    unsigned char *M0 = 0;
-    unsigned int M0_len = 0;
+    unsigned char *m0 = 0;
+    unsigned int m0_len = 0;
 
-    unsigned char *D0 = 0;
-    unsigned int D0_len = 0;
+    unsigned char *d0 = 0;
+    unsigned int d0_len = 0;
 
     EVP_MD_CTX mdctx;
 
     SKLOG_CONNECTION conn = {0,0,0};
 
-    unsigned char *M1 = 0;
-    unsigned int M1_len = 0;
+    unsigned char *m1 = 0;
+    unsigned int m1_len = 0;
     
     const char *reason = 0;
 
@@ -1583,8 +1583,8 @@ initialize_logging_session(SKLOG_U_Ctx    *u_ctx)
     d_timeout = d;
     d_timeout.tv_sec += u_ctx->u_timeout;
 
-    //~ generate X0
-    if ( gen_x0(u_ctx,p,&d,&X0,&X0_len) == SKLOG_FAILURE ) {
+    //~ generate x0
+    if ( gen_x0(u_ctx,p,&d,&x0,&x0_len) == SKLOG_FAILURE ) {
         ERROR("gen_x0() failure")
         goto error;
     }
@@ -1597,15 +1597,15 @@ initialize_logging_session(SKLOG_U_Ctx    *u_ctx)
         goto error;
     }
 
-    //~ sign X0 using U's private key
-    if ( sign_message(X0,X0_len,u_ctx->u_privkey,
-                      &X0_sign,&X0_sign_len) == SKLOG_FAILURE ) {
+    //~ sign x0 using U's private key
+    if ( sign_message(x0,x0_len,u_ctx->u_privkey,
+                      &x0_sign,&x0_sign_len) == SKLOG_FAILURE ) {
         ERROR("sign_message() failure")
         goto error;
     }
 
-    //~ encrypt (XO,sign_u_X0) using k0 key
-    if ( gen_e_k0(u_ctx,X0,X0_len,X0_sign,X0_sign_len,
+    //~ encrypt (XO,sign_u_x0) using k0 key
+    if ( gen_e_k0(u_ctx,x0,x0_len,x0_sign,x0_sign_len,
                   &e_k0,&e_k0_len) == SKLOG_FAILURE ) {
         ERROR("gen_e_k0() failure")
         goto error;
@@ -1613,19 +1613,19 @@ initialize_logging_session(SKLOG_U_Ctx    *u_ctx)
 
     //~ generate M0
     if ( gen_m0(u_ctx,p,pke_t_k0,pke_t_k0_len,e_k0,e_k0_len,
-                &M0,&M0_len) == SKLOG_FAILURE ) {
+                &m0,&m0_len) == SKLOG_FAILURE ) {
         ERROR("gen_m0() failure")
         goto error;
     }
 
-    //~ generate D0
-    if ( gen_d0(u_ctx,&d,&d_timeout,M0,M0_len,
-                &D0,&D0_len) == SKLOG_FAILURE ) {
+    //~ generate d0
+    if ( gen_d0(u_ctx,&d,&d_timeout,m0,m0_len,
+                &d0,&d0_len) == SKLOG_FAILURE ) {
         ERROR("gen_d0() failure")
         goto error;
     }
 
-    //~ store X0
+    //~ store x0
     EVP_MD_CTX_init(&mdctx);
     retval = EVP_DigestInit_ex(&mdctx, EVP_sha256(),NULL);
 
@@ -1634,7 +1634,7 @@ initialize_logging_session(SKLOG_U_Ctx    *u_ctx)
         goto error;
     }
     
-    retval = EVP_DigestUpdate(&mdctx,X0,X0_len);
+    retval = EVP_DigestUpdate(&mdctx,x0,x0_len);
 
     if ( retval == 0 ) {
         ERR_print_errors_fp(stderr);
@@ -1650,11 +1650,11 @@ initialize_logging_session(SKLOG_U_Ctx    *u_ctx)
     
     EVP_MD_CTX_cleanup(&mdctx);
 
-    SKLOG_FREE(X0)
+    SKLOG_FREE(x0)
 
     //~ create firts log entry
     if ( create_logentry(u_ctx,LogfileInitializationType,
-                         D0,D0_len) == SKLOG_FAILURE ) {
+                         d0,d0_len) == SKLOG_FAILURE ) {
         ERROR("create_logentry() failure")
         goto error;
     }
@@ -1666,14 +1666,14 @@ initialize_logging_session(SKLOG_U_Ctx    *u_ctx)
     }
 
     //~ send m0 to T
-    if ( send_m0(u_ctx,conn.ssl,M0,M0_len) == SKLOG_FAILURE ) {
+    if ( send_m0(u_ctx,conn.ssl,m0,m0_len) == SKLOG_FAILURE ) {
         ERROR("send_m0() failure")
         goto error;
     }
-    SKLOG_FREE(M0)
+    SKLOG_FREE(m0)
 
     //~ receive m1 from T
-    if ( receive_m1(conn.ssl,&M1,&M1_len) == SKLOG_FAILURE ) {
+    if ( receive_m1(conn.ssl,&m1,&m1_len) == SKLOG_FAILURE ) {
         ERROR("receive_m1() failure")
         goto error;
     }
@@ -1692,7 +1692,7 @@ initialize_logging_session(SKLOG_U_Ctx    *u_ctx)
     }
 
     //~ verify M1
-    if ( verify_m1(u_ctx,M1,M1_len) == SKLOG_FAILURE ) {
+    if ( verify_m1(u_ctx,m1,m1_len) == SKLOG_FAILURE ) {
         ERROR("verify_m1() failure")
         reason = "M1 verification failure";
         goto failure;
@@ -1700,7 +1700,7 @@ initialize_logging_session(SKLOG_U_Ctx    *u_ctx)
 
     //~ create log entry
     if ( create_logentry(u_ctx,ResponseMessageType,
-                         M1,M1_len) == SKLOG_FAILURE ) {
+                         m1,m1_len) == SKLOG_FAILURE ) {
         ERROR("create_logentry() failure")
         goto error;
     }
@@ -1732,13 +1732,13 @@ failure:
     return SKLOG_FAILURE;
 
 error:
-    if ( X0 > 0 ) free(X0);
+    if ( x0 > 0 ) free(x0);
     if ( pke_t_k0 > 0 ) free(pke_t_k0);
-    if ( X0_sign > 0 ) free(X0_sign);
+    if ( x0_sign > 0 ) free(x0_sign);
     if ( e_k0 > 0 ) free(e_k0);
-    if ( M0 > 0 ) free(M0);
-    if ( D0 > 0 ) free(D0);
-    if ( M1 > 0 ) free(M1);
+    if ( m0 > 0 ) free(m0);
+    if ( d0 > 0 ) free(d0);
+    if ( m1 > 0 ) free(m1);
 
     ERR_free_strings();
     return SKLOG_FAILURE;
