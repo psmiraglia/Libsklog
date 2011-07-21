@@ -35,7 +35,7 @@
 /*--------------------------------------------------------------------*/
 
 #define  SKLOG_U_CONFIG_FILE_PATH  ETC_PREFIX"/libsklog/libsklog-u.conf"
-#define  SKLOG_DEF_LOGFILE_SIZE  10
+#define  SKLOG_DEF_LOGFILE_SIZE  7
 #define  SKLOG_DEF_T_CERT_PATH  ETC_PREFIX"/libsklog/certs/ca/ca_cert.pem"
 #define  SKLOG_DEF_T_ADDRESS  "127.0.0.1"
 #define  SKLOG_DEF_T_PORT  5555
@@ -48,18 +48,19 @@
 #define  SKLOG_U_CTX_INITIALIZED  1
 #define  SKLOG_U_CTX_NOT_INITIALIZED  !SKLOG_U_CTX_INITIALIZED
 
-
 /*--------------------------------------------------------------------*/
 /*--------------------------------------------------------------------*/
 
-typedef struct sklog_u_ctx {
+typedef struct sklog_u_ctx SKLOG_U_Ctx;
+
+struct sklog_u_ctx {
 
     int context_state;
 
     //~ U information
-    char            u_id[HOST_NAME_MAX+1];  /* load from config file */
+    char            u_id[HOST_NAME_MAX+1];
     unsigned int    u_id_len;
-    int             u_timeout;              /* load from config file */
+    int             u_timeout;
     X509            *u_cert;
     EVP_PKEY        *u_privkey;
 
@@ -70,7 +71,7 @@ typedef struct sklog_u_ctx {
     short int       t_port;
 
     //~ Logging session information
-    int             logfile_size;           /* load from config file */
+    int             logfile_size;
     int             logfile_counter;
     uuid_t          logfile_id;
 
@@ -80,7 +81,7 @@ typedef struct sklog_u_ctx {
 
     unsigned char   x0_hash[SHA256_LEN];
 
-} SKLOG_U_Ctx;
+};
 
 /*--------------------------------------------------------------------*/
 /*--------------------------------------------------------------------*/

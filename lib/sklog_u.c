@@ -282,7 +282,13 @@ gen_enc_key(SKLOG_U_Ctx        *ctx,
     ERR_load_crypto_strings();
 
     buflen = sizeof(type) + SKLOG_AUTH_KEY_LEN;
-    SKLOG_CALLOC(buffer,buflen,char)
+
+    //~ SKLOG_CALLOC(buffer,buflen,char)
+
+    if ( SKLOG_alloc(&buffer,unsigned char,buflen) == SKLOG_FAILURE ) {
+        ERROR("SKLOG_alloc() failure");
+        goto error;
+    }
 
     memcpy(&buffer[pos],&type,sizeof(type));
     pos+=sizeof(type);
@@ -315,7 +321,8 @@ gen_enc_key(SKLOG_U_Ctx        *ctx,
 
     EVP_MD_CTX_cleanup(&mdctx);
 
-    SKLOG_FREE(buffer);
+    //~ SKLOG_FREE(buffer);
+    SKLOG_free(&buffer);
     ERR_free_strings();
     return SKLOG_SUCCESS;
 
@@ -346,7 +353,12 @@ gen_hash_chain(SKLOG_U_Ctx        *ctx,
     ERR_load_crypto_strings();
 
     buflen = sizeof(type) + data_enc_size + SKLOG_HASH_CHAIN_LEN;
-    SKLOG_CALLOC(buffer,buflen,char)
+    //~ SKLOG_CALLOC(buffer,buflen,char)
+
+    if ( SKLOG_alloc(&buffer,unsigned char,buflen) == SKLOG_FAILURE ) {
+        ERROR("SKLOG_alloc() failure");
+        goto error;
+    }
 
     memcpy(&buffer[pos],ctx->last_hash_chain,SKLOG_HASH_CHAIN_LEN);
     pos+=SKLOG_HASH_CHAIN_LEN;
@@ -384,7 +396,7 @@ gen_hash_chain(SKLOG_U_Ctx        *ctx,
     //~ save hash chain for the next generation
     memcpy(ctx->last_hash_chain,hash_chain,SKLOG_HASH_CHAIN_LEN);
 
-    SKLOG_FREE(buffer)
+    SKLOG_free(&buffer);
     ERR_free_strings();
     return SKLOG_SUCCESS;
 
@@ -459,7 +471,14 @@ renew_auth_key(SKLOG_U_Ctx    *ctx)
     OpenSSL_add_all_digests();
     ERR_load_crypto_strings();
 
-    SKLOG_CALLOC(buffer,SKLOG_AUTH_KEY_LEN,char)
+    //~ SKLOG_CALLOC(buffer,SKLOG_AUTH_KEY_LEN,char)
+
+    if ( SKLOG_alloc(&buffer,unsigned char,SKLOG_AUTH_KEY_LEN)
+                                                    == SKLOG_FAILURE ) {
+        ERROR("SKLOG_alloc() failure");
+        goto error;
+    }
+    
     memcpy(buffer,ctx->auth_key,SKLOG_AUTH_KEY_LEN);
 
     //~ calculate SHA256 message digest
@@ -489,7 +508,7 @@ renew_auth_key(SKLOG_U_Ctx    *ctx)
 
     EVP_MD_CTX_cleanup(&mdctx);
 
-    SKLOG_FREE(buffer);
+    SKLOG_free(&buffer);
     return SKLOG_SUCCESS;
 
 error:
@@ -667,7 +686,7 @@ parse_config_file(char            **t_cert,
     DEBUG
     #endif
 
-    char buffer[1024] = { 0 };
+    char buffer[SKLOG_SMALL_BUFFER_LEN] = { 0 };
     int len = 0;
 
     cfg_opt_t opts[] = {
@@ -695,14 +714,14 @@ parse_config_file(char            **t_cert,
     *t_cert = calloc(len+1,sizeof(char));
     memcpy(*t_cert,buffer,len);
     (*t_cert)[len] = '\0';
-    memset(buffer,0,1024);
+    memset(buffer,0,SKLOG_SMALL_BUFFER_LEN);
     
     //~ load t_address
     len = sprintf(buffer,"%s",cfg_getstr(cfg,"t_address"));
     *t_address = calloc(len+1,sizeof(char));
     memcpy(*t_address,buffer,len);
     (*t_address)[len] = '\0';
-    memset(buffer,0,1024);
+    memset(buffer,0,SKLOG_SMALL_BUFFER_LEN);
     
 
     //~ load t_port
@@ -713,21 +732,21 @@ parse_config_file(char            **t_cert,
     *u_cert = calloc(len+1,sizeof(char));
     memcpy(*u_cert,buffer,len);
     (*u_cert)[len] = '\0';
-    memset(buffer,0,1024);
+    memset(buffer,0,SKLOG_SMALL_BUFFER_LEN);
     
     //~ load u_id
     len = sprintf(buffer,"%s",cfg_getstr(cfg,"u_id"));
     *u_id = calloc(len+1,sizeof(char));
     memcpy(*u_id,buffer,len);
     (*u_id)[len] = '\0';
-    memset(buffer,0,1024);
+    memset(buffer,0,SKLOG_SMALL_BUFFER_LEN);
 
     //~ load u_privkey
     len = sprintf(buffer,"%s",cfg_getstr(cfg,"u_privkey"));
     *u_privkey = calloc(len+1,sizeof(char));
     memcpy(*u_privkey,buffer,len);
     (*u_privkey)[len] = '\0';
-    memset(buffer,0,1024);
+    memset(buffer,0,SKLOG_SMALL_BUFFER_LEN);
 
     //~ load u_timeout
     *u_timeout = cfg_getint(cfg,"u_timeout");
@@ -799,7 +818,11 @@ gen_x0(SKLOG_U_Ctx            *u_ctx,
               (cert_size + 8) +
               (SKLOG_AUTH_KEY_LEN + 8);
 
-    SKLOG_CALLOC(*x0,*x0_len,char)
+    //~ SKLOG_CALLOC(*x0,*x0_len,char)
+    if ( SKLOG_alloc(x0,unsigned char, *x0_len) == SKLOG_FAILURE ) {
+        ERROR("SKLOG_alloc() failure");
+        goto error;
+    }
 
     //~ TLV-ize protocol step
     tlv_create(PROTOCOL_STEP,sizeof(p_net),&p_net,buffer);
@@ -814,7 +837,7 @@ gen_x0(SKLOG_U_Ctx            *u_ctx,
 
     ds += (dbuf_len + 8);
     memset(buffer,0,SKLOG_BUFFER_LEN);
-    SKLOG_FREE(dbuf);
+    SKLOG_free(&dbuf);
 
     //~ TLV-ize DER encoded C's certificate
     tlv_create(CERT_U,cert_size,cert,buffer);
@@ -865,7 +888,12 @@ gen_e_k0(SKLOG_U_Ctx *u_ctx,
     unsigned int buffer2_len = x0_len + 8 +
                                x0_sign_len + 8;
 
-    SKLOG_CALLOC(buffer2,buffer2_len,char)
+    //~ SKLOG_CALLOC(buffer2,buffer2_len,char)
+
+    if ( SKLOG_alloc(&buffer2,unsigned char,buffer2_len) == SKLOG_FAILURE ) {
+        ERROR("SKLOG_alloc() failure");
+        goto error;
+    }
 
     ds = 0;
     memset(buffer,0,SKLOG_BUFFER_LEN);
@@ -891,7 +919,7 @@ gen_e_k0(SKLOG_U_Ctx *u_ctx,
         ERROR("encrypt_aes256() failure")
         goto error;
     }
-    SKLOG_FREE(buffer2);
+    SKLOG_free(&buffer2);
 
     return SKLOG_SUCCESS;
 
@@ -916,17 +944,25 @@ gen_m0(SKLOG_U_Ctx *u_ctx,
 
     unsigned char buffer[SKLOG_BUFFER_LEN] = { 0 };
     unsigned int ds = 0;
+    
+    unsigned char *uuid = 0;
 
     //~ convert p in network order
     uint32_t p_net = htonl(p);
 
     //~ compose M0 in tlv format
     *m0_len = (sizeof(p_net) + 8) +
-              (u_ctx->u_id_len + 8) +
+              //~ (u_ctx->u_id_len + 8) +
+              (UUID_LEN + 8) +
               (pke_t_k0_len + 8) +
               (e_k0_len + 8);
 
-    SKLOG_CALLOC(*m0,*m0_len,char)
+    //~ SKLOG_CALLOC(*m0,*m0_len,char)
+
+    if ( SKLOG_alloc(m0,unsigned char,*m0_len) == SKLOG_FAILURE ) {
+        ERROR("SKLOG_alloc() failure");
+        goto error;
+    }
 
     //~ TLV-ize p
     if ( tlv_create(PROTOCOL_STEP,sizeof(p_net),&p_net,\
@@ -937,6 +973,7 @@ gen_m0(SKLOG_U_Ctx *u_ctx,
     ds += sizeof(p_net)+8;
     memset(buffer,0,SKLOG_BUFFER_LEN);
 
+    /*
     //~ TLV-ize u_id
     if ( tlv_create(ID_U,u_ctx->u_id_len,u_ctx->u_id,
                     buffer) == SKLOG_FAILURE )
@@ -944,6 +981,23 @@ gen_m0(SKLOG_U_Ctx *u_ctx,
     memcpy(*m0+ds,buffer,u_ctx->u_id_len+8);
 
     ds += u_ctx->u_id_len+8;
+    memset(buffer,0,SKLOG_BUFFER_LEN);
+    */
+
+    //~ TLV-ize logfile_id
+
+    if ( SKLOG_alloc(&uuid,unsigned char,UUID_LEN) == SKLOG_FAILURE) {
+        ERROR("SKLOG_alloc() failure");
+        goto error;
+    }
+
+    memcpy(uuid,u_ctx->logfile_id,UUID_LEN);
+    
+    if ( tlv_create(ID_LOG,UUID_LEN,uuid,buffer) == SKLOG_FAILURE )
+        goto error;
+    memcpy(*m0+ds,buffer,UUID_LEN+8);
+
+    ds += UUID_LEN+8;
     memset(buffer,0,SKLOG_BUFFER_LEN);
 
     //~ TLV-ize pke_t_k0
@@ -1013,7 +1067,11 @@ gen_d0(SKLOG_U_Ctx *u_ctx,
               (SKLOG_LOG_ID_LEN + 8) +
               (m0_len + 8);
 
-    SKLOG_CALLOC(*d0,*d0_len,char)
+    //~ SKLOG_CALLOC(*d0,*d0_len,char)
+    if ( SKLOG_alloc(d0,unsigned char,*d0_len) == SKLOG_FAILURE ) {
+        ERROR("SKLOG_alloc() failure");
+        goto error;
+    }
 
     //~ TLV-ize d
     if ( tlv_create(TIMESTAMP,dbuf_len,dbuf,buffer) == SKLOG_FAILURE) {
@@ -1025,7 +1083,7 @@ gen_d0(SKLOG_U_Ctx *u_ctx,
 
     ds += dbuf_len+8;
     memset(buffer,0,SKLOG_BUFFER_LEN);
-    SKLOG_FREE(dbuf);
+    SKLOG_free(&dbuf);
 
     //~ TLV-ize d_timeout
     if ( tlv_create(TIMESTAMP,dbuf2_len,dbuf2,buffer) == SKLOG_FAILURE) {
@@ -1036,7 +1094,7 @@ gen_d0(SKLOG_U_Ctx *u_ctx,
 
     ds += dbuf2_len+8;
     memset(buffer,0,SKLOG_BUFFER_LEN);
-    SKLOG_FREE(dbuf2);
+    SKLOG_free(&dbuf2);
 
     //~ TLV-ize log_id
     if ( tlv_create(ID_LOG,SKLOG_LOG_ID_LEN,&u_ctx->logfile_id,
@@ -1132,7 +1190,12 @@ receive_m1(SSL *ssl,
         goto error;
     }
 
-    SKLOG_CALLOC(*m1,*m1_len,char)
+    //~ SKLOG_CALLOC(*m1,*m1_len,char)
+    if ( SKLOG_alloc(m1,unsigned char,*m1_len) == SKLOG_FAILURE ) {
+        ERROR("SKLOG_alloc() failure");
+        goto error;
+    }
+
     memcpy(*m1,buf2,*m1_len);
     ERR_free_strings();
     return SKLOG_SUCCESS;
@@ -1183,7 +1246,11 @@ parse_m1(unsigned char    *m1,
         goto error;
     }
 
-    SKLOG_CALLOC(*pke_u_k1,len,char)
+    //~ SKLOG_CALLOC(*pke_u_k1,len,char)
+    if ( SKLOG_alloc(pke_u_k1,unsigned char,len) == SKLOG_FAILURE ) {
+        ERROR("SKLOG_alloc() failure");
+        goto error;
+    }
     memcpy(*pke_u_k1,buffer,len);
     *pke_u_k1_len = len;
 
@@ -1196,7 +1263,11 @@ parse_m1(unsigned char    *m1,
         goto error;
     }
 
-    SKLOG_CALLOC(*e_k1,len,char)
+    //~ SKLOG_CALLOC(*e_k1,len,char)
+    if ( SKLOG_alloc(e_k1,unsigned char,len) == SKLOG_FAILURE ) {
+        ERROR("SKLOG_alloc() failure");
+        goto error;
+    }
     memcpy(*e_k1,buffer,len);
     *e_k1_len = len;
 
@@ -1233,7 +1304,11 @@ parse_e_k1_content(unsigned char    *in,
         goto error;
     }
 
-    SKLOG_CALLOC(*x1,len,char)
+    //~ SKLOG_CALLOC(*x1,len,char)
+    if ( SKLOG_alloc(x1,unsigned char,len) == SKLOG_FAILURE ) {
+        ERROR("SKLOG_alloc() failure");
+        goto error;
+    }
 
     *x1_len = len;
     memcpy(*x1,buffer,len);
@@ -1247,7 +1322,11 @@ parse_e_k1_content(unsigned char    *in,
         goto error;
     }
 
-    SKLOG_CALLOC(*x1_sign,len,char)
+    //~ SKLOG_CALLOC(*x1_sign,len,char)
+    if ( SKLOG_alloc(x1_sign,unsigned char,len) == SKLOG_FAILURE ) {
+        ERROR("SKLOG_alloc() failure");
+        goto error;
+    }
 
     *x1_sign_len = len;
     memcpy(*x1_sign,buffer,len);
@@ -1650,7 +1729,7 @@ initialize_logging_session(SKLOG_U_Ctx    *u_ctx)
     
     EVP_MD_CTX_cleanup(&mdctx);
 
-    SKLOG_FREE(x0)
+    SKLOG_free(&x0);
 
     //~ create firts log entry
     if ( create_logentry(u_ctx,LogfileInitializationType,
@@ -1670,7 +1749,7 @@ initialize_logging_session(SKLOG_U_Ctx    *u_ctx)
         ERROR("send_m0() failure")
         goto error;
     }
-    SKLOG_FREE(m0)
+    SKLOG_free(&m0);
 
     //~ receive m1 from T
     if ( receive_m1(conn.ssl,&m1,&m1_len) == SKLOG_FAILURE ) {
@@ -1712,7 +1791,11 @@ failure:
     gettimeofday(&now,NULL);
     ts_len = sizeof(now);
 
-    SKLOG_CALLOC(ts,ts_len,char)
+    //~ SKLOG_CALLOC(ts,ts_len,char)
+    if ( SKLOG_alloc(&ts,unsigned char,ts_len) == SKLOG_FAILURE ) {
+        ERROR("SKLOG_alloc() failure");
+        goto error;
+    }
     memcpy(ts,&now,ts_len);
 
     for ( i = 0 , j = 0 ; i < ts_len ; i++ , j+=2 )
@@ -1727,7 +1810,7 @@ failure:
         ERROR("create_logentry() failure")
         goto error;
     }
-    SKLOG_FREE(ts);
+    SKLOG_free(&ts);
     ERR_free_strings();
     return SKLOG_FAILURE;
 
@@ -1805,15 +1888,15 @@ error:
 }
 
 static SKLOG_RETURN
-flush_logfile_send_logentry(SSL                    *ssl,
-                            const unsigned char    *type,
-                            unsigned int           type_len,
-                            const unsigned char    *data_enc,
-                            unsigned int           data_enc_len,
-                            const unsigned char    *y,
-                            unsigned int           y_len,
-                            const unsigned char    *z,
-                            unsigned int           z_len)
+flush_logfile_send_logentry(SSL              *ssl,
+                            unsigned char    *type,
+                            unsigned int     type_len,
+                            unsigned char    *data_enc,
+                            unsigned int     data_enc_len,
+                            unsigned char    *y,
+                            unsigned int     y_len,
+                            unsigned char    *z,
+                            unsigned int     z_len)
 {
     #ifdef DO_TRACE
     DEBUG
@@ -1828,28 +1911,28 @@ flush_logfile_send_logentry(SSL                    *ssl,
 
     SSL_load_error_strings();
 
-    if ( tlv_create(LOGENTRY_TYPE,type_len,(void *)type,
+    if ( tlv_create(LOGENTRY_TYPE,type_len,type,
                     &buf[displacement]) == SKLOG_FAILURE ) {
         ERROR("tlv_create() failure")
         goto error;
     }
     displacement += type_len+8;
     
-    if ( tlv_create(LOGENTRY_DATA,data_enc_len,(void *)data_enc,
+    if ( tlv_create(LOGENTRY_DATA,data_enc_len,data_enc,
                     &buf[displacement]) == SKLOG_FAILURE ) {
         ERROR("tlv_create() failure")
         goto error;
     }
     displacement += data_enc_len+8;
     
-    if ( tlv_create(LOGENTRY_HASH,y_len,(void *)y,
+    if ( tlv_create(LOGENTRY_HASH,y_len,y,
                     &buf[displacement]) == SKLOG_FAILURE ) {
         ERROR("tlv_create() failure")
         goto error;
     }
     displacement += y_len+8;
     
-    if ( tlv_create(LOGENTRY_HMAC,z_len,(void *)z,
+    if ( tlv_create(LOGENTRY_HMAC,z_len,z,
                     &buf[displacement]) == SKLOG_FAILURE ) {
         ERROR("tlv_create() failure")
         goto error;
@@ -1957,14 +2040,17 @@ flush_logfile(SKLOG_U_Ctx    *u_ctx)
     char *err_msg = 0;
     int sql_step = 0;
 
-    const unsigned char *type = 0;
+    const unsigned char *tmp = 0;
+
+    unsigned char *type = 0;
     unsigned int type_len = 0;
-    const unsigned char *enc_data = 0;
+    unsigned char *enc_data = 0;
     unsigned int enc_data_len = 0;
-    const unsigned char *y = 0;
+    unsigned char *y = 0;
     unsigned int y_len = 0;
-    const unsigned char *z = 0;
+    unsigned char *z = 0;
     unsigned int z_len = 0;
+
     int go_next = 1;
     
     sqlite3_open(SKLOG_U_DB,&db);
@@ -2006,17 +2092,41 @@ flush_logfile(SKLOG_U_Ctx    *u_ctx)
 
         switch ( sql_step ) {
             case SQLITE_ROW:
-                type = sqlite3_column_text(stmt,0);
+                tmp = sqlite3_column_text(stmt,0);
                 type_len = sqlite3_column_bytes(stmt,0);
-                
-                enc_data = sqlite3_column_text(stmt,1);
+                //~ SKLOG_CALLOC(type,type_len,char);
+                if ( SKLOG_alloc(&type,unsigned char,type_len) == SKLOG_FAILURE ) {
+                    ERROR("SKLOG_alloc() failure");
+                    goto error;
+                }
+                memcpy(type,tmp,type_len);
+
+                tmp = sqlite3_column_text(stmt,1);
                 enc_data_len = sqlite3_column_bytes(stmt,1);
-                
+                //~ SKLOG_CALLOC(enc_data,enc_data_len,char);
+                if ( SKLOG_alloc(&enc_data,unsigned char,enc_data_len) == SKLOG_FAILURE ) {
+                    ERROR("SKLOG_alloc() failure");
+                    goto error;
+                }
+                memcpy(enc_data,tmp,enc_data_len);
+
+                tmp = sqlite3_column_text(stmt,2);
                 y_len = sqlite3_column_bytes(stmt,2);
-                y = sqlite3_column_text(stmt,2);
-                
+                //~ SKLOG_CALLOC(y,y_len,char);
+                if ( SKLOG_alloc(&y,unsigned char,y_len) == SKLOG_FAILURE ) {
+                    ERROR("SKLOG_alloc() failure");
+                    goto error;
+                }
+                memcpy(y,tmp,y_len);
+
+                tmp = sqlite3_column_text(stmt,3);
                 z_len = sqlite3_column_bytes(stmt,3);
-                z = sqlite3_column_text(stmt,3);
+                //~ SKLOG_CALLOC(z,z_len,char);
+                if ( SKLOG_alloc(&z,unsigned char,z_len) == SKLOG_FAILURE ) {
+                    ERROR("SKLOG_alloc() failure");
+                    goto error;
+                }
+                memcpy(z,tmp,z_len);
 
                 if ( flush_logfile_send_logentry(conn.ssl,type,type_len,
                                                  enc_data,enc_data_len,
@@ -2025,6 +2135,7 @@ flush_logfile(SKLOG_U_Ctx    *u_ctx)
                     ERROR("flush_logfile_send_logentry() failure")
                     goto error;
                 }
+
                 break;
             case SQLITE_DONE:
                 go_next = 0;
@@ -2102,7 +2213,11 @@ SKLOG_U_CreateLogentry(SKLOG_U_Ctx        *u_ctx,
     unsigned char *data_blob = 0;
     unsigned int data_blob_len = 0;
 
-    SKLOG_CALLOC(data_blob,data_len,unsigned char)
+    //~ SKLOG_CALLOC(data_blob,data_len,unsigned char)
+    if ( SKLOG_alloc(&data_blob,unsigned char,data_len) == SKLOG_FAILURE ) {
+        ERROR("SKLOG_alloc() failure");
+        goto error;
+    }
     memcpy(data_blob,data,data_len);
 
     //~ check the state of the logging session

@@ -30,6 +30,10 @@
 #include <openssl/evp.h>
 #include <openssl/x509.h>
 
+/*--------------------------------------------------------------------*/
+/*                         crypto primitives                          */
+/*--------------------------------------------------------------------*/
+
 SKLOG_RETURN
 sign_message(unsigned char    *message,
              unsigned int     message_len,
@@ -65,11 +69,6 @@ aes256_encrypt(unsigned char    *plain,
                unsigned int     key_len,
                unsigned char    **cipher,
                unsigned int     *cipher_len);
-               //~ unsigned char    **data_enc,
-               //~ unsigned int     *data_enc_size,
-               //~ unsigned char    *data,
-               //~ unsigned int     data_size,
-               //~ unsigned char    *enc_key);
 
 SKLOG_RETURN
 aes256_decrypt(unsigned char    *cipher,
@@ -78,11 +77,10 @@ aes256_decrypt(unsigned char    *cipher,
                unsigned int     key_len,
                unsigned char    **plain,
                unsigned int     *plain_len);
-               //~ unsigned char    *dec_key,
-               //~ unsigned char    *in,
-               //~ unsigned int     in_len,
-               //~ unsigned char    **out,
-               //~ unsigned int     *out_len);
+
+/*--------------------------------------------------------------------*/
+/*                         tlv management                             */
+/*--------------------------------------------------------------------*/
 
 SKLOG_RETURN
 tlv_create(uint32_t         type,
@@ -110,6 +108,24 @@ tlv_get_value(unsigned char    *tlv_msg,
               unsigned char    **value);
 
 SKLOG_RETURN
+tlv_parse_message(unsigned char    *msg,
+                  uint32_t         exected_type,
+                  uint32_t         *type,
+                  unsigned int     *len,
+                  unsigned char    **value);
+
+SKLOG_RETURN
+tlv_create_message(uint32_t         type,
+                   unsigned int     len,
+                   unsigned char    *value,
+                   unsigned int     *message_len,
+                   unsigned char    **message);
+
+/*--------------------------------------------------------------------*/
+/*                      timestamp management                          */
+/*--------------------------------------------------------------------*/
+
+SKLOG_RETURN
 serialize_timeval(struct timeval    *time,
                   unsigned char     **buf,
                   unsigned int      *buf_len);
@@ -118,5 +134,17 @@ SKLOG_RETURN
 deserialize_timeval(unsigned char     *buf,
                     unsigned int      buf_len,
                     struct timeval    *time);
+                    
+/*--------------------------------------------------------------------*/
+/*                       memory management                            */
+/*--------------------------------------------------------------------*/
+
+SKLOG_RETURN
+mem_alloc_n(void      **mem,
+            size_t    size,
+            size_t    couny);
+
+SKLOG_RETURN
+mem_free(void      **mem);
 
 #endif /* SKLOG_INTERNAL_H */

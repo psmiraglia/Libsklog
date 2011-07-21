@@ -46,7 +46,7 @@ install-data-local:
 	if [ ! -d $(localstatedir)/libsklog ]; then \
 		mkdir -p $(localstatedir)/libsklog/db && \
 		sqlite3 $(localstatedir)/libsklog/db/t.db \
-			"create table AUTH_KEYS(u_id varchar(64),auth_key varchar(32));" && \
+			"create table AUTH_KEYS(u_ip varchar(64),logfile_id varchar(32),auth_key varchar(32));" && \
 		sqlite3 $(localstatedir)/libsklog/db/u.db \
 			"create table LOG_ENTRY(type varchar(8),data varchar(4096),hash varchar(64),hmac varchar(64));" ; \
 	fi

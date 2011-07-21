@@ -64,7 +64,7 @@
 /*--------------------------------------------------------------------*/
 /*                    memory management macros                        */
 /*--------------------------------------------------------------------*/
-
+/*
 #define SKLOG_CALLOC(mem_ptr,len,type) {\
     mem_ptr = calloc(len,sizeof(type));\
     if ( mem_ptr == NULL ) {\
@@ -74,12 +74,18 @@
         exit(1);\
     }\
 }
+*/
+#define SKLOG_alloc(mem,type,count) mem_alloc_n((void **)mem,sizeof(type),count)
 
+/*
 #define SKLOG_FREE(mem_ptr) {\
     free(mem_ptr);\
     mem_ptr = NULL;\
 }
+*/
 
+#define SKLOG_free(mem) mem_free((void **)mem)
+    
 /*--------------------------------------------------------------------*/
 /*                         common defines                             */
 /*--------------------------------------------------------------------*/
@@ -104,6 +110,9 @@
 #define     SKLOG_SUCCESS             1
 #define     SKLOG_FAILURE             !SKLOG_SUCCESS
 #define     SKLOG_TO_IMPLEMENT        SKLOG_SUCCESS
+
+#define     SKLOG_ACK                 "LE_ACK"
+#define     SKLOG_ACK_LEN             6
 
 /*--------------------------------------------------------------------*/
 /*                              types                                 */
@@ -159,6 +168,8 @@ enum sklog_tlv_type {
     LE_NACK          = 0x0000001d,
 
     X509_CERT        = 0x000000fc,
+
+    NOTYPE           = 0xffffffff,
 };
 
 struct sklog_connection {

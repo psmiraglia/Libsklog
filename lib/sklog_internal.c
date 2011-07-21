@@ -30,6 +30,10 @@
 #include <openssl/engine.h>
 #include <openssl/err.h>
 
+/*--------------------------------------------------------------------*/
+/*                         crypto primitives                          */
+/*--------------------------------------------------------------------*/
+
 SKLOG_RETURN
 sign_message(unsigned char    *message,
              unsigned int     message_len,
@@ -111,12 +115,18 @@ sign_message(unsigned char    *message,
        goto error;
     }
 
-    sig = OPENSSL_malloc(sig_len);
+    //~ sig = OPENSSL_malloc(sig_len);
+    if ( SKLOG_alloc(&sig,unsigned char,sig_len) == SKLOG_FAILURE ) {
+        ERROR("SKLOG_alloc() failure");
+        goto error;
+    }
 
+    /*
     if ( !sig ) {
        ERR_print_errors_fp(stderr);
        goto error;
     }
+    */
 
     if ( EVP_PKEY_sign(ctx, sig, &sig_len, md, md_len) <= 0 ) {
        ERR_print_errors_fp(stderr);
@@ -124,12 +134,17 @@ sign_message(unsigned char    *message,
     }
 
     /* Signature is sig_len bytes written to buffer sig */
-    SKLOG_CALLOC(*signature,sig_len,char)
+    //~ SKLOG_CALLOC(*signature,sig_len,char)
+    if ( SKLOG_alloc(signature,unsigned char,sig_len) == SKLOG_FAILURE ) {
+        ERROR("SKLOG_alloc() failure");
+        goto error;
+    }
 
     memcpy(*signature,sig,sig_len);
     *signature_len = sig_len;
 
-    OPENSSL_free(sig);
+    //~ OPENSSL_free(sig);
+    SKLOG_free(&sig);
     EVP_PKEY_CTX_free(ctx);
     ERR_free_strings();
 
@@ -140,7 +155,8 @@ sign_message(unsigned char    *message,
     return SKLOG_SUCCESS;
 
 error:
-    if ( sig > 0 ) OPENSSL_free(sig);
+    //~ if ( sig > 0 ) OPENSSL_free(sig);
+    if ( sig > 0 ) SKLOG_free(sig);
     if ( ctx > 0 ) EVP_PKEY_CTX_free(ctx);
     ERR_free_strings();
     return SKLOG_FAILURE;
@@ -373,7 +389,8 @@ pke_decrypt(EVP_PKEY         *key,
         WARNING("EVP_PKEY_decrypt 2")
         if ( retval == -2 )
             WARNING("unsupported")
-        SKLOG_FREE(*out);
+        //~ SKLOG_FREE(*out);
+        SKLOG_free(out);
         ERR_print_errors_fp(stderr);
         goto error;
     }
@@ -563,6 +580,10 @@ aes256_decrypt(unsigned char    *cipher,
     return SKLOG_SUCCESS;
 }
 
+/*--------------------------------------------------------------------*/
+/*                         tlv management                             */
+/*--------------------------------------------------------------------*/
+
 SKLOG_RETURN
 tlv_create(uint32_t         type,
            unsigned int     data_len,
@@ -702,6 +723,97 @@ tlv_get_value(unsigned char    *tlv_msg,
 }
 
 SKLOG_RETURN
+tlv_parse_message(unsigned char    *msg,
+                  uint32_t         expected_type,
+                  uint32_t         *type,
+                  unsigned int     *len,
+                  unsigned char    **value)
+{
+    #ifdef DO_TRACE
+    DEBUG
+    #endif
+
+    uint32_t t = 0;
+    unsigned int l = 0;
+    unsigned char *v = 0;
+
+    if ( msg == NULL ) {
+        ERROR("msg must be not null")
+        goto error;
+    }
+
+    if ( tlv_get_type(msg,&t) == SKLOG_FAILURE ) {
+        ERROR("tlv_get_type() failure");
+        goto error;
+    }
+    if ( expected_type != NOTYPE ) {
+        if ( t != expected_type ) {
+            ERROR("malformed message");
+            goto error;
+        }
+    }
+
+    if ( tlv_get_len(msg,&l) == SKLOG_FAILURE ) {
+        ERROR("tlv_get_len() failure");
+        goto error;
+    }
+
+    if ( tlv_get_value(msg,l,&v) == SKLOG_FAILURE ) {
+        ERROR("tlv_get_value() failure");
+        goto error;
+    }
+
+    *type = t;
+    *len = l;
+    *value = v;
+
+    return SKLOG_SUCCESS;
+
+error:
+    return SKLOG_FAILURE;
+}                  
+
+SKLOG_RETURN
+tlv_create_message(uint32_t         type,
+                   unsigned int     len,
+                   unsigned char    *value,
+                   unsigned int     *message_len,
+                   unsigned char    **message)
+{
+    #ifdef DO_TRACE
+    DEBUG
+    #endif
+
+    uint32_t t = 0;
+    unsigned int l = 0;
+
+    if ( value == NULL ) {
+        goto error;
+    }
+
+    t = htonl(type);
+    l = htonl(len);
+
+    *message = calloc(len+8,sizeof(char));
+
+    if ( *message == NULL ) {
+        goto error;
+    }
+
+    memcpy(*message,value,len+8);
+    *message_len = len + 8;
+    
+    return SKLOG_SUCCESS;
+
+error:
+    return SKLOG_FAILURE;
+}
+
+/*--------------------------------------------------------------------*/
+/*                      timestamp management                          */
+/*--------------------------------------------------------------------*/
+
+SKLOG_RETURN
 serialize_timeval(struct timeval    *time,
                   unsigned char     **buf,
                   unsigned int      *buf_len)
@@ -717,7 +829,13 @@ serialize_timeval(struct timeval    *time,
     usec = htonl(time->tv_usec);
 
     *buf_len = 2*sizeof(uint64_t);
-    SKLOG_CALLOC(*buf,*buf_len,char)
+    
+    //~ SKLOG_CALLOC(*buf,*buf_len,char)
+    if ( SKLOG_alloc(buf,unsigned char,*buf_len) == SKLOG_FAILURE ) {
+        ERROR("SKLOG_alloc() failure");
+        return SKLOG_FAILURE;
+    }
+    
     memcpy(*buf,&sec,sizeof(uint64_t));
     memcpy(*buf+sizeof(uint64_t),&usec,sizeof(uint64_t));
     
@@ -741,6 +859,38 @@ deserialize_timeval(unsigned char     *buf,
 
     time->tv_sec = ntohl(sec);
     time->tv_usec = ntohl(usec);
+
+    return SKLOG_SUCCESS;
+}
+
+/*--------------------------------------------------------------------*/
+/*                       memory management                            */
+/*--------------------------------------------------------------------*/
+
+SKLOG_RETURN
+mem_alloc_n(void      **mem,
+            size_t    size,
+            size_t    count)
+{
+    #ifdef DO_TRACE
+    DEBUG
+    #endif
+
+    *mem = calloc(count,size);
+    if (*mem == NULL)
+        return SKLOG_FAILURE;
+    return SKLOG_SUCCESS;
+}
+
+SKLOG_RETURN
+mem_free(void      **mem)
+{
+    #ifdef DO_TRACE
+    DEBUG
+    #endif
+
+    free(*mem);
+    *mem = NULL;
 
     return SKLOG_SUCCESS;
 }
