@@ -43,8 +43,6 @@
 #define  SKLOG_DEF_U_RSA_KEY_PATH  ETC_PREFIX"/libsklog/certs/private/u1_key.pem"
 #define  SKLOG_DEF_U_TIMEOUT  60
 
-#define  SKLOG_U_DB  VAR_PREFIX"/libsklog/db/u.db"
-
 #define  SKLOG_U_CTX_INITIALIZED  1
 #define  SKLOG_U_CTX_NOT_INITIALIZED  !SKLOG_U_CTX_INITIALIZED
 
@@ -52,6 +50,7 @@
 /*--------------------------------------------------------------------*/
 
 typedef struct sklog_u_ctx SKLOG_U_Ctx;
+typedef struct sklog_storage_driver SKLOG_STORAGE_DRIVER;
 
 struct sklog_u_ctx {
 
@@ -81,6 +80,17 @@ struct sklog_u_ctx {
 
     unsigned char   x0_hash[SHA256_LEN];
 
+    //~ storage driver
+    SKLOG_STORAGE_DRIVER *lsdriver;
+
+};
+
+struct sklog_storage_driver {
+
+    SKLOG_RETURN (*store_logentry) (SKLOG_DATA_TYPE,
+                                    unsigned char *,unsigned int,
+                                    unsigned char *,unsigned char *);
+    SKLOG_RETURN (*flush_logfile) (SSL *);
 };
 
 /*--------------------------------------------------------------------*/

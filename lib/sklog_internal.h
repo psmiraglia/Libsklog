@@ -147,4 +147,19 @@ mem_alloc_n(void      **mem,
 SKLOG_RETURN
 mem_free(void      **mem);
 
+/*--------------------------------------------------------------------*/
+/*                        flush management                            */
+/*--------------------------------------------------------------------*/
+
+SKLOG_RETURN
+flush_logfile_send_logentry(SSL              *ssl,
+                            unsigned char    *type,
+                            unsigned int     type_len,
+                            unsigned char    *data_enc,
+                            unsigned int     data_enc_len,
+                            unsigned char    *y,
+                            unsigned int     y_len,
+                            unsigned char    *z,
+                            unsigned int     z_len);
+
 #endif /* SKLOG_INTERNAL_H */

@@ -44,7 +44,9 @@ apps/tnode
 *.tar.gz
 
 */.libs
+lib/storage/.libs
 */.deps
+lib/storage/.deps
 compile
 
 lib/config.h

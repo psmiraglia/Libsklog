@@ -894,3 +894,95 @@ mem_free(void      **mem)
 
     return SKLOG_SUCCESS;
 }
+
+/*--------------------------------------------------------------------*/
+/*                        flush management                            */
+/*--------------------------------------------------------------------*/
+
+SKLOG_RETURN
+flush_logfile_send_logentry(SSL              *ssl,
+                            unsigned char    *type,
+                            unsigned int     type_len,
+                            unsigned char    *data_enc,
+                            unsigned int     data_enc_len,
+                            unsigned char    *y,
+                            unsigned int     y_len,
+                            unsigned char    *z,
+                            unsigned int     z_len)
+{
+    #ifdef DO_TRACE
+    DEBUG
+    #endif
+
+    unsigned char msg[SKLOG_BUFFER_LEN] = { 0 };
+    unsigned char buf[SKLOG_BUFFER_LEN] = { 0 };
+    unsigned int displacement = 0;
+
+    int nread = 0;
+    int nwrite = 0;
+
+    SSL_load_error_strings();
+
+    if ( tlv_create(LOGENTRY_TYPE,type_len,type,
+                    &buf[displacement]) == SKLOG_FAILURE ) {
+        ERROR("tlv_create() failure")
+        goto error;
+    }
+    displacement += type_len+8;
+    
+    if ( tlv_create(LOGENTRY_DATA,data_enc_len,data_enc,
+                    &buf[displacement]) == SKLOG_FAILURE ) {
+        ERROR("tlv_create() failure")
+        goto error;
+    }
+    displacement += data_enc_len+8;
+    
+    if ( tlv_create(LOGENTRY_HASH,y_len,y,
+                    &buf[displacement]) == SKLOG_FAILURE ) {
+        ERROR("tlv_create() failure")
+        goto error;
+    }
+    displacement += y_len+8;
+    
+    if ( tlv_create(LOGENTRY_HMAC,z_len,z,
+                    &buf[displacement]) == SKLOG_FAILURE ) {
+        ERROR("tlv_create() failure")
+        goto error;
+    }
+    displacement += z_len+8;
+
+    if ( tlv_create(LOGENTRY,displacement,buf,msg) == SKLOG_FAILURE ) {
+        ERROR("tlv_create() failure")
+        goto error;
+    }
+
+    nwrite = SSL_write(ssl,msg,displacement+8);
+    
+    if ( nwrite <= 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+
+    memset(msg,0,SKLOG_BUFFER_LEN);
+    nread = SSL_read(ssl,msg,SKLOG_BUFFER_LEN-1);
+
+    if ( nread <= 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    } 
+
+    if ( memcmp(msg,"LE_ACK",6) == 0 ) {
+        ERR_free_strings();
+        return SKLOG_SUCCESS;
+    } else if ( memcmp(msg,"LE_NACK",7) == 0 ) {
+        WARNING("received NACK")
+        goto error;
+    } else {
+        ERROR("unexpected message")
+        goto error;
+    }
+    
+error:
+    ERR_free_strings();
+    return SKLOG_FAILURE;
+}

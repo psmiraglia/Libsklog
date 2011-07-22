@@ -1125,6 +1125,7 @@ manage_logfile_flush(SKLOG_T_Ctx    *t_ctx,
 
         switch ( type ) {
             case LOGENTRY:
+                NOTIFY("Received log entry");
 
                 if ( tlv_parse_message(buffer,NOTYPE,&type,&len,&value) == SKLOG_FAILURE ) {
                     ERROR("tlv_parse_message() failure")
