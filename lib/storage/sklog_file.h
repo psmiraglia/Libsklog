@@ -33,7 +33,8 @@
 #define  SKLOG_U_LOGFILE  VAR_PREFIX"/libsklog/logfile/u.log"
 
 SKLOG_RETURN
-sklog_file_u_store_logentry(SKLOG_DATA_TYPE    type,
+sklog_file_u_store_logentry(// uuid_t             logfile_id,
+                            SKLOG_DATA_TYPE    type,
                             unsigned char      *data,
                             unsigned int       data_len,
                             unsigned char      *hash,

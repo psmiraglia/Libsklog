@@ -93,7 +93,7 @@
 #define     SHA1_LEN                  20
 #define     SHA256_LEN                32
 #define     UUID_LEN                  16
-#define     UUID_STR_LEN              32
+#define     UUID_STR_LEN              36
 #define     HOST_NAME_MAX             64
 #define     AES_KEYSIZE_256           32
 

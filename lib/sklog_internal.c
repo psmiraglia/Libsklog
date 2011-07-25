@@ -901,6 +901,7 @@ mem_free(void      **mem)
 
 SKLOG_RETURN
 flush_logfile_send_logentry(SSL              *ssl,
+                            char             *f_uuid,
                             unsigned char    *type,
                             unsigned int     type_len,
                             unsigned char    *data_enc,
@@ -922,6 +923,15 @@ flush_logfile_send_logentry(SSL              *ssl,
     int nwrite = 0;
 
     SSL_load_error_strings();
+
+    //~ [ID_LOG][W][DATA][Y][Z]
+
+    if ( tlv_create(ID_LOG,strlen(f_uuid),f_uuid,
+                    &buf[displacement]) == SKLOG_FAILURE ) {
+        ERROR("tlv_create() failure")
+        goto error;
+    }
+    displacement += (strlen(f_uuid)+8);
 
     if ( tlv_create(LOGENTRY_TYPE,type_len,type,
                     &buf[displacement]) == SKLOG_FAILURE ) {

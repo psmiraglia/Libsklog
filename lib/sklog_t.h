@@ -31,6 +31,8 @@
 
 #include <sys/time.h>
 
+#include <uuid/uuid.h>
+
 /*--------------------------------------------------------------------*/
 /*--------------------------------------------------------------------*/
 
@@ -44,12 +46,18 @@
 #define  SKLOG_DEF_T_ID  "t.example.com"
 #define  SKLOG_DEF_T_PORT  5555
 
-#define  SKLOG_T_DB  VAR_PREFIX"/libsklog/db/t.db"
+//~ #define  SKLOG_T_DB  VAR_PREFIX"/libsklog/db/t.db"
 
 /*--------------------------------------------------------------------*/
 /*--------------------------------------------------------------------*/
 
-typedef struct sklog_t_ctx {
+typedef struct sklog_t_ctx SKLOG_T_Ctx;
+typedef struct sklog_t_storage_driver SKLOG_T_STORAGE_DRIVER;
+
+/*--------------------------------------------------------------------*/
+/*--------------------------------------------------------------------*/
+
+struct sklog_t_ctx {
 
     char            t_id[HOST_NAME_MAX];
     unsigned int    t_id_len;
@@ -62,11 +70,20 @@ typedef struct sklog_t_ctx {
     unsigned int    t_cert_size;
     EVP_PKEY        *t_priv_key;
     const char      *t_priv_key_path;
-    
-} SKLOG_T_Ctx;
+
+    SKLOG_T_STORAGE_DRIVER *lsdriver;
+};
+
+struct sklog_t_storage_driver {
+    SKLOG_RETURN (*store_authkey) (char*,uuid_t,unsigned char*);
+    SKLOG_RETURN (*store_logentry) (unsigned char*,unsigned int);
+};
 
 /*--------------------------------------------------------------------*/
 /*--------------------------------------------------------------------*/
+
+SKLOG_T_Ctx*
+SKLOG_T_NewCtx(void);
 
 SKLOG_RETURN
 SKLOG_T_InitCtx(SKLOG_T_Ctx    *t_ctx);

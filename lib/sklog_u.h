@@ -50,7 +50,7 @@
 /*--------------------------------------------------------------------*/
 
 typedef struct sklog_u_ctx SKLOG_U_Ctx;
-typedef struct sklog_storage_driver SKLOG_STORAGE_DRIVER;
+typedef struct sklog_u_storage_driver SKLOG_U_STORAGE_DRIVER;
 
 struct sklog_u_ctx {
 
@@ -81,16 +81,17 @@ struct sklog_u_ctx {
     unsigned char   x0_hash[SHA256_LEN];
 
     //~ storage driver
-    SKLOG_STORAGE_DRIVER *lsdriver;
+    SKLOG_U_STORAGE_DRIVER *lsdriver;
 
 };
 
-struct sklog_storage_driver {
+struct sklog_u_storage_driver {
 
-    SKLOG_RETURN (*store_logentry) (SKLOG_DATA_TYPE,
+    SKLOG_RETURN (*store_logentry) (uuid_t,SKLOG_DATA_TYPE,
                                     unsigned char *,unsigned int,
                                     unsigned char *,unsigned char *);
-    SKLOG_RETURN (*flush_logfile) (SSL *);
+    SKLOG_RETURN (*flush_logfile) (uuid_t,struct timeval *,SSL *);
+    SKLOG_RETURN (*init_logfile) (uuid_t,struct timeval *);
 };
 
 /*--------------------------------------------------------------------*/

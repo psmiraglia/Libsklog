@@ -153,6 +153,7 @@ mem_free(void      **mem);
 
 SKLOG_RETURN
 flush_logfile_send_logentry(SSL              *ssl,
+                            char             *f_uuid,
                             unsigned char    *type,
                             unsigned int     type_len,
                             unsigned char    *data_enc,

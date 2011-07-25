@@ -23,6 +23,11 @@
 #include "sklog_commons.h"
 #include "sklog_internal.h"
 #include "sklog_t.h"
+#ifdef USE_SQLITE
+    #include "storage/sklog_sqlite.h"
+#else
+    #include "storage/sklog_file.h"
+#endif
 
 #include <sqlite3.h>
 #include <string.h>
@@ -701,6 +706,7 @@ send_m1(SKLOG_T_Ctx      *t_ctx,
     return SKLOG_SUCCESS;
 }
 
+/*
 static int
 sql_callback(void    *NotUsed,
              int     argc,
@@ -714,7 +720,9 @@ sql_callback(void    *NotUsed,
     fprintf(stderr,"\n");
     return 0;
 }
+*/
 
+/*
 static SKLOG_RETURN //~ todo: to refine
 //~ store_auth_key(unsigned char    *u_id,
 store_auth_key(uuid_t          logfile_id,
@@ -768,6 +776,7 @@ store_auth_key(uuid_t          logfile_id,
 
     return SKLOG_SUCCESS;
 }
+*/
 
 /*--------------------------------------------------------------------*/
 /* interactions with U nodes                                          */
@@ -871,7 +880,8 @@ manage_logsession_init(SKLOG_T_Ctx      *t_ctx,
 
     //~ store auth_key
     //~ if ( store_auth_key(u_id,auth_key) == SKLOG_FAILURE ) {
-    if ( store_auth_key(logfile_id,auth_key,u_ip) == SKLOG_FAILURE ) {
+    //~ if ( store_auth_key(logfile_id,auth_key,u_ip) == SKLOG_FAILURE ) {
+    if ( t_ctx->lsdriver->store_authkey(u_ip,logfile_id,auth_key) == SKLOG_FAILURE ) {
         ERROR("store_auth_key() failure")
         goto error;
     }
@@ -961,6 +971,7 @@ error:
     return SKLOG_FAILURE;
 }
 
+/*
 static SKLOG_RETURN
 store_logentry(unsigned char *blob,
                unsigned int blob_len)
@@ -975,8 +986,10 @@ store_logentry(unsigned char *blob,
     unsigned int len = 0;
     unsigned char *value = 0;
 
-    char *w = 0;
-    unsigned int wl = 0;
+    //~ char *w = 0;
+
+    //~ unsigned int wl = 0;
+    SKLOG_DATA_TYPE w = 0;
     char *d = 0;
     unsigned int dl = 0;
     char *y = 0;
@@ -992,14 +1005,20 @@ store_logentry(unsigned char *blob,
         goto error;
     }
 
-    wl = len;
+    //~ wl = len;
+
     //~ SKLOG_CALLOC(w,wl+1,char);
-    if ( SKLOG_alloc(&w,char,wl+1) == SKLOG_FAILURE ) {
-        ERROR("SKLOG_alloc() failure");
-        goto error;
-    }
-    memcpy(w,value,wl);
-    w[wl]='\0';
+
+    //~ if ( SKLOG_alloc(&w,char,wl+1) == SKLOG_FAILURE ) {
+
+        //~ ERROR("SKLOG_alloc() failure");
+
+        //~ goto error;
+
+    //~ }
+    memcpy(&w,value,sizeof(w));
+    w = ntohl(w);
+    //~ w[wl]='\0';
 
     i += (len + 8);
 
@@ -1061,10 +1080,10 @@ store_logentry(unsigned char *blob,
     i += (len + 8);
 
     fprintf(stderr,
-        "\n\ninsert into LOG_ENTRY values ('%s','%s','%s','%s')\n\n",
+        "\n\ninsert into LOG_ENTRY values (%d,'%s','%s','%s')\n\n",
         w,d,y,z);
 
-    SKLOG_free(&w);
+    //~ SKLOG_free(&w);
     SKLOG_free(&d);
     SKLOG_free(&y);
     SKLOG_free(&z);
@@ -1072,13 +1091,14 @@ store_logentry(unsigned char *blob,
     return SKLOG_SUCCESS;
 
 error:
-    if ( w > 0 ) free(w); 
+    //~ if ( w > 0 ) free(w); 
     if ( d > 0 ) free(d); 
     if ( y > 0 ) free(y); 
     if ( z > 0 ) free(z);
      
     return SKLOG_FAILURE;
 }
+*/
 
 static SKLOG_RETURN
 manage_logfile_flush(SKLOG_T_Ctx    *t_ctx,
@@ -1127,12 +1147,13 @@ manage_logfile_flush(SKLOG_T_Ctx    *t_ctx,
             case LOGENTRY:
                 NOTIFY("Received log entry");
 
-                if ( tlv_parse_message(buffer,NOTYPE,&type,&len,&value) == SKLOG_FAILURE ) {
+                if ( tlv_parse_message(buffer,LOGENTRY,&type,&len,&value) == SKLOG_FAILURE ) {
                     ERROR("tlv_parse_message() failure")
                     goto error;
                 }
 
-                if ( store_logentry(value,len) == SKLOG_FAILURE ) {
+                //~ if ( store_logentry(value,len) == SKLOG_FAILURE ) {
+                if ( t_ctx->lsdriver->store_logentry(value,len) == SKLOG_FAILURE ) {
                     ERROR("store_logentry() failure")
                     goto error;
                 }
@@ -1183,6 +1204,39 @@ error:
 /*--------------------------------------------------------------------*/
 /*--------------------------------------------------------------------*/
 /*--------------------------------------------------------------------*/
+
+SKLOG_T_Ctx*
+SKLOG_T_NewCtx(void)
+{
+    #ifdef DO_TRACE
+    DEBUG
+    #endif
+    
+    SKLOG_T_Ctx *ctx = calloc(1,sizeof(SKLOG_T_Ctx));
+
+    if ( ctx == NULL ) {
+        //~ error
+        return NULL;
+    }
+
+    memset(ctx,0,sizeof(SKLOG_T_Ctx));
+    
+    ctx->lsdriver = calloc(1,sizeof(SKLOG_T_STORAGE_DRIVER));
+
+    if ( ctx->lsdriver == NULL ) {
+        //~ error
+        return NULL;
+    }
+
+    #ifdef USE_SQLITE
+    ctx->lsdriver->store_authkey = &sklog_sqlite_t_store_authkey;
+    ctx->lsdriver->store_logentry = &sklog_sqlite_t_store_logentry;
+    #else
+    ctx->lsdriver->store_authkey = &sklog_file_t_store_authkey;
+    #endif
+
+    return ctx;
+}
 
 SKLOG_RETURN
 SKLOG_T_InitCtx(SKLOG_T_Ctx    *t_ctx)

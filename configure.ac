@@ -46,8 +46,8 @@ AC_ARG_ENABLE(
         [--enable-notify],
         [Enable notify messages for libsklog library [default=no]]
     ),
-    [enable_trace="yes"],
-    [enable_trace="no"]
+    [enable_notify="yes"],
+    [enable_notify="no"]
 )
 
 AC_MSG_CHECKING(
@@ -138,7 +138,16 @@ AC_CHECK_LIB([sqlite3],[sqlite3_open])
 #----------------------------------------------------------------------
 
 AC_CONFIG_HEADERS([config.h])
-AC_CONFIG_FILES([Makefile lib/Makefile apps/Makefile include/Makefile])
+AC_CONFIG_FILES([\
+    Makefile \
+    apps/Makefile \
+    docs/Makefile \
+    docs/certs/Makefile \
+    docs/config/Makefile \
+    docs/sql/Makefile \
+    include/Makefile \
+    lib/Makefile\
+])
 
 AC_OUTPUT
 

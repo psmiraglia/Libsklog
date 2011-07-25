@@ -161,7 +161,10 @@ sklog_file_u_flush_logfile(SSL *ssl)
         
         SKLOG_free(&line);
 
-        if ( flush_logfile_send_logentry(ssl,type,type_len,
+        /**
+         * ALERT: remove NULL
+         */
+        if ( flush_logfile_send_logentry(ssl,NULL,type,type_len,
                 enc_data,enc_data_len,y,y_len,z,z_len)
                                                     == SKLOG_FAILURE ) {
             ERROR("flush_logfile_send_logentry() failure")

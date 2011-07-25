@@ -23,7 +23,7 @@
 #include "sklog_internal.h"
 #include "sklog_u.h"
 
-#ifdef USE_SQLITE_X
+#ifdef USE_SQLITE
     #include "storage/sklog_sqlite.h"
 #else
     #include "storage/sklog_file.h"
@@ -662,7 +662,7 @@ create_logentry(SKLOG_U_Ctx        *u_ctx,
     //~ store log entry
 
     if ( u_ctx->lsdriver->store_logentry
-            (type,data_enc,data_enc_len,hash_chain,hmac)
+            (u_ctx->logfile_id,type,data_enc,data_enc_len,hash_chain,hmac)
                 == SKLOG_FAILURE ) {
         ERROR("store_logentry() failure")
         goto error;
@@ -1749,6 +1749,13 @@ initialize_logging_session(SKLOG_U_Ctx    *u_ctx)
 
     SKLOG_free(&x0);
 
+    //~ initialize logfile
+    if ( u_ctx->lsdriver->init_logfile(u_ctx->logfile_id,&d)
+                                                    == SKLOG_FAILURE ) {
+        ERROR("u_ctx->lsdriver->init_logfile() failure");
+        goto error;
+    }
+
     //~ create firts log entry
     if ( create_logentry(u_ctx,LogfileInitializationType,
                          d0,d0_len) == SKLOG_FAILURE ) {
@@ -1958,7 +1965,8 @@ error:
 }
 
 static SKLOG_RETURN
-flush_logfile_execute(SKLOG_U_Ctx    *u_ctx)
+flush_logfile_execute(SKLOG_U_Ctx       *u_ctx,
+                      struct timeval    *now)
 {
     #ifdef DO_TRACE
     DEBUG
@@ -1980,7 +1988,7 @@ flush_logfile_execute(SKLOG_U_Ctx    *u_ctx)
     }
 
     //~ flush logfile
-    if ( u_ctx->lsdriver->flush_logfile(conn.ssl) == SKLOG_FAILURE ) {
+    if ( u_ctx->lsdriver->flush_logfile(u_ctx->logfile_id,now,conn.ssl) == SKLOG_FAILURE ) {
         ERROR("u_ctx->lsdriver->flush_logfile() failure");
         goto error;
     }
@@ -2030,16 +2038,17 @@ SKLOG_U_NewCtx(void)
         return NULL;
     }
     
-    ctx->lsdriver = calloc(1,sizeof(SKLOG_STORAGE_DRIVER));
+    ctx->lsdriver = calloc(1,sizeof(SKLOG_U_STORAGE_DRIVER));
 
     if ( ctx->lsdriver == NULL ) {
         //~ error
         return NULL;
     }
 
-    #ifdef USE_SQLITE_X
+    #ifdef USE_SQLITE
     ctx->lsdriver->store_logentry = &sklog_sqlite_u_store_logentry;
     ctx->lsdriver->flush_logfile = &sklog_sqlite_u_flush_logfile;
+    ctx->lsdriver->init_logfile = &sklog_sqlite_u_init_logfile;
     #else
     ctx->lsdriver->store_logentry = &sklog_file_u_store_logentry;
     ctx->lsdriver->flush_logfile = &sklog_file_u_flush_logfile;
@@ -2110,7 +2119,7 @@ SKLOG_U_CreateLogentry(SKLOG_U_Ctx        *u_ctx,
         }
 
         //~ send all generated log-entries to T
-        if ( flush_logfile_execute(u_ctx) == SKLOG_FAILURE ) {
+        if ( flush_logfile_execute(u_ctx,&now) == SKLOG_FAILURE ) {
             ERROR("flush_logfile_execute() failure")
             goto error;
         }
