@@ -989,6 +989,22 @@ SKLOG_T_NewCtx(void)
 }
 
 SKLOG_RETURN
+SKLOG_T_FreeCtx(SKLOG_T_Ctx **ctx)
+{
+    #ifdef DO_TRACE
+    DEBUG
+    #endif
+
+    X509_free((*ctx)->t_cert);
+    EVP_PKEY_free((*ctx)->t_priv_key);
+
+    memset(*ctx,0,sizeof(SKLOG_U_Ctx));
+    *ctx = 0;
+    
+    return SKLOG_SUCCESS;
+}
+
+SKLOG_RETURN
 SKLOG_T_InitCtx(SKLOG_T_Ctx    *t_ctx)
 {
     #ifdef DO_TRACE

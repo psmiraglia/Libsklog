@@ -179,7 +179,6 @@ autoreconf --install --force --verbose
 
 ./configure --prefix=/usr/local [other options]
 make
-make check
 make install (as root)
 \end{lstlisting}
 \ \\
@@ -237,9 +236,11 @@ configuration of the components.
 
 \subsubsection{Configuration File}
 
-To configure a \u component it's necessary to create a file
-called \texttt{libsklog-u.conf} in \texttt{/usr/local/etc/libsklog}
-which will contains all required settings. Below all settable parameters:
+To configure a \u component it's necessary to create a file called
+\texttt{libsklog-u.conf} in \texttt{/usr/local/etc/libsklog} which
+will contains all required settings. If the configuration file is
+not present, default values will be used. Below all settable
+parameters:
 
 \begin{center}
 \small{
@@ -287,9 +288,11 @@ sqlite3 u.db < /usr/local/etc/libsklog/sql/u_database.sql
 
 \subsubsection{Configuration File}
 
-To configure a \t component it's necessary to create a file
-called \texttt{libsklog-t.conf} in \texttt{/usr/local/etc/libsklog}
-which will contains all required settings. Below all settable parameters:
+To configure a \t component it's necessary to create a file called
+\texttt{libsklog-t.conf} in \texttt{/usr/local/etc/libsklog} which
+will contains all required settings. If the configuration file is
+not present, default values will be used. Below all settable
+parameters:
 
 \begin{center}
 \small{
@@ -334,6 +337,12 @@ Not yet implemented. Do you want to help me?
 
 \newpage
 \section{Usage}
+
+The installation of libsklog provides two sample application called
+\texttt{tnode} and \texttt{unode}. The applications are available
+in the path \texttt{/usr/local/bin}. During the execution of the
+application you have to provide a passphrase which is
+"123456" if you use the default certificates.
 
 \subsection{\u component}
 

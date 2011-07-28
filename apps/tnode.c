@@ -1,20 +1,21 @@
-#include <sklog_commons.h>
 #include <sklog_t.h>
-
-#include <sys/time.h>
 
 int main ( void ) {
 
-    SKLOG_T_Ctx *t_ctx = SKLOG_T_NewCtx();
+    SKLOG_T_Ctx *ctx = 0;
 
+    ctx = SKLOG_T_NewCtx();
 
-    
-    if ( SKLOG_T_InitCtx(t_ctx) == SKLOG_FAILURE ) {
-        //~ error
+    if ( ctx == NULL ) {
+        fprintf(stderr,"SKLOG_T_NewCtx() failure\n");
+        return 1;
+    } 
+
+    if ( SKLOG_T_InitCtx(ctx) == SKLOG_FAILURE ) {
+        fprintf(stderr,"SKLOG_T_InitCtx() failure\n");
         return 1;
     }
 
-    SKLOG_T_Run(t_ctx);
-
+    SKLOG_T_Run(&ctx);
     return 0;
 }

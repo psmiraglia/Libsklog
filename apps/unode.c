@@ -1,7 +1,6 @@
 #include <time.h>
 #include <unistd.h>
 
-#include <sklog_commons.h>
 #include <sklog_u.h>
 
 #define MAX 10

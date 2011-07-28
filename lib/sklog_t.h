@@ -84,6 +84,9 @@ SKLOG_T_Ctx*
 SKLOG_T_NewCtx(void);
 
 SKLOG_RETURN
+SKLOG_T_FreeCtx(SKLOG_T_Ctx**);
+
+SKLOG_RETURN
 SKLOG_T_InitCtx(SKLOG_T_Ctx    *t_ctx);
 
 SKLOG_RETURN
