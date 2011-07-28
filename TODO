@@ -1,0 +1,13 @@
+LEGEND:
+    T - things concerning the T component
+    U - things concerning the U component
+    V - things concerning the V component
+
+ToDo List
+=========
+
+* [T] Implement function which parse the configuration file
+* [T] Implement function which verify the M0 message
+* [T] Implement function which verify the integrity of collected data
+* [V] All! Do you want to help me? :-)
+

@@ -1,0 +1,15 @@
+# T's X509 certificate
+t_cert="%%%SYSCONFDIR%%%/libsklog/certs/ca/ca_cert.pem"
+
+# T's RSA private key
+t_privkey="%%%SYSCONFDIR%%%/libsklog/certs/private/ca_cert.pem"
+t_privkey_passphrase="123456"
+
+# T's identificator
+t_id = "t.example.com"
+
+# T's IP address
+t_address = "127.0.0.1"
+
+# T's IP port
+t_port = 5555

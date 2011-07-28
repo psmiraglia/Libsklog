@@ -1,0 +1,33 @@
+#-----------------------------------------------------------------------------
+# T settings
+#-----------------------------------------------------------------------------
+
+# X509 T's certificate (CA)
+t_cert="%%%SYSCONFDIR%%%/libsklog/certs/ca/ca_cert.pem"
+
+# T's address
+t_address = "127.0.0.1"
+
+# T's port
+t_port = 5555
+
+#-----------------------------------------------------------------------------
+# U settings
+#-----------------------------------------------------------------------------
+
+# X509 U's certificate
+u_cert="%%%SYSCONFDIR%%%/libsklog/certs/u1_cert.pem"
+
+# U's identificator
+u_id="u1.example.com"
+
+# U's RSA private key file
+u_privkey="%%%SYSCONFDIR%%%/libsklog/certs/private/u1_key.pem"
+
+# U's timeout
+u_timeout = 30 
+
+# Max number of log entries in logfile
+logfile_size = 7
+
+
