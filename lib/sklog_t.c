@@ -998,7 +998,7 @@ SKLOG_T_FreeCtx(SKLOG_T_Ctx **ctx)
     X509_free((*ctx)->t_cert);
     EVP_PKEY_free((*ctx)->t_priv_key);
 
-    memset(*ctx,0,sizeof(SKLOG_U_Ctx));
+    memset(*ctx,0,sizeof(SKLOG_T_Ctx));
     *ctx = 0;
     
     return SKLOG_SUCCESS;

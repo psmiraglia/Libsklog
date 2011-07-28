@@ -16,6 +16,8 @@ int main ( void ) {
         return 1;
     }
 
-    SKLOG_T_Run(&ctx);
+    SKLOG_T_Run(ctx);
+
+    SKLOG_T_FreeCtx(&ctx);
     return 0;
 }

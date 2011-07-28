@@ -27,30 +27,34 @@
     #include <config.h>
 #endif
 
+#include <unistd.h>
+
 #include <openssl/ssl.h>
+
+#include <sys/types.h>
 
 /*--------------------------------------------------------------------*/
 /*                       message macros                               */
 /*--------------------------------------------------------------------*/
 
 #define DEBUG { \
-    fprintf(stderr,"[DEBUG] Libsklog (%s:%d): %s()\n", \
-    __FILE__,__LINE__,__func__); \
+    fprintf(stderr,"[DEBUG] (%d) Libsklog (%s:%d): %s()\n", \
+    getpid(),__FILE__,__LINE__,__func__); \
 }
 
 #define ERROR(msg) { \
-    fprintf(stderr,"[ERROR] Libsklog (%s:%d): %s(): %s\n", \
-    __FILE__,__LINE__,__func__,msg); \
+    fprintf(stderr,"[ERROR] (%d) Libsklog (%s:%d): %s(): %s\n", \
+    getpid(),__FILE__,__LINE__,__func__,msg); \
 }
 
 #define NOTIFY(msg) { \
-    fprintf(stderr,"[NOTIFY] Libsklog (%s:%d): %s(): %s\n", \
-    __FILE__,__LINE__,__func__,msg); \
+    fprintf(stderr,"[NOTIFY] (%d) Libsklog (%s:%d): %s(): %s\n", \
+    getpid(),__FILE__,__LINE__,__func__,msg); \
 }
 
 #define WARNING(msg) { \
-    fprintf(stderr,"[WARNING] Libsklog (%s): %s\n", \
-    __func__,msg); \
+    fprintf(stderr,"[WARNING] (%d) Libsklog (%s): %s\n", \
+    getpid(),__func__,msg); \
 }
 
 #define TO_IMPLEMENT {\
