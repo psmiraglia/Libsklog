@@ -46,8 +46,6 @@
 #define  SKLOG_DEF_T_ID  "t.example.com"
 #define  SKLOG_DEF_T_PORT  5555
 
-//~ #define  SKLOG_T_DB  VAR_PREFIX"/libsklog/db/t.db"
-
 /*--------------------------------------------------------------------*/
 /*--------------------------------------------------------------------*/
 
@@ -62,7 +60,7 @@ struct sklog_t_ctx {
     char            t_id[HOST_NAME_MAX];
     unsigned int    t_id_len;
 
-    const char      *t_address; //xxx.xxx.xxx.xxx
+    const char      *t_address;
     short int       t_port;
 
     X509            *t_cert;

@@ -20,6 +20,8 @@
 **    along with Libsklog.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifdef USE_SQLITE
+
 #include "sklog_sqlite.h"
 
 #include <netinet/in.h>
@@ -420,7 +422,7 @@ sklog_sqlite_t_store_logentry(unsigned char    *blob,
     sqlite3 *db = 0;
     char *err_msg = 0;
     char query[SKLOG_BUFFER_LEN] = { 0 };
-
+    
     //~ get logfile id
 
     if ( tlv_parse_message(blob+i,ID_LOG,
@@ -458,6 +460,7 @@ sklog_sqlite_t_store_logentry(unsigned char    *blob,
         ERROR("SKLOG_alloc() failure");
         goto error;
     }
+    
     memcpy(d,value,dl);
     d[dl]='\0';
 
@@ -538,4 +541,7 @@ error:
     if ( z > 0 ) SKLOG_free(z);
      
     return SKLOG_FAILURE;
-}                              
+}
+
+#endif /* USE_SQLITE */
+

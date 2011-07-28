@@ -23,6 +23,8 @@
 #ifndef SKLOG_SQLITE
 #define SKLOG_SQLITE
 
+#ifdef USE_SQLITE
+
 #include "../sklog_commons.h"
 #include "../sklog_internal.h"
 
@@ -70,5 +72,6 @@ sklog_sqlite_t_store_authkey(char             *u_ip,
 SKLOG_RETURN
 sklog_sqlite_t_store_logentry(unsigned char    *blob,
                               unsigned int     blob_len);
+#endif /* USE_SQLITE */
 
 #endif /* SKLOG_SQLITE */

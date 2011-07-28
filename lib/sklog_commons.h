@@ -23,7 +23,9 @@
 #ifndef SKLOG_COMMONS_H
 #define SKLOG_COMMONS_H
 
-#include <config.h>
+#if HAVE_CONFIG_H
+    #include <config.h>
+#endif
 
 #include <openssl/ssl.h>
 
@@ -54,37 +56,22 @@
 #define TO_IMPLEMENT {\
     fprintf(stderr,\
 "\
-#-------------------------------------------------------------------\n\
-# The function %s()                                                 \n\
-# will be implemented as soon as possible. Can you help me? :-)     \n\
-#-------------------------------------------------------------------\n"\
+#--------------------------------------------------------------\n\
+# The function %s()                                            \n\
+# will be implemented as soon as possible. Can you help me? :-)\n\
+#--------------------------------------------------------------\n"\
     , __func__);\
 }
 
 /*--------------------------------------------------------------------*/
 /*                    memory management macros                        */
 /*--------------------------------------------------------------------*/
-/*
-#define SKLOG_CALLOC(mem_ptr,len,type) {\
-    mem_ptr = calloc(len,sizeof(type));\
-    if ( mem_ptr == NULL ) {\
-        fprintf(stderr,\
-            "[SYSERROR] Libsklog (%s:%d): %s(): calloc() failure\n",\
-            __FILE__,__LINE__,__func__);\
-        exit(1);\
-    }\
-}
-*/
-#define SKLOG_alloc(mem,type,count) mem_alloc_n((void **)mem,sizeof(type),count)
 
-/*
-#define SKLOG_FREE(mem_ptr) {\
-    free(mem_ptr);\
-    mem_ptr = NULL;\
-}
-*/
+#define SKLOG_alloc(mem,type,count) \
+    mem_alloc_n((void **)mem,sizeof(type),count)
 
-#define SKLOG_free(mem) mem_free((void **)mem)
+#define SKLOG_free(mem) \
+    mem_free((void **)mem)
     
 /*--------------------------------------------------------------------*/
 /*                         common defines                             */
@@ -97,8 +84,8 @@
 #define     HOST_NAME_MAX             64
 #define     AES_KEYSIZE_256           32
 
-#define     SKLOG_BUFFER_LEN          10240  // 10KB
-#define     SKLOG_SMALL_BUFFER_LEN    1024   // 1KB
+#define     SKLOG_BUFFER_LEN          10240
+#define     SKLOG_SMALL_BUFFER_LEN    1024
 #define     SKLOG_LOG_ID_LEN          UUID_STR_LEN
 
 #define     SKLOG_SESSION_KEY_LEN     SHA256_LEN

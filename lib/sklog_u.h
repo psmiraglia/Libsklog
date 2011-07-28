@@ -87,11 +87,11 @@ struct sklog_u_ctx {
 
 struct sklog_u_storage_driver {
 
-    SKLOG_RETURN (*store_logentry) (uuid_t,SKLOG_DATA_TYPE,
-                                    unsigned char *,unsigned int,
-                                    unsigned char *,unsigned char *);
-    SKLOG_RETURN (*flush_logfile) (uuid_t,struct timeval *,SSL *);
-    SKLOG_RETURN (*init_logfile) (uuid_t,struct timeval *);
+    SKLOG_RETURN (*store_logentry)    (uuid_t,SKLOG_DATA_TYPE,
+                                       unsigned char *,unsigned int,
+                                       unsigned char *,unsigned char *);
+    SKLOG_RETURN (*flush_logfile)     (uuid_t,struct timeval *,SSL *);
+    SKLOG_RETURN (*init_logfile)      (uuid_t,struct timeval *);
 };
 
 /*--------------------------------------------------------------------*/
@@ -101,9 +101,12 @@ SKLOG_U_Ctx*
 SKLOG_U_NewCtx(void);
 
 SKLOG_RETURN
-SKLOG_U_CreateLogentry(SKLOG_U_Ctx        *u_ctx,
-                       SKLOG_DATA_TYPE    type,
-                       char               *data,
-                       unsigned int       data_len);
+SKLOG_U_FreeCtx(SKLOG_U_Ctx**);
+
+SKLOG_RETURN
+SKLOG_U_LogEvent(SKLOG_U_Ctx        *u_ctx,
+                 SKLOG_DATA_TYPE    type,
+                 char               *data,
+                 unsigned int       data_len);
 
 #endif /* SKLOG_U_H */

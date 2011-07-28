@@ -24,7 +24,7 @@
 
 #include <string.h>
 
-#include <netinet/in.h> //~ for htonl(), ntohl(), ...
+#include <netinet/in.h>
 
 #include <openssl/aes.h>
 #include <openssl/engine.h>
@@ -115,18 +115,10 @@ sign_message(unsigned char    *message,
        goto error;
     }
 
-    //~ sig = OPENSSL_malloc(sig_len);
     if ( SKLOG_alloc(&sig,unsigned char,sig_len) == SKLOG_FAILURE ) {
         ERROR("SKLOG_alloc() failure");
         goto error;
     }
-
-    /*
-    if ( !sig ) {
-       ERR_print_errors_fp(stderr);
-       goto error;
-    }
-    */
 
     if ( EVP_PKEY_sign(ctx, sig, &sig_len, md, md_len) <= 0 ) {
        ERR_print_errors_fp(stderr);
@@ -134,7 +126,6 @@ sign_message(unsigned char    *message,
     }
 
     /* Signature is sig_len bytes written to buffer sig */
-    //~ SKLOG_CALLOC(*signature,sig_len,char)
     if ( SKLOG_alloc(signature,unsigned char,sig_len) == SKLOG_FAILURE ) {
         ERROR("SKLOG_alloc() failure");
         goto error;
@@ -143,7 +134,6 @@ sign_message(unsigned char    *message,
     memcpy(*signature,sig,sig_len);
     *signature_len = sig_len;
 
-    //~ OPENSSL_free(sig);
     SKLOG_free(&sig);
     EVP_PKEY_CTX_free(ctx);
     ERR_free_strings();
@@ -155,7 +145,6 @@ sign_message(unsigned char    *message,
     return SKLOG_SUCCESS;
 
 error:
-    //~ if ( sig > 0 ) OPENSSL_free(sig);
     if ( sig > 0 ) SKLOG_free(sig);
     if ( ctx > 0 ) EVP_PKEY_CTX_free(ctx);
     ERR_free_strings();
@@ -389,7 +378,6 @@ pke_decrypt(EVP_PKEY         *key,
         WARNING("EVP_PKEY_decrypt 2")
         if ( retval == -2 )
             WARNING("unsupported")
-        //~ SKLOG_FREE(*out);
         SKLOG_free(out);
         ERR_print_errors_fp(stderr);
         goto error;
@@ -609,8 +597,6 @@ tlv_create(uint32_t         type,
     uint32_t tmp = htonl(type);
     uint32_t len = htonl(data_len);
 
-    //~ SKLOG_CALLOC(*tlv,*tlv_len,char)
-
     memcpy(buffer,&tmp,sizeof(uint32_t));
     memcpy(&buffer[sizeof(uint32_t)],&len,sizeof(uint32_t));
     memcpy(&buffer[sizeof(uint32_t)+sizeof(uint32_t)],data,data_len);
@@ -651,7 +637,7 @@ tlv_parse(unsigned char    *tlv_msg,
     tmp = ntohl(tmp);
 
     if ( tmp != type ) {
-        //~ WARNING("Message not well formed!!!")
+        WARNING("Message not well formed!!!")
         return SKLOG_FAILURE;
     }
 
@@ -830,7 +816,6 @@ serialize_timeval(struct timeval    *time,
 
     *buf_len = 2*sizeof(uint64_t);
     
-    //~ SKLOG_CALLOC(*buf,*buf_len,char)
     if ( SKLOG_alloc(buf,unsigned char,*buf_len) == SKLOG_FAILURE ) {
         ERROR("SKLOG_alloc() failure");
         return SKLOG_FAILURE;
@@ -896,7 +881,7 @@ mem_free(void      **mem)
 }
 
 /*--------------------------------------------------------------------*/
-/*                        flush management                            */
+/*                     logfile flush management                       */
 /*--------------------------------------------------------------------*/
 
 SKLOG_RETURN

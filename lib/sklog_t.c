@@ -140,8 +140,11 @@ init_ssl_structure(SSL_CTX    *ctx,
     char *str = 0;
     X509 *client_cert = NULL;
 
+    SSL_load_error_strings();
+
     if ( (ssl = SSL_new(ctx)) == NULL ) {
-        return NULL;
+        ERR_print_errors_fp(stderr);
+        goto error;
     }
     
     /* Assign the socket into the SSL structure
@@ -152,8 +155,8 @@ init_ssl_structure(SSL_CTX    *ctx,
     
     /* Perform SSL Handshake on the SSL server */
     if ( SSL_accept(ssl) < 0 ) {
-        //~ error
-        return NULL;
+        ERR_print_errors_fp(stderr);
+        goto error;
     }
     
     if ( verify == 1 ) {
@@ -170,7 +173,7 @@ init_ssl_structure(SSL_CTX    *ctx,
             
             if ( str == NULL ) {
                 ERROR("X509_NAME_oneline() failure")
-                return NULL;
+                goto error;
             }
             
             fprintf(stdout,"\t subject: %s\n",str);
@@ -180,20 +183,25 @@ init_ssl_structure(SSL_CTX    *ctx,
                                     0,0);
 
             if ( str == NULL ) {
-                return NULL;
+                ERR_print_errors_fp(stderr);
+                goto error;
             }
 
             fprintf(stdout,"\t issuer: %s\n", str);
-            free (str);
+            SKLOG_free(&str);
             
             X509_free(client_cert);
         } else {
-            fprintf(stderr,
-                "The SSL client does not have certificate.\n");
+            NOTIFY("The SSL client does not have certificate");
         }
     }
 
+    ERR_free_strings();
     return ssl;
+
+error:
+    ERR_free_strings();
+    return NULL;
 }
 
 static int
@@ -234,7 +242,8 @@ tcp_bind(const char    *address,
 /* logging session initialization                                     */
 /*--------------------------------------------------------------------*/
 
-static SKLOG_RETURN // todo: to implement
+// todo: to implement
+static SKLOG_RETURN
 parse_config_file(char    **t_cert,
                   char    **t_privkey,
                   char    **t_privkey_passphrase,
@@ -263,7 +272,6 @@ parse_m0(SKLOG_T_Ctx            *t_ctx,
          unsigned char          *m0,
          unsigned int           m0_len,
          SKLOG_PROTOCOL_STEP    *p,
-         //~ unsigned char          *u_id,
          uuid_t                 *logfile_id,
          unsigned char          **pke_t_k0,
          unsigned int           *pke_t_k0_len,
@@ -280,7 +288,6 @@ parse_m0(SKLOG_T_Ctx            *t_ctx,
     unsigned int len = 0;
 
     unsigned char uuid_tmp[SKLOG_SMALL_BUFFER_LEN] = { 0 };
-    char uuid_str[UUID_STR_LEN] = { 0 }; // temp
     uuid_t uuid;
 
     if ( tlv_parse(&m0[ds],PROTOCOL_STEP,p,&len) == SKLOG_FAILURE ) {
@@ -291,16 +298,6 @@ parse_m0(SKLOG_T_Ctx            *t_ctx,
     ds += len+8;
     len = 0;
 
-    /*
-    if ( tlv_parse(&m0[ds],ID_U,u_id,&len) == SKLOG_FAILURE ) {
-        ERROR("M1 message is bad structured: expected ID_U");
-        return SKLOG_FAILURE;
-    }
-
-    ds += len+8;
-    len = 0;
-    */
-
     if ( tlv_parse(&m0[ds],ID_LOG,uuid_tmp,&len) == SKLOG_FAILURE ) {
         ERROR("M1 message is bad structured: expected ID_U");
         return SKLOG_FAILURE;
@@ -308,11 +305,6 @@ parse_m0(SKLOG_T_Ctx            *t_ctx,
 
     memcpy(&uuid,uuid_tmp,len);
     uuid_copy(*logfile_id,uuid);
-
-    uuid_unparse_lower(uuid,uuid_str); // temp
-    fprintf(stderr,"\n\n||| %s |||\n\n",uuid_str); //temp
-    getchar(); //temp
-    
 
     ds += len+8;
     len = 0;
@@ -322,7 +314,6 @@ parse_m0(SKLOG_T_Ctx            *t_ctx,
         return SKLOG_FAILURE;
     }
 
-    //~ SKLOG_CALLOC(*pke_t_k0,len,char)
     if ( SKLOG_alloc(pke_t_k0,unsigned char,len) == SKLOG_FAILURE ) {
         ERROR("SKLOG_alloc() failure");
         return SKLOG_FAILURE;
@@ -340,7 +331,6 @@ parse_m0(SKLOG_T_Ctx            *t_ctx,
         return SKLOG_FAILURE;
     }
 
-    //~ SKLOG_CALLOC(*e_k0,len,char)
     if ( SKLOG_alloc(e_k0,unsigned char,len) == SKLOG_FAILURE ) {
         ERROR("SKLOG_alloc() failure");
         return SKLOG_FAILURE;
@@ -355,8 +345,9 @@ parse_m0(SKLOG_T_Ctx            *t_ctx,
     return SKLOG_SUCCESS;
 }
 
+// todo: to implement
 static SKLOG_RETURN
-verify_m0(void) // todo: to implement
+verify_m0(void)
 {
     #ifdef DO_TRACE
     DEBUG
@@ -388,8 +379,6 @@ parse_e_k0_content(unsigned char    *in,
         return SKLOG_FAILURE;
     }
 
-    //~ SKLOG_CALLOC(*x0,len,char)
-
     if ( SKLOG_alloc(x0,unsigned char,len) == SKLOG_FAILURE ) {
         ERROR("SKLOG_alloc() failure");
         return SKLOG_FAILURE;
@@ -408,8 +397,6 @@ parse_e_k0_content(unsigned char    *in,
         return SKLOG_FAILURE;
     }
 
-    //~ SKLOG_CALLOC(*x0_sign,len,char)
-
     if ( SKLOG_alloc(x0_sign,unsigned char,len) == SKLOG_FAILURE ) {
         ERROR("SKLOG_alloc() failure");
         return SKLOG_FAILURE;
@@ -425,7 +412,8 @@ parse_e_k0_content(unsigned char    *in,
     return SKLOG_SUCCESS;
 }
 
-static SKLOG_RETURN // todo: to refine
+// todo: to refine
+static SKLOG_RETURN
 parse_x0( unsigned char    *x0,
          unsigned int      x0_len,
          X509              **u_cert,
@@ -535,8 +523,6 @@ gen_x1(SKLOG_PROTOCOL_STEP    *p,
     *x1_len = (sizeof(p_net) + 8) +
               SHA256_LEN + 8;
 
-    //~ SKLOG_CALLOC(*x1,*x1_len,char)
-
     if ( SKLOG_alloc(x1,unsigned char,*x1_len) == SKLOG_FAILURE ) {
         ERROR("SKLOG_alloc() failure");
         return SKLOG_FAILURE;
@@ -584,8 +570,6 @@ gen_e_k1(SKLOG_T_Ctx      *t_ctx,
     unsigned int buffer2_len = x1_len + 8 +
                                x1_sign_len + 8;
 
-    //~ SKLOG_CALLOC(buffer2,buffer2_len,char)
-
     if ( SKLOG_alloc(&buffer2,unsigned char,buffer2_len) == SKLOG_FAILURE ) {
         ERROR("SKLOG_alloc() failure");
         return SKLOG_FAILURE;
@@ -605,8 +589,6 @@ gen_e_k1(SKLOG_T_Ctx      *t_ctx,
     tlv_create(X1_SIGN_T,x1_sign_len,x1_sign,buffer);
     memcpy(&buffer2[ds],buffer,x1_sign_len+8);
 
-    //~ if ( aes256_encrypt(e_k1,e_k1_len,buffer2,buffer2_len,
-                        //~ k1) == SKLOG_FAILURE ) {
     if ( aes256_encrypt(buffer2,buffer2_len,k1,SKLOG_SESSION_KEY_LEN,
                         e_k1,e_k1_len) == SKLOG_FAILURE ) {
         free(buffer2);
@@ -614,7 +596,7 @@ gen_e_k1(SKLOG_T_Ctx      *t_ctx,
         return SKLOG_FAILURE;
     }
 
-    free(buffer2);
+    SKLOG_free(&buffer2);
     return SKLOG_SUCCESS;
 }
 
@@ -644,7 +626,6 @@ gen_m1(SKLOG_T_Ctx            *t_ctx,
               (pke_u_k1_len + 8) +
               (e_k1_len + 8);
 
-    //~ SKLOG_CALLOC(*m1,*m1_len,char)
     if ( SKLOG_alloc(m1,unsigned char,*m1_len) == SKLOG_FAILURE ) {
         ERROR("SKLOG_alloc() failure");
         return SKLOG_FAILURE;
@@ -706,78 +687,6 @@ send_m1(SKLOG_T_Ctx      *t_ctx,
     return SKLOG_SUCCESS;
 }
 
-/*
-static int
-sql_callback(void    *NotUsed,
-             int     argc,
-             char    **argv,
-             char    **azColName)
-{
-    int i = 0;
-    for ( i = 0 ; i < argc ; i++ )
-        fprintf(stderr,
-            "%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
-    fprintf(stderr,"\n");
-    return 0;
-}
-*/
-
-/*
-static SKLOG_RETURN //~ todo: to refine
-//~ store_auth_key(unsigned char    *u_id,
-store_auth_key(uuid_t          logfile_id,
-               unsigned char    *auth_key,
-               char            *u_ip)
-{
-    #ifdef DO_TRACE
-    DEBUG
-    #endif
-
-    //~ TODO: store auth_key not in plaintext
-
-    sqlite3 *db = 0;
-    char *err_msg = 0;
-
-    char buffer[SKLOG_SMALL_BUFFER_LEN] = { 0 };
-    char key[(SKLOG_AUTH_KEY_LEN*2)+1] = { 0 };
-    int i = 0;
-    int j = 0;
-
-    char uuid[UUID_STR_LEN+1] = { 0 };
-
-    sqlite3_open(SKLOG_T_DB,&db);
-    
-    if ( db == NULL ) {
-        fprintf(stderr,
-            "SQLite3: Can't open database: %s\n",sqlite3_errmsg(db));
-        sqlite3_close(db);
-        return SKLOG_FAILURE;
-    }
-
-    uuid_unparse_lower(logfile_id,uuid);
-    uuid[UUID_STR_LEN]='\0';
-
-    for ( i = 0 , j = 0 ; i < SKLOG_AUTH_KEY_LEN ; i++ , j += 2)
-        sprintf(key+j,"%2.2x",auth_key[i]);
-    key[j-1] = '\0';
-    
-    sprintf(buffer,
-        "insert into AUTH_KEYS values ('%s','%s','%s')",
-        u_ip,uuid,key);
-
-    if ( sqlite3_exec(db,buffer,sql_callback,0,
-                      &err_msg) != SQLITE_OK ) {
-        fprintf(stderr, "SQLite3: SQL error: %s\n",err_msg);
-        sqlite3_free(err_msg);
-        return SKLOG_FAILURE;
-    }
-
-    sqlite3_close(db);
-
-    return SKLOG_SUCCESS;
-}
-*/
-
 /*--------------------------------------------------------------------*/
 /* interactions with U nodes                                          */
 /*--------------------------------------------------------------------*/
@@ -795,8 +704,6 @@ manage_logsession_init(SKLOG_T_Ctx      *t_ctx,
 
     SKLOG_PROTOCOL_STEP p = 0;
     
-    //~ unsigned char u_id[HOST_NAME_MAX] = { 0 };
-
     uuid_t logfile_id;
 
     unsigned char *e_k0 = 0;
@@ -840,8 +747,7 @@ manage_logsession_init(SKLOG_T_Ctx      *t_ctx,
         ERROR("parse_m0() failure")
         goto error;
     }
-    
-    //~ SKLOG_FREE(m0)
+    SKLOG_free(&m0);
 
     //~ decrypt k0 using T's private key
     size_t len = 0;
@@ -853,9 +759,6 @@ manage_logsession_init(SKLOG_T_Ctx      *t_ctx,
     k0_len = len;
     SKLOG_free(&pke_t_k0);
 
-    //~ decrypt e_k0 using k0 key
-    //~ if ( decrypt_aes256(k0,e_k0,e_k0_len,&plain,
-                        //~ &plain_len) == SKLOG_FAILURE ) {
     if ( aes256_decrypt(e_k0,e_k0_len,k0,SKLOG_SESSION_KEY_LEN,&plain,
                         &plain_len) == SKLOG_FAILURE ) {
         ERROR("decrypt_aes256() failure")
@@ -879,8 +782,6 @@ manage_logsession_init(SKLOG_T_Ctx      *t_ctx,
     }
 
     //~ store auth_key
-    //~ if ( store_auth_key(u_id,auth_key) == SKLOG_FAILURE ) {
-    //~ if ( store_auth_key(logfile_id,auth_key,u_ip) == SKLOG_FAILURE ) {
     if ( t_ctx->lsdriver->store_authkey(u_ip,logfile_id,auth_key) == SKLOG_FAILURE ) {
         ERROR("store_auth_key() failure")
         goto error;
@@ -954,151 +855,21 @@ manage_logsession_init(SKLOG_T_Ctx      *t_ctx,
     return SKLOG_SUCCESS;
 
 error:
-    //~ if ( m0 ) free(m0);
-    if ( pke_t_k0 )    SKLOG_free(&pke_t_k0); 
-    if ( e_k0 )        SKLOG_free(&e_k0);
-    if ( k0 )          SKLOG_free(&k0);
-    if ( plain )       SKLOG_free(&plain);
-    if ( x0 )          SKLOG_free(&x0);
-    if ( x0_sign )     SKLOG_free(&x0_sign);
+    if ( pke_t_k0 > 0 )    SKLOG_free(&pke_t_k0); 
+    if ( e_k0 > 0 )        SKLOG_free(&e_k0);
+    if ( k0 > 0 )          SKLOG_free(&k0);
+    if ( plain > 0 )       SKLOG_free(&plain);
+    if ( x0 > 0 )          SKLOG_free(&x0);
+    if ( x0_sign > 0 )     SKLOG_free(&x0_sign);
     if ( u_cert )      X509_free(u_cert);
-    if ( x1 )          SKLOG_free(&x1);
-    if ( x1_sign )     SKLOG_free(&x1_sign);
-    if ( e_k1 )        SKLOG_free(&e_k1);
-    if ( pke_u_k1 )    SKLOG_free(&pke_u_k1);
-    if ( m1 )          SKLOG_free(&m1);
+    if ( x1 > 0 )          SKLOG_free(&x1);
+    if ( x1_sign > 0 )     SKLOG_free(&x1_sign);
+    if ( e_k1 > 0 )        SKLOG_free(&e_k1);
+    if ( pke_u_k1 > 0 )    SKLOG_free(&pke_u_k1);
+    if ( m1 > 0 )          SKLOG_free(&m1);
 
     return SKLOG_FAILURE;
 }
-
-/*
-static SKLOG_RETURN
-store_logentry(unsigned char *blob,
-               unsigned int blob_len)
-{
-    #ifdef DO_TRACE
-    DEBUG
-    #endif
-
-    int i = 0;
-
-    uint32_t type = 0;
-    unsigned int len = 0;
-    unsigned char *value = 0;
-
-    //~ char *w = 0;
-
-    //~ unsigned int wl = 0;
-    SKLOG_DATA_TYPE w = 0;
-    char *d = 0;
-    unsigned int dl = 0;
-    char *y = 0;
-    unsigned int yl = 0;
-    char *z = 0;
-    unsigned int zl = 0;
-    
-    //~ get logentry type
-
-    if ( tlv_parse_message(blob+i,LOGENTRY_TYPE,
-                           &type,&len,&value) == SKLOG_FAILURE) {
-        ERROR("tlv_parse_message() failure");
-        goto error;
-    }
-
-    //~ wl = len;
-
-    //~ SKLOG_CALLOC(w,wl+1,char);
-
-    //~ if ( SKLOG_alloc(&w,char,wl+1) == SKLOG_FAILURE ) {
-
-        //~ ERROR("SKLOG_alloc() failure");
-
-        //~ goto error;
-
-    //~ }
-    memcpy(&w,value,sizeof(w));
-    w = ntohl(w);
-    //~ w[wl]='\0';
-
-    i += (len + 8);
-
-    //~ get logentry message
-
-    if ( tlv_parse_message(blob+i,LOGENTRY_DATA,
-                           &type,&len,&value) == SKLOG_FAILURE ) {
-        ERROR("tlv_parse_message() failure");
-        goto error;
-    }
-
-    dl = len;
-    //~ SKLOG_CALLOC(d,dl+1,char);
-    if ( SKLOG_alloc(&d,char,dl+1) == SKLOG_FAILURE ) {
-        ERROR("SKLOG_alloc() failure");
-        goto error;
-    }
-    memcpy(d,value,dl);
-    d[dl]='\0';
-
-    i += (len + 8);
-    
-    //~ get logentry hash
-    
-    if ( tlv_parse_message(blob+i,LOGENTRY_HASH,
-                           &type,&len,&value) == SKLOG_FAILURE ) {
-        ERROR("tlv_parse_message() failure");
-        goto error;
-    }
-
-    yl = len;
-    //~ SKLOG_CALLOC(y,yl+1,char);
-    if ( SKLOG_alloc(&y,char,yl+1) == SKLOG_FAILURE ) {
-        ERROR("SKLOG_alloc() failure");
-        goto error;
-    }
-    memcpy(y,value,yl);
-    y[yl]='\0';
-
-    i += (len + 8);
-    
-    //~ get logentry hmac
-
-    if ( tlv_parse_message(blob+i,LOGENTRY_HMAC,
-                           &type,&len,&value) == SKLOG_FAILURE ) {
-        ERROR("tlv_parse_message() failure");
-        goto error;
-    }
-
-    zl = len;
-    //~ SKLOG_CALLOC(z,zl+1,char);
-    if ( SKLOG_alloc(&z,char,zl+1) == SKLOG_FAILURE ) {
-        ERROR("SKLOG_alloc() failure");
-        goto error;
-    }
-    memcpy(z,value,zl);
-    z[zl]='\0';
-
-    i += (len + 8);
-
-    fprintf(stderr,
-        "\n\ninsert into LOG_ENTRY values (%d,'%s','%s','%s')\n\n",
-        w,d,y,z);
-
-    //~ SKLOG_free(&w);
-    SKLOG_free(&d);
-    SKLOG_free(&y);
-    SKLOG_free(&z);
-
-    return SKLOG_SUCCESS;
-
-error:
-    //~ if ( w > 0 ) free(w); 
-    if ( d > 0 ) free(d); 
-    if ( y > 0 ) free(y); 
-    if ( z > 0 ) free(z);
-     
-    return SKLOG_FAILURE;
-}
-*/
 
 static SKLOG_RETURN
 manage_logfile_flush(SKLOG_T_Ctx    *t_ctx,
@@ -1111,18 +882,16 @@ manage_logfile_flush(SKLOG_T_Ctx    *t_ctx,
     int more = 1;
 
     int nread = 0;
-    //~ unsigned char msg[SKLOG_BUFFER_LEN] = { 0 };
     unsigned char buffer[SKLOG_BUFFER_LEN] = { 0 };
-    //~ unsigned int msg_len = 0;
 
     uint32_t type = 0;
     unsigned int len = 0;
     unsigned char *value = 0;
+
+    SSL_load_error_strings();
     
-    //~ if ( SSL_write(ssl,"LE_ACK",6) < 0 ) {
     if ( SSL_write(ssl,SKLOG_ACK,SKLOG_ACK_LEN) < 0 ) {
-        //~ todo: manage error
-        ERROR("SSL_write() failure")
+        ERR_print_errors_fp(stderr);
         goto error;
     } 
 
@@ -1131,12 +900,9 @@ manage_logfile_flush(SKLOG_T_Ctx    *t_ctx,
         nread = SSL_read(ssl,buffer,SKLOG_BUFFER_LEN);
 
         if ( nread <= 0 ) {
-            NOTIFY("SSL_read() failure")
+            ERR_print_errors_fp(stderr);
             goto error;
         }
-
-        
-        //~
 
         if ( tlv_get_type(buffer,&type) == SKLOG_FAILURE ) {
             ERROR("tlv_get_type() failure")
@@ -1152,9 +918,8 @@ manage_logfile_flush(SKLOG_T_Ctx    *t_ctx,
                     goto error;
                 }
 
-                //~ if ( store_logentry(value,len) == SKLOG_FAILURE ) {
                 if ( t_ctx->lsdriver->store_logentry(value,len) == SKLOG_FAILURE ) {
-                    ERROR("store_logentry() failure")
+                    ERROR("t_ctx->lsdriver->store_logentry() failure");
                     goto error;
                 }
                 
@@ -1165,39 +930,23 @@ manage_logfile_flush(SKLOG_T_Ctx    *t_ctx,
                 break;
             default:
                 ERROR("protocol error")
+                goto error;
                 break;
         } 
-         
         
-        //~
-
-        /*
-        if ( tlv_parse(buffer,LOGENTRY,msg,
-                       &msg_len) == SKLOG_SUCCESS ) {
-            NOTIFY("Storing log entry...")
-
-        } else if ( tlv_parse(buffer,LE_FLUSH_END,msg,
-                              &msg_len) == SKLOG_SUCCESS ) {
-            NOTIFY("Logfile fush terminated!")
-            more = 0;
-        } else {
-            todo: manage error
-            NOTIFY("Something goes wrong!")
-            goto error;
-        }
-        */
-
-        //~ if ( SSL_write(ssl,"LE_ACK",6) < 0 ) {
         if ( SSL_write(ssl,SKLOG_ACK,SKLOG_ACK_LEN) < 0 ) {
-            //~ todo: manage error
-            ERROR("SSL_write() failure")
+            ERR_print_errors_fp(stderr);
             goto error;
         }
         memset(buffer,0,SKLOG_BUFFER_LEN);
     }
+
+    ERR_free_strings();
+    return SKLOG_SUCCESS;
     
 error:
-    return SKLOG_SUCCESS;
+    ERR_free_strings();
+    return SKLOG_FAILURE;
 }
 
 /*--------------------------------------------------------------------*/
@@ -1215,7 +964,7 @@ SKLOG_T_NewCtx(void)
     SKLOG_T_Ctx *ctx = calloc(1,sizeof(SKLOG_T_Ctx));
 
     if ( ctx == NULL ) {
-        //~ error
+        ERROR("calloc() failure");
         return NULL;
     }
 
@@ -1224,15 +973,16 @@ SKLOG_T_NewCtx(void)
     ctx->lsdriver = calloc(1,sizeof(SKLOG_T_STORAGE_DRIVER));
 
     if ( ctx->lsdriver == NULL ) {
-        //~ error
+        ERROR("calloc() failure");
         return NULL;
     }
 
     #ifdef USE_SQLITE
-    ctx->lsdriver->store_authkey = &sklog_sqlite_t_store_authkey;
-    ctx->lsdriver->store_logentry = &sklog_sqlite_t_store_logentry;
+    ctx->lsdriver->store_authkey =     &sklog_sqlite_t_store_authkey;
+    ctx->lsdriver->store_logentry =    &sklog_sqlite_t_store_logentry;
     #else
-    ctx->lsdriver->store_authkey = &sklog_file_t_store_authkey;
+    ctx->lsdriver->store_authkey =     &sklog_file_t_store_authkey;
+    ctx->lsdriver->store_logentry =    &sklog_file_t_store_logentry;
     #endif
 
     return ctx;

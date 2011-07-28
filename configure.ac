@@ -12,8 +12,7 @@ AC_SUBST([LIB_VERSION],[0:1:0])
 # enable DO_TRACE
 #----------------------------------------------------------------------
 
-AC_ARG_ENABLE(
-    trace,
+AC_ARG_ENABLE([trace],
     AS_HELP_STRING(
         [--enable-trace],
         [Enable high verbosity mode for libsklog library [default=no]]
@@ -40,8 +39,7 @@ fi
 # enable DO_NOTIFY
 #----------------------------------------------------------------------
 
-AC_ARG_ENABLE(
-    notify,
+AC_ARG_ENABLE([notify],
     AS_HELP_STRING(
         [--enable-notify],
         [Enable notify messages for libsklog library [default=no]]
@@ -65,43 +63,10 @@ if test "x${enable_notify}" = "xyes" ; then
 fi
 
 #----------------------------------------------------------------------
-# enable USE_QUOTE
-#----------------------------------------------------------------------
-
-#AC_ARG_ENABLE(
-#    quote,
-#    AS_HELP_STRING(
-#        [--enable-quote],
-#        [Enable the usage of TPM_Quote in log entry computation 
-#            [default=no]]),
-#    [enable_quote=yes],
-#    [enable_quote=no]
-#)
-
-#AC_MSG_CHECKING(
-#    [whether to build with TPM_Quote support]
-#)
-
-#AC_MSG_RESULT(${enable_quote})
-
-#if test "x${enable_quote}" = "xyes" ; then
-#    AC_DEFINE(
-#        [USE_QUOTE],
-#        [],
-#        [Enable the usage of TPM_Quote in log entry computation]
-#    )
-#    AC_CHECK_LIB(
-#        [tpa],
-#        [TpaHL_CTX_allocate]
-#    )
-#fi
-
-#----------------------------------------------------------------------
 # enable Debug
 #----------------------------------------------------------------------
 
-AC_ARG_ENABLE(
-    debug,
+AC_ARG_ENABLE([debug],
     AC_HELP_STRING(
         [--enable-debug],
         [enable debug support [default=no]]),
@@ -126,13 +91,95 @@ if test "x${enable_debug}" = "xyes" ; then
 fi
 
 #----------------------------------------------------------------------
+# with SSL
+#----------------------------------------------------------------------
+checkssldir() { :
+    if test -f "$1/include/openssl/ssl.h"
+    then
+        ssldir="$1"
+        return 0
+    fi
+    if test -f "$1/include/ssl.h"
+    then
+        ssldir="$1"
+        return 0
+    fi
+    return 1
+}
+
+AC_MSG_CHECKING(
+    [for OpenSSL directory]
+)
+
+AC_ARG_WITH(
+    ssl,
+    AC_HELP_STRING(
+        [--with-ssl=DIR],
+        [location of installed OpenSSL libraries/include files]
+    ),
+    [checkssldir "$withval"],
+    [
+        for maindir in /usr /usr/local /opt; do
+            for dir in $maindir $maindir/openssl $maindir/ssl; do
+               checkssldir $dir && break 2
+            done
+        done
+    ]
+)
+
+if test -z "$ssldir"
+then AC_MSG_RESULT([Not found])
+    echo -e "\nCouldn't find your OpenSSL dir\n"
+    echo -e "Use --with-ssl option to fix this problem\n"
+    exit 1
+fi
+AC_MSG_RESULT([$ssldir])
+
+# add SSL include and libraries
+CFLAGS="$CFLAGS -I$ssldir/include"
+LIBS="$LIBS -L$ssldir/lib -lcrypto -lssl"
+
+#----------------------------------------------------------------------
+# without STORAGE SQLite
+#----------------------------------------------------------------------
+AC_ARG_WITH([storage-sqlite],
+    AC_HELP_STRING(
+        [--without-storage-sqlite],
+        [disable sqlite as storage driver]
+    ),
+    [],
+    [without_storage_sqlite=no]
+)
+
+if test "x$without_storage_sqlite" == "xno"; then
+    CFLAGS="$CFLAGS -DUSE_SQLITE"
+    LIBS="$LIBS -lsqlite3"
+    AC_CHECK_LIB([sqlite3],[sqlite3_open])
+fi
+
+#----------------------------------------------------------------------
+# with STORAGE File
+#----------------------------------------------------------------------
+AC_ARG_WITH([storage-file],
+    AC_HELP_STRING(
+        [--with-storage-file],
+        [set file as storage driver]
+    ),
+    [],
+    [with_storage_file=no]
+)
+
+if test "x$with_storage_file" != "xno"; then
+    CFLAGS="$CFLAGS -DUSE_FILE"
+fi
+
+#----------------------------------------------------------------------
 # checking for libraries
 #----------------------------------------------------------------------
-AC_CHECK_LIB([crypto],[EVP_MD_CTX_init])
-AC_CHECK_LIB([ssl],[SSL_CTX_new])
+#AC_CHECK_LIB([crypto],[EVP_MD_CTX_init])
+#AC_CHECK_LIB([ssl],[SSL_CTX_new])
 AC_CHECK_LIB([confuse],[cfg_init])
 AC_CHECK_LIB([uuid],[uuid_generate_random])
-AC_CHECK_LIB([sqlite3],[sqlite3_open])
 
 #----------------------------------------------------------------------
 #----------------------------------------------------------------------

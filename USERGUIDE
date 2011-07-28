@@ -1,3 +1,13 @@
+libsklog - Make secure logging using Schneier and Kelsey scheme
+===============================================================
+
+	Copyright (C) 2007-2010 Politecnico di Torino, Italy
+	TORSEC group -- http://security.polito.it
+
+    Author: Paolo Smiraglia <paolo.smiraglia@polito.it>
+
+
+
 1 Introduction
 ==============
 

@@ -30,7 +30,6 @@
 #endif
 
 #include <confuse.h>
-//~ #include <sqlite3.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -289,8 +288,6 @@ gen_enc_key(SKLOG_U_Ctx        *ctx,
 
     buflen = sizeof(type) + SKLOG_AUTH_KEY_LEN;
 
-    //~ SKLOG_CALLOC(buffer,buflen,char)
-
     if ( SKLOG_alloc(&buffer,unsigned char,buflen) == SKLOG_FAILURE ) {
         ERROR("SKLOG_alloc() failure");
         goto error;
@@ -327,7 +324,6 @@ gen_enc_key(SKLOG_U_Ctx        *ctx,
 
     EVP_MD_CTX_cleanup(&mdctx);
 
-    //~ SKLOG_FREE(buffer);
     SKLOG_free(&buffer);
     ERR_free_strings();
     return SKLOG_SUCCESS;
@@ -522,84 +518,6 @@ error:
     ERR_free_strings();
     return SKLOG_FAILURE;
 }
-
-/*
-static int
-sql_callback(void    *NotUsed,
-             int     argc,
-             char    **argv,
-             char    **azColName)
-{
-    int i = 0;
-    for ( i = 0 ; i < argc ; i++ )
-        fprintf(stderr,
-            "%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
-    fprintf(stderr,"\n");
-    return 0;
-}
-
-static SKLOG_RETURN
-store_logentry(SKLOG_DATA_TYPE    type,
-               unsigned char      *data_enc,
-               unsigned int       data_enc_len,
-               unsigned char      *hash_chain,
-               unsigned char      *hmac)
-{
-    #ifdef DO_TRACE
-    DEBUG
-    #endif
-
-    //~ todo: store auth_key not in plaintext
-
-    sqlite3 *db = 0;
-    char *err_msg = 0;
-
-    char buffer[4096] = { 0 };
-    int i = 0;
-    int j = 0;
-
-    char buf_type[9] = { 0 };
-    sprintf(buf_type,"%8.8x",htonl(type));
-
-    char *buf_data = 0;
-    buf_data = calloc(1+(data_enc_len*2),sizeof(char)); 
-    for ( i = 0 , j = 0 ; i < data_enc_len ; i++ , j += 2)
-        sprintf(buf_data+j,"%2.2x",data_enc[i]);
-
-    char buf_hash[1+(SKLOG_HASH_CHAIN_LEN*2)] = { 0 };
-    for ( i = 0 , j = 0 ; i < SKLOG_HASH_CHAIN_LEN ; i++ , j += 2)
-        sprintf(buf_hash+j,"%2.2x",hash_chain[i]);
-
-    char buf_hmac[1+(SKLOG_HMAC_LEN*2)] = { 0 };
-    for ( i = 0 , j = 0 ; i < SKLOG_HMAC_LEN ; i++ , j += 2)
-        sprintf(buf_hmac+j,"%2.2x",hmac[i]);
-
-    sqlite3_open(SKLOG_U_DB,&db);
-    
-    if ( db == NULL ) {
-        fprintf(stderr,
-            "SQLite3: Can't open database: %s\n",sqlite3_errmsg(db));
-        goto error;
-    }
-
-    sprintf(buffer,"insert into LOG_ENTRY values ('%s','%s','%s','%s')",
-                   buf_type,buf_data,buf_hash,buf_hmac);
-
-    if ( sqlite3_exec(db,buffer,sql_callback,0,
-                      &err_msg) != SQLITE_OK ) {
-        fprintf(stderr, "SQLite3: SQL error: %s\n",err_msg);
-        goto error;
-    }
-
-    sqlite3_close(db);
-
-    return SKLOG_SUCCESS;
-
-error:
-    if ( db ) sqlite3_close(db);
-    return SKLOG_FAILURE; 
-}
-*/
 
 static SKLOG_RETURN
 create_logentry(SKLOG_U_Ctx        *u_ctx,
@@ -2022,46 +1940,56 @@ SKLOG_U_NewCtx(void)
     #ifdef DO_TRACE
     DEBUG
     #endif
-    
-    //~ SKLOG_U_Ctx ctx = {
-        //~ SKLOG_U_CTX_NOT_INITIALIZED,
-        //~ {0},0,0,0,0,
-        //~ 0,{0},{0},0,
-        //~ 0,0,{0},
-        //~ {0},{0},{0},{0}
-    //~ };
 
     SKLOG_U_Ctx *ctx = calloc(1,sizeof(SKLOG_U_Ctx));
 
     if ( ctx == NULL ) {
-        //~ error
+        ERROR("calloc() failure");
         return NULL;
     }
     
     ctx->lsdriver = calloc(1,sizeof(SKLOG_U_STORAGE_DRIVER));
 
     if ( ctx->lsdriver == NULL ) {
-        //~ error
+        ERROR("calloc() failure");
         return NULL;
     }
 
     #ifdef USE_SQLITE
-    ctx->lsdriver->store_logentry = &sklog_sqlite_u_store_logentry;
-    ctx->lsdriver->flush_logfile = &sklog_sqlite_u_flush_logfile;
-    ctx->lsdriver->init_logfile = &sklog_sqlite_u_init_logfile;
+    ctx->lsdriver->store_logentry =    &sklog_sqlite_u_store_logentry;
+    ctx->lsdriver->flush_logfile =     &sklog_sqlite_u_flush_logfile;
+    ctx->lsdriver->init_logfile =      &sklog_sqlite_u_init_logfile;
     #else
-    ctx->lsdriver->store_logentry = &sklog_file_u_store_logentry;
-    ctx->lsdriver->flush_logfile = &sklog_file_u_flush_logfile;
+    ctx->lsdriver->store_logentry =    &sklog_file_u_store_logentry;
+    ctx->lsdriver->flush_logfile =     &sklog_file_u_flush_logfile;
+    ctx->lsdriver->init_logfile =      &sklog_file_u_init_logfile;
     #endif
 
     return ctx;
 }
 
 SKLOG_RETURN
-SKLOG_U_CreateLogentry(SKLOG_U_Ctx        *u_ctx,
-                       SKLOG_DATA_TYPE    type,
-                       char               *data,
-                       unsigned int       data_len)
+SKLOG_U_FreeCtx(SKLOG_U_Ctx **ctx)
+{
+    #ifdef DO_TRACE
+    DEBUG
+    #endif
+    
+    X509_free((*ctx)->u_cert);
+    X509_free((*ctx)->t_cert);
+    EVP_PKEY_free((*ctx)->u_privkey);
+
+    memset(*ctx,0,sizeof(SKLOG_U_Ctx));
+    *ctx = 0;
+    
+    return SKLOG_SUCCESS;
+}
+
+SKLOG_RETURN
+SKLOG_U_LogEvent(SKLOG_U_Ctx        *u_ctx,
+                 SKLOG_DATA_TYPE    type,
+                 char               *data,
+                 unsigned int       data_len)
 {
     #ifdef DO_TRACE
     DEBUG
@@ -2070,7 +1998,6 @@ SKLOG_U_CreateLogentry(SKLOG_U_Ctx        *u_ctx,
     unsigned char *data_blob = 0;
     unsigned int data_blob_len = 0;
 
-    //~ SKLOG_CALLOC(data_blob,data_len,unsigned char)
     if ( SKLOG_alloc(&data_blob,unsigned char,data_len) == SKLOG_FAILURE ) {
         ERROR("SKLOG_alloc() failure");
         goto error;

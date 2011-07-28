@@ -13,11 +13,8 @@ libsklog_la_SOURCES = \
 
 libsklog_la_CFLAGS = -Wall -Werror \
 	-DETC_PREFIX=\"@sysconfdir@\" \
-	-DVAR_PREFIX=\"@localstatedir@\" \
-	-DUSE_SQLITE
+	-DVAR_PREFIX=\"@localstatedir@\"
 
 libsklog_la_LDFLAGS = \
 	--version-info $(LIB_VERSION) \
-	-lconfuse -lcrypto -lssl \
-	-luuid -lsqlite3
-
+	-lconfuse -luuid
