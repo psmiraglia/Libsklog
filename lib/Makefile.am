@@ -9,7 +9,8 @@ libsklog_la_SOURCES = \
 	sklog_v.c sklog_v.h \
 	sklog_utils.c sklog_utils.h \
 	storage/sklog_sqlite.c storage/sklog_sqlite.h \
-	storage/sklog_file.c storage/sklog_file.h
+	storage/sklog_file.c storage/sklog_file.h \
+	storage/sklog_syslog.c storage/sklog_syslog.h
 
 libsklog_la_CFLAGS = -Wall -Werror \
 	-DETC_PREFIX=\"@sysconfdir@\" \

@@ -23,12 +23,19 @@
 #include "sklog_commons.h"
 #include "sklog_internal.h"
 #include "sklog_t.h"
-#ifdef USE_SQLITE
+
+
+#ifdef USE_FILE
+    #include "storage/sklog_file.h"
+#elif USE_SYSLOG
+    #include "storage/sklog_syslog.h"
+#elif USE_SQLITE
     #include "storage/sklog_sqlite.h"
 #else
-    #include "storage/sklog_file.h"
+    //~ todo: manage default case
 #endif
 
+#include <confuse.h>
 #include <sqlite3.h>
 #include <string.h>
 #include <unistd.h>
@@ -242,7 +249,6 @@ tcp_bind(const char    *address,
 /* logging session initialization                                     */
 /*--------------------------------------------------------------------*/
 
-// todo: to implement
 static SKLOG_RETURN
 parse_config_file(char    **t_cert,
                   char    **t_privkey,
@@ -255,16 +261,68 @@ parse_config_file(char    **t_cert,
     DEBUG
     #endif
 
-    TO_IMPLEMENT
+    char buffer[SKLOG_SMALL_BUFFER_LEN] = { 0 };
+    int len = 0;
 
-    *t_cert = SKLOG_DEF_T_CERT_PATH;
-    *t_privkey = SKLOG_DEF_T_RSA_KEY_PATH;
+    cfg_opt_t opts[] = {
+        CFG_STR("t_cert",SKLOG_DEF_T_CERT_PATH,CFGF_NONE),
+        CFG_STR("t_privkey",SKLOG_DEF_T_RSA_KEY_PATH,CFGF_NONE),
+        CFG_STR("t_privkey_passphrase",SKLOG_DEF_T_RSA_KEY_PASSPHRASE,CFGF_NONE),
+        CFG_STR("t_id",SKLOG_DEF_T_ID,CFGF_NONE),
+        CFG_STR("t_address",SKLOG_DEF_T_ADDRESS,CFGF_NONE),
+        CFG_INT("t_port",SKLOG_DEF_T_PORT,CFGF_NONE),
+        CFG_END()
+    };
+
+    cfg_t *cfg = NULL;
+    cfg = cfg_init(opts, CFGF_NONE);
+    
+    if( cfg_parse(cfg,SKLOG_T_CONFIG_FILE_PATH) == CFG_PARSE_ERROR ) {
+        ERROR("cfg_parse() failure")
+        goto error;
+    }
+
+    //~ load t_cert ($ETC_PREFIX/libsklog/certs/ca/ca_cert.pem)
+    len = sprintf(buffer,"%s",cfg_getstr(cfg,"t_cert"));
+    *t_cert = calloc(len+1,sizeof(char));
+    memcpy(*t_cert,buffer,len);
+    (*t_cert)[len] = '\0';
+    memset(buffer,0,SKLOG_SMALL_BUFFER_LEN);
+    
+    //~ load t_privkey ($ETC_PREFIX/libsklog/certs/private/ca_key.pem)
+    len = sprintf(buffer,"%s",cfg_getstr(cfg,"t_privkey"));
+    *t_privkey = calloc(len+1,sizeof(char));
+    memcpy(*t_privkey,buffer,len);
+    (*t_privkey)[len] = '\0';
+    memset(buffer,0,SKLOG_SMALL_BUFFER_LEN);
+
+    //~ load t_privkey_passphrase (123456)
     *t_privkey_passphrase = SKLOG_DEF_T_RSA_KEY_PASSPHRASE;
-    *t_id = SKLOG_DEF_T_ID;
-    *t_address = SKLOG_DEF_T_ADDRESS;
-    *t_port = SKLOG_DEF_T_PORT;
+    
+    //~ load t_id (t.example.com)
+    len = sprintf(buffer,"%s",cfg_getstr(cfg,"t_id"));
+    *t_id = calloc(len+1,sizeof(char));
+    memcpy(*t_id,buffer,len);
+    (*t_id)[len] = '\0';
+    memset(buffer,0,SKLOG_SMALL_BUFFER_LEN);
 
-    return SKLOG_TO_IMPLEMENT;
+    //~ load t_address (127.0.0.1)
+    len = sprintf(buffer,"%s",cfg_getstr(cfg,"t_address"));
+    *t_address = calloc(len+1,sizeof(char));
+    memcpy(*t_address,buffer,len);
+    (*t_address)[len] = '\0';
+    memset(buffer,0,SKLOG_SMALL_BUFFER_LEN);
+
+    //~ load t_port (5555)
+    *t_port = cfg_getint(cfg,"t_port");
+
+    cfg_free(cfg);
+
+    return SKLOG_SUCCESS;
+    
+error:
+    if ( cfg ) cfg_free(cfg);
+    return SKLOG_FAILURE;
 }
 
 static SKLOG_RETURN
@@ -346,15 +404,84 @@ parse_m0(SKLOG_T_Ctx            *t_ctx,
 }
 
 // todo: to implement
+//~ static SKLOG_RETURN
+//~ verify_m0(void)
+//~ {
+    //~ #ifdef DO_TRACE
+    //~ DEBUG
+    //~ #endif
+//~ 
+    //~ TO_IMPLEMENT;
+//~ 
+    //~ return SKLOG_TO_IMPLEMENT;
+//~ }
+
 static SKLOG_RETURN
-verify_m0(void)
+verify_m0_signature(X509             *u_cert,
+                    unsigned char    *x0_sign,
+                    size_t           x0_sign_len,
+                    unsigned char    *x0,
+                    unsigned int     x0_len)
 {
     #ifdef DO_TRACE
     DEBUG
     #endif
 
-    TO_IMPLEMENT;
+    EVP_PKEY *u_pubkey = 0;
+
+    ERR_load_crypto_strings();
+
+    if ( u_cert == NULL ) {
+        ERROR("u_cert variable must be not null");
+        goto error;
+    }
+
+    if ( x0_sign == NULL ) {
+        ERROR("x0_sign variable must be not null");
+        goto error;
+    }
+    if ( x0 == NULL ) {
+        ERROR("x0 variable must be not null");
+        goto error;
+    }
+
+    if ( (u_pubkey = X509_get_pubkey(u_cert)) == NULL ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+
+    if ( sign_verify(u_pubkey,x0_sign,x0_sign_len,
+                                        x0,x0_len) == SKLOG_FAILURE ) {
+        ERROR("sign_verify() failure")
+        goto error;
+    }
+
+    ERR_free_strings();
+    EVP_PKEY_free(u_pubkey);
     
+    return SKLOG_SUCCESS;
+
+error:
+    if ( u_pubkey > 0 ) EVP_PKEY_free(u_pubkey); 
+    ERR_free_strings();
+
+    return SKLOG_FAILURE;
+}
+
+static SKLOG_RETURN
+verify_m0_certificate(X509 *u_cert)
+{
+    #ifdef DO_TRACE
+    DEBUG
+    #endif
+
+    if ( u_cert == NULL ) {
+        ERROR("u_cert variable must be not null");
+        return SKLOG_FAILURE;
+    }
+
+    TO_IMPLEMENT;
+
     return SKLOG_TO_IMPLEMENT;
 }
 
@@ -754,7 +881,7 @@ manage_logsession_init(SKLOG_T_Ctx      *t_ctx,
     if ( pke_decrypt(t_ctx->t_priv_key,pke_t_k0,
                      pke_t_k0_len,&k0,&len) == SKLOG_FAILURE ) {
         ERROR("pke_decrypt() failure")
-        goto error;
+        goto error; //~ m0 verification fails
     }
     k0_len = len;
     SKLOG_free(&pke_t_k0);
@@ -762,7 +889,7 @@ manage_logsession_init(SKLOG_T_Ctx      *t_ctx,
     if ( aes256_decrypt(e_k0,e_k0_len,k0,SKLOG_SESSION_KEY_LEN,&plain,
                         &plain_len) == SKLOG_FAILURE ) {
         ERROR("decrypt_aes256() failure")
-        goto error;
+        goto error; //~ m0 verification fails
     }
     SKLOG_free(&e_k0);
     SKLOG_free(&k0);
@@ -781,21 +908,43 @@ manage_logsession_init(SKLOG_T_Ctx      *t_ctx,
         goto error;
     }
 
+    /*----------------------------------------------------------------*/
+    
+    /**
+     * M0 Verification
+     *
+     * The M0 message verification may include multiple steps which are
+     * not specified. In the paper, authors suggest as verification
+     * steps only the signature and certificate verification.
+     *
+     * Users may define a custom verification steps list.
+     */
+
+    //~ verify U's signature
+    if ( verify_m0_signature(u_cert,x0_sign,x0_sign_len,
+                                        x0,x0_len) == SKLOG_FAILURE ) {
+        ERROR("verify_m0_signature() failure")
+        goto error;
+    }
+    SKLOG_free(&x0_sign);
+
+    //~ check validity of U's certificate
+    if ( verify_m0_certificate(u_cert) == SKLOG_FAILURE ) {
+        ERROR("verify_m0_certificate() failure")
+        goto error;
+    }
+    
+    /*----------------------------------------------------------------*/
+
     //~ store auth_key
-    if ( t_ctx->lsdriver->store_authkey(u_ip,logfile_id,auth_key) == SKLOG_FAILURE ) {
+    if ( t_ctx->lsdriver->store_authkey(u_ip,logfile_id,
+                                         auth_key) == SKLOG_FAILURE ) {
         ERROR("store_auth_key() failure")
         goto error;
     }
     
     //~ remove auth_key from memory
     memset(auth_key,0,SKLOG_AUTH_KEY_LEN); 
-    
-    //~ verify m0:
-    if ( verify_m0() == SKLOG_FAILURE ) {
-        ERROR("verify_m0() failure")
-        goto error;
-    }
-    SKLOG_free(&x0_sign);
 
     /*----------------------------------------------------------------*/
     /*----------------------------------------------------------------*/
@@ -951,6 +1100,7 @@ error:
 
 /*--------------------------------------------------------------------*/
 /*--------------------------------------------------------------------*/
+/*                             LOCAL                                  */
 /*--------------------------------------------------------------------*/
 /*--------------------------------------------------------------------*/
 
@@ -977,12 +1127,17 @@ SKLOG_T_NewCtx(void)
         return NULL;
     }
 
-    #ifdef USE_SQLITE
+    #ifdef USE_FILE
+    ctx->lsdriver->store_authkey =     &sklog_file_t_store_authkey;
+    ctx->lsdriver->store_logentry =    &sklog_file_t_store_logentry;
+    #elif USE_SYSLOG
+    ctx->lsdriver->store_authkey =     &sklog_syslog_t_store_authkey;
+    ctx->lsdriver->store_logentry =    &sklog_syslog_t_store_logentry;
+    #elif USE_SQLITE
     ctx->lsdriver->store_authkey =     &sklog_sqlite_t_store_authkey;
     ctx->lsdriver->store_logentry =    &sklog_sqlite_t_store_logentry;
     #else
-    ctx->lsdriver->store_authkey =     &sklog_file_t_store_authkey;
-    ctx->lsdriver->store_logentry =    &sklog_file_t_store_logentry;
+    //~ todo: manage default case
     #endif
 
     return ctx;
@@ -1084,6 +1239,12 @@ error:
     ERR_free_strings();
     return SKLOG_FAILURE;
 }
+
+/*--------------------------------------------------------------------*/
+/*--------------------------------------------------------------------*/
+/*                            SERVER                                  */
+/*--------------------------------------------------------------------*/
+/*--------------------------------------------------------------------*/
 
 SKLOG_RETURN
 SKLOG_T_Run(SKLOG_T_Ctx    *t_ctx)
@@ -1242,3 +1403,9 @@ failure:
     close(lskt);
     return SKLOG_SUCCESS; 
 }
+
+/*--------------------------------------------------------------------*/
+/*--------------------------------------------------------------------*/
+/*                            CLIENT                                  */
+/*--------------------------------------------------------------------*/
+/*--------------------------------------------------------------------*/

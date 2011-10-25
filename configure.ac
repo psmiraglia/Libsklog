@@ -174,6 +174,22 @@ if test "x$with_storage_file" != "xno"; then
 fi
 
 #----------------------------------------------------------------------
+# with STORAGE Syslog
+#----------------------------------------------------------------------
+AC_ARG_WITH([storage-syslog],
+    AC_HELP_STRING(
+        [--with-storage-syslog],
+        [send logentry to syslog daemon]
+    ),
+    [],
+    [with_storage_syslog=no]
+)
+
+if test "x$with_storage_syslog" != "xno"; then
+    CFLAGS="$CFLAGS -DUSE_SYSLOG"
+fi
+
+#----------------------------------------------------------------------
 # checking for libraries
 #----------------------------------------------------------------------
 #AC_CHECK_LIB([crypto],[EVP_MD_CTX_init])

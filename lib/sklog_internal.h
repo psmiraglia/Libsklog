@@ -163,4 +163,25 @@ flush_logfile_send_logentry(SSL              *ssl,
                             unsigned char    *z,
                             unsigned int     z_len);
 
+/*--------------------------------------------------------------------*/
+/*                         conenctions                                */
+/*--------------------------------------------------------------------*/
+
+SSL_CTX*
+init_ssl_ctx_c(X509        *client_cert,
+               EVP_PKEY    *client_privkey,
+               char        *ca_cert_path,
+               int         verify);
+
+int
+tcp_connect(const char    *address,
+            short int     port);
+
+SSL*
+init_ssl_structure_c(SSL_CTX    *ctx,
+                     int        socket);
+
+SKLOG_RETURN
+conn_close(SKLOG_CONNECTION    *conn);                   
+
 #endif /* SKLOG_INTERNAL_H */

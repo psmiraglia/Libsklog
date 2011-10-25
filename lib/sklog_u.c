@@ -23,11 +23,16 @@
 #include "sklog_internal.h"
 #include "sklog_u.h"
 
-#ifdef USE_SQLITE
+#ifdef USE_FILE
+    #include "storage/sklog_file.h"
+#elif USE_SYSLOG
+    #include "storage/sklog_syslog.h"
+#elif USE_SQLITE
     #include "storage/sklog_sqlite.h"
 #else
-    #include "storage/sklog_file.h"
+    //~ todo: manage default case
 #endif
+
 
 #include <confuse.h>
 #include <string.h>
@@ -42,186 +47,186 @@
 
 #include <openssl/evp.h>
 #include <openssl/ssl.h>
-#include <arpa/inet.h>
+//~ #include <arpa/inet.h>
 
 /*--------------------------------------------------------------------*/
 /* connection                                                         */
 /*--------------------------------------------------------------------*/
 
-static SSL_CTX*
-init_ssl_ctx(SKLOG_U_Ctx    *u_ctx,
-             int            verify)
-{
-    #ifdef DO_TRACE
-    DEBUG
-    #endif
-    
-    SSL_CTX *ctx = 0;
-    const SSL_METHOD *meth = 0;
-    
-    SSL_library_init();
-    SSL_load_error_strings();
-    
-    /*
-     * Create an SSL_METHOD structure 
-     * (choose an SSL/TLS protocol version) 
-     */
-    meth = SSLv3_method();
-    
-    /* Create an SSL_CTX structure */
-    if ( (ctx = SSL_CTX_new(meth)) == NULL ) {
-        ERR_print_errors_fp(stderr);
-        goto error;
-    }
-    
-    if ( verify == 1 ) {
+//~ static SSL_CTX*
+//~ init_ssl_ctx(SKLOG_U_Ctx    *u_ctx,
+             //~ int            verify)
+//~ {
+    //~ #ifdef DO_TRACE
+    //~ DEBUG
+    //~ #endif
+    //~ 
+    //~ SSL_CTX *ctx = 0;
+    //~ const SSL_METHOD *meth = 0;
+    //~ 
+    //~ SSL_library_init();
+    //~ SSL_load_error_strings();
+    //~ 
+    //~ /*
+     //~ * Create an SSL_METHOD structure 
+     //~ * (choose an SSL/TLS protocol version) 
+     //~ */
+    //~ meth = SSLv3_method();
+    //~ 
+    //~ /* Create an SSL_CTX structure */
+    //~ if ( (ctx = SSL_CTX_new(meth)) == NULL ) {
+        //~ ERR_print_errors_fp(stderr);
+        //~ goto error;
+    //~ }
+    //~ 
+    //~ if ( verify == 1 ) {
+//~ 
+        //~ /* Load the client certificate into the SSL_CTX structure */
+        //~ if ( SSL_CTX_use_certificate(ctx,u_ctx->u_cert) <= 0 ) {
+            //~ ERR_print_errors_fp(stderr);
+            //~ goto error;
+        //~ }
+        //~ 
+        //~ /*
+         //~ * Load the private-key corresponding
+         //~ * to the client certificate
+         //~ */
+        //~ if ( SSL_CTX_use_PrivateKey(ctx,u_ctx->u_privkey) <= 0 ) {
+            //~ 
+            //~ goto error;
+        //~ }
+        //~ 
+        //~ /* Check if the client certificate and private-key matches */
+        //~ if ( !SSL_CTX_check_private_key(ctx) ) {
+            //~ ERROR("Private key does not match the certificate public key");
+            //~ goto error;
+        //~ }
+    //~ }
+    //~ 
+    //~ /*
+     //~ * Load the RSA CA certificate into the SSL_CTX structure This will
+     //~ * allow this client to verify the server's certificate.
+     //~ */
+    //~ 
+    //~ if ( !SSL_CTX_load_verify_locations(ctx,u_ctx->t_cert_path,NULL) ) {
+        //~ ERR_print_errors_fp(stderr);
+        //~ goto error;
+    //~ }
+    //~ 
+    //~ /*
+     //~ * Set flag in context to require peer (server) certificate
+     //~ * verification
+     //~ */
+    //~ 
+    //~ SSL_CTX_set_verify(ctx,SSL_VERIFY_PEER,NULL);
+    //~ SSL_CTX_set_verify_depth(ctx,1);
+//~ 
+    //~ return ctx;
+//~ 
+//~ error:
+    //~ if ( ctx ) SSL_CTX_free(ctx);
+    //~ return NULL;
+//~ }
 
-        /* Load the client certificate into the SSL_CTX structure */
-        if ( SSL_CTX_use_certificate(ctx,u_ctx->u_cert) <= 0 ) {
-            ERR_print_errors_fp(stderr);
-            goto error;
-        }
-        
-        /*
-         * Load the private-key corresponding
-         * to the client certificate
-         */
-        if ( SSL_CTX_use_PrivateKey(ctx,u_ctx->u_privkey) <= 0 ) {
-            
-            goto error;
-        }
-        
-        /* Check if the client certificate and private-key matches */
-        if ( !SSL_CTX_check_private_key(ctx) ) {
-            ERROR("Private key does not match the certificate public key");
-            goto error;
-        }
-    }
-    
-    /*
-     * Load the RSA CA certificate into the SSL_CTX structure This will
-     * allow this client to verify the server's certificate.
-     */
-    
-    if ( !SSL_CTX_load_verify_locations(ctx,u_ctx->t_cert_path,NULL) ) {
-        ERR_print_errors_fp(stderr);
-        goto error;
-    }
-    
-    /*
-     * Set flag in context to require peer (server) certificate
-     * verification
-     */
-    
-    SSL_CTX_set_verify(ctx,SSL_VERIFY_PEER,NULL);
-    SSL_CTX_set_verify_depth(ctx,1);
-
-    return ctx;
-
-error:
-    if ( ctx ) SSL_CTX_free(ctx);
-    return NULL;
-}
-
-static int
-tcp_connect(const char *address, short int port)
-{
-    #ifdef DO_TRACE
-    DEBUG
-    #endif
-    
-    int skt = 0;
-    struct sockaddr_in server_addr;
-
-    skt = socket(PF_INET,SOCK_STREAM,IPPROTO_TCP);
-
-    if ( skt < 0 ) {
-        ERROR("socket() failure")
-        return -1;
-    }
-    
-    memset (&server_addr,0,sizeof(server_addr));
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(port);
-    server_addr.sin_addr.s_addr = inet_addr(address);
-    
-    /* Establish a TCP/IP connection to the SSL client */
-    
-    NOTIFY(address)
-    
-    if ( connect(skt, (struct sockaddr*) &server_addr,
-                 sizeof(server_addr)) < 0 ) {
-        ERROR("connect() failure")
-        return -1;
-    }
-    
-    return skt;
-}
+//~ static int
+//~ tcp_connect(const char *address, short int port)
+//~ {
+    //~ #ifdef DO_TRACE
+    //~ DEBUG
+    //~ #endif
+    //~ 
+    //~ int skt = 0;
+    //~ struct sockaddr_in server_addr;
+//~ 
+    //~ skt = socket(PF_INET,SOCK_STREAM,IPPROTO_TCP);
+//~ 
+    //~ if ( skt < 0 ) {
+        //~ ERROR("socket() failure")
+        //~ return -1;
+    //~ }
+    //~ 
+    //~ memset (&server_addr,0,sizeof(server_addr));
+    //~ server_addr.sin_family = AF_INET;
+    //~ server_addr.sin_port = htons(port);
+    //~ server_addr.sin_addr.s_addr = inet_addr(address);
+    //~ 
+    //~ /* Establish a TCP/IP connection to the SSL client */
+    //~ 
+    //~ NOTIFY(address)
+    //~ 
+    //~ if ( connect(skt, (struct sockaddr*) &server_addr,
+                 //~ sizeof(server_addr)) < 0 ) {
+        //~ ERROR("connect() failure")
+        //~ return -1;
+    //~ }
+    //~ 
+    //~ return skt;
+//~ }
 
 
-static SSL*
-init_ssl_structure(SSL_CTX *ctx,int socket)
-{
-    #ifdef DO_TRACE
-    DEBUG
-    #endif
-    
-    SSL *ssl = 0;
-
-    if ( (ssl = SSL_new(ctx)) == NULL ) {
-        ERROR("SSL_new() failure")
-        goto error;
-    }
-    
-    /*
-     * Assign the socket into the SSL structure
-     * (SSL and socket without BIO)
-     */
-    SSL_set_fd(ssl,socket);
-    
-    /* Perform SSL Handshake on the SSL client */
-    if ( SSL_connect(ssl) < 0 ) {
-        ERROR("SSL_connect() failure")
-        goto error;
-    }
-
-    #ifdef DO_NOTIFY
-
-    char *str = 0;
-    X509 *server_cert = 0;
-
-    /* Get the server's certificate (optional) */
-    server_cert = SSL_get_peer_certificate (ssl);    
-    
-    if ( server_cert != NULL ) {
-
-        fprintf(stderr,"Server certificate:\n");
-        
-        str = X509_NAME_oneline(X509_get_subject_name(server_cert),0,0);
-        if ( str != NULL ) { 
-            fprintf (stderr,"\t subject: %s\n", str);
-            free (str);
-        }
-
-        str = X509_NAME_oneline(X509_get_issuer_name(server_cert),0,0);
-        if ( str != NULL ) {
-            fprintf (stderr,"\t issuer: %s\n", str);
-            free(str);
-        }
-        
-        X509_free (server_cert);
-    } else {
-        fprintf(stderr,"The SSL server does not have certificate.\n");
-    }
-
-    #endif
-
-    return ssl;
-    
-error:
-    if ( ssl ) SSL_free(ssl);
-    return NULL;
-}
+//~ static SSL*
+//~ init_ssl_structure(SSL_CTX *ctx,int socket)
+//~ {
+    //~ #ifdef DO_TRACE
+    //~ DEBUG
+    //~ #endif
+    //~ 
+    //~ SSL *ssl = 0;
+//~ 
+    //~ if ( (ssl = SSL_new(ctx)) == NULL ) {
+        //~ ERROR("SSL_new() failure")
+        //~ goto error;
+    //~ }
+    //~ 
+    //~ /*
+     //~ * Assign the socket into the SSL structure
+     //~ * (SSL and socket without BIO)
+     //~ */
+    //~ SSL_set_fd(ssl,socket);
+    //~ 
+    //~ /* Perform SSL Handshake on the SSL client */
+    //~ if ( SSL_connect(ssl) < 0 ) {
+        //~ ERROR("SSL_connect() failure")
+        //~ goto error;
+    //~ }
+//~ 
+    //~ #ifdef DO_NOTIFY
+//~ 
+    //~ char *str = 0;
+    //~ X509 *server_cert = 0;
+//~ 
+    //~ /* Get the server's certificate (optional) */
+    //~ server_cert = SSL_get_peer_certificate (ssl);    
+    //~ 
+    //~ if ( server_cert != NULL ) {
+//~ 
+        //~ fprintf(stderr,"Server certificate:\n");
+        //~ 
+        //~ str = X509_NAME_oneline(X509_get_subject_name(server_cert),0,0);
+        //~ if ( str != NULL ) { 
+            //~ fprintf (stderr,"\t subject: %s\n", str);
+            //~ free (str);
+        //~ }
+//~ 
+        //~ str = X509_NAME_oneline(X509_get_issuer_name(server_cert),0,0);
+        //~ if ( str != NULL ) {
+            //~ fprintf (stderr,"\t issuer: %s\n", str);
+            //~ free(str);
+        //~ }
+        //~ 
+        //~ X509_free (server_cert);
+    //~ } else {
+        //~ fprintf(stderr,"The SSL server does not have certificate.\n");
+    //~ }
+//~ 
+    //~ #endif
+//~ 
+    //~ return ssl;
+    //~ 
+//~ error:
+    //~ if ( ssl ) SSL_free(ssl);
+    //~ return NULL;
+//~ }
 
 static SKLOG_RETURN
 conn_open(SKLOG_U_Ctx         *u_ctx,
@@ -229,7 +234,9 @@ conn_open(SKLOG_U_Ctx         *u_ctx,
 {
     SSL_load_error_strings();
 
-    conn->ssl_ctx = init_ssl_ctx(u_ctx,1);
+    //~ conn->ssl_ctx = init_ssl_ctx(u_ctx,1);
+    conn->ssl_ctx = init_ssl_ctx_c(u_ctx->u_cert,u_ctx->u_privkey,
+                                   u_ctx->t_cert_path,1);
 
     if ( conn->ssl_ctx == NULL ) {
         ERROR("init_ssl_ctx() failure")
@@ -243,7 +250,7 @@ conn_open(SKLOG_U_Ctx         *u_ctx,
         return SKLOG_FAILURE;
     }
 
-    conn->ssl = init_ssl_structure(conn->ssl_ctx,conn->socket);
+    conn->ssl = init_ssl_structure_c(conn->ssl_ctx,conn->socket);
 
     if ( conn->ssl == NULL ) {
         ERROR("init_ssl_structure() failure")
@@ -253,16 +260,16 @@ conn_open(SKLOG_U_Ctx         *u_ctx,
     return SKLOG_SUCCESS;
 }
 
-static SKLOG_RETURN
-conn_close(SKLOG_CONNECTION    *conn)
-{
-    SSL_shutdown(conn->ssl);
-    close(conn->socket);
-    SSL_free(conn->ssl);
-    SSL_CTX_free(conn->ssl_ctx);
-
-    return SKLOG_SUCCESS;
-}
+//~ static SKLOG_RETURN
+//~ conn_close(SKLOG_CONNECTION    *conn)
+//~ {
+    //~ SSL_shutdown(conn->ssl);
+    //~ close(conn->socket);
+    //~ SSL_free(conn->ssl);
+    //~ SSL_CTX_free(conn->ssl_ctx);
+//~ 
+    //~ return SKLOG_SUCCESS;
+//~ }
 
 /*--------------------------------------------------------------------*/
 /* log an event                                                       */
@@ -1931,6 +1938,7 @@ error:
 
 /*--------------------------------------------------------------------*/
 /*--------------------------------------------------------------------*/
+/*                             LOCAL                                  */
 /*--------------------------------------------------------------------*/
 /*--------------------------------------------------------------------*/
 
@@ -1955,14 +1963,20 @@ SKLOG_U_NewCtx(void)
         return NULL;
     }
 
-    #ifdef USE_SQLITE
+    #ifdef USE_FILE
+    ctx->lsdriver->store_logentry =    &sklog_file_u_store_logentry;
+    ctx->lsdriver->flush_logfile =     &sklog_file_u_flush_logfile;
+    ctx->lsdriver->init_logfile =      &sklog_file_u_init_logfile;
+    #elif USE_SYSLOG
+    ctx->lsdriver->store_logentry =    &sklog_syslog_u_store_logentry;
+    ctx->lsdriver->flush_logfile =     &sklog_syslog_u_flush_logfile;
+    ctx->lsdriver->init_logfile =      &sklog_syslog_u_init_logfile;
+    #elif USE_SQLITE
     ctx->lsdriver->store_logentry =    &sklog_sqlite_u_store_logentry;
     ctx->lsdriver->flush_logfile =     &sklog_sqlite_u_flush_logfile;
     ctx->lsdriver->init_logfile =      &sklog_sqlite_u_init_logfile;
     #else
-    ctx->lsdriver->store_logentry =    &sklog_file_u_store_logentry;
-    ctx->lsdriver->flush_logfile =     &sklog_file_u_flush_logfile;
-    ctx->lsdriver->init_logfile =      &sklog_file_u_init_logfile;
+    //~ todo: manage default case
     #endif
 
     return ctx;
@@ -2063,3 +2077,15 @@ error:
     if ( data_blob > 0 ) free(data_blob);
     return SKLOG_FAILURE;
 }
+
+/*--------------------------------------------------------------------*/
+/*--------------------------------------------------------------------*/
+/*                            CLIENT                                  */
+/*--------------------------------------------------------------------*/
+/*--------------------------------------------------------------------*/
+
+/*--------------------------------------------------------------------*/
+/*--------------------------------------------------------------------*/
+/*                            SERVER                                  */
+/*--------------------------------------------------------------------*/
+/*--------------------------------------------------------------------*/

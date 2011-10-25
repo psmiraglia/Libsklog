@@ -24,6 +24,8 @@
 
 #include <string.h>
 
+#include <arpa/inet.h>
+
 #include <netinet/in.h>
 
 #include <openssl/aes.h>
@@ -589,17 +591,29 @@ tlv_create(uint32_t         type,
      *    $length Bytes: content
      */
 
-    if ( data == NULL ) {
-        ERROR("data must be NOT NULL")
+    if ( data == NULL && data_len > 0 ) {
+        ERROR("data must be NOT NULL if data_len > 0")
         return SKLOG_FAILURE;
     }
 
     uint32_t tmp = htonl(type);
-    uint32_t len = htonl(data_len);
-
     memcpy(buffer,&tmp,sizeof(uint32_t));
-    memcpy(&buffer[sizeof(uint32_t)],&len,sizeof(uint32_t));
-    memcpy(&buffer[sizeof(uint32_t)+sizeof(uint32_t)],data,data_len);
+    
+    if ( data_len > 0 ) {
+        uint32_t len = htonl(data_len);
+        memcpy(&buffer[sizeof(uint32_t)],&len,sizeof(uint32_t));
+        memcpy(&buffer[sizeof(uint32_t)+sizeof(uint32_t)],data,data_len);
+    } else {
+        uint32_t len = 0;
+        memcpy(&buffer[sizeof(uint32_t)],&len,sizeof(uint32_t));
+    }
+
+    //~ uint32_t tmp = htonl(type);
+    //~ uint32_t len = htonl(data_len);
+
+    //~ memcpy(buffer,&tmp,sizeof(uint32_t));
+    //~ memcpy(&buffer[sizeof(uint32_t)],&len,sizeof(uint32_t));
+    //~ memcpy(&buffer[sizeof(uint32_t)+sizeof(uint32_t)],data,data_len);
 
     return SKLOG_SUCCESS;
 }
@@ -980,4 +994,195 @@ flush_logfile_send_logentry(SSL              *ssl,
 error:
     ERR_free_strings();
     return SKLOG_FAILURE;
+}
+
+/*--------------------------------------------------------------------*/
+/*                         conenctions                                */
+/*--------------------------------------------------------------------*/
+
+SSL_CTX*
+init_ssl_ctx_c(X509        *client_cert,
+               EVP_PKEY    *client_privkey,
+               char        *ca_cert_path,
+               int         verify)
+{
+    #ifdef DO_TRACE
+    DEBUG
+    #endif
+    
+    SSL_CTX *ctx = 0;
+    const SSL_METHOD *meth = 0;
+    
+    SSL_library_init();
+    SSL_load_error_strings();
+    
+    /*
+     * Create an SSL_METHOD structure 
+     * (choose an SSL/TLS protocol version) 
+     */
+    meth = SSLv3_method();
+    
+    /* Create an SSL_CTX structure */
+    if ( (ctx = SSL_CTX_new(meth)) == NULL ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+    
+    if ( verify == 1 ) {
+
+        /* Load the client certificate into the SSL_CTX structure */
+        if ( SSL_CTX_use_certificate(ctx,client_cert) <= 0 ) {
+            ERR_print_errors_fp(stderr);
+            goto error;
+        }
+        
+        /*
+         * Load the private-key corresponding
+         * to the client certificate
+         */
+        if ( SSL_CTX_use_PrivateKey(ctx,client_privkey) <= 0 ) {
+            
+            goto error;
+        }
+        
+        /* Check if the client certificate and private-key matches */
+        if ( !SSL_CTX_check_private_key(ctx) ) {
+            ERROR("Private key does not match the certificate public key");
+            goto error;
+        }
+    }
+    
+    /*
+     * Load the RSA CA certificate into the SSL_CTX structure This will
+     * allow this client to verify the server's certificate.
+     */
+    
+    if ( !SSL_CTX_load_verify_locations(ctx,ca_cert_path,NULL) ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+    
+    /*
+     * Set flag in context to require peer (server) certificate
+     * verification
+     */
+    
+    SSL_CTX_set_verify(ctx,SSL_VERIFY_PEER,NULL);
+    SSL_CTX_set_verify_depth(ctx,1);
+
+    return ctx;
+
+error:
+    if ( ctx ) SSL_CTX_free(ctx);
+    return NULL;
+}
+
+int
+tcp_connect(const char *address, short int port)
+{
+    #ifdef DO_TRACE
+    DEBUG
+    #endif
+    
+    int skt = 0;
+    struct sockaddr_in server_addr;
+
+    skt = socket(PF_INET,SOCK_STREAM,IPPROTO_TCP);
+
+    if ( skt < 0 ) {
+        ERROR("socket() failure")
+        return -1;
+    }
+    
+    memset (&server_addr,0,sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(port);
+    server_addr.sin_addr.s_addr = inet_addr(address);
+    
+    /* Establish a TCP/IP connection to the SSL client */
+    
+    NOTIFY(address)
+    
+    if ( connect(skt, (struct sockaddr*) &server_addr,
+                 sizeof(server_addr)) < 0 ) {
+        ERROR("connect() failure")
+        return -1;
+    }
+    
+    return skt;
+}
+
+SSL*
+init_ssl_structure_c(SSL_CTX *ctx,int socket)
+{
+    #ifdef DO_TRACE
+    DEBUG
+    #endif
+    
+    SSL *ssl = 0;
+
+    if ( (ssl = SSL_new(ctx)) == NULL ) {
+        ERROR("SSL_new() failure")
+        goto error;
+    }
+    
+    /*
+     * Assign the socket into the SSL structure
+     * (SSL and socket without BIO)
+     */
+    SSL_set_fd(ssl,socket);
+    
+    /* Perform SSL Handshake on the SSL client */
+    if ( SSL_connect(ssl) < 0 ) {
+        ERROR("SSL_connect() failure")
+        goto error;
+    }
+
+    #ifdef DO_NOTIFY
+
+    char *str = 0;
+    X509 *server_cert = 0;
+
+    /* Get the server's certificate (optional) */
+    server_cert = SSL_get_peer_certificate (ssl);    
+    
+    if ( server_cert != NULL ) {
+
+        fprintf(stderr,"Server certificate:\n");
+        
+        str = X509_NAME_oneline(X509_get_subject_name(server_cert),0,0);
+        if ( str != NULL ) { 
+            fprintf (stderr,"\t subject: %s\n", str);
+            free (str);
+        }
+
+        str = X509_NAME_oneline(X509_get_issuer_name(server_cert),0,0);
+        if ( str != NULL ) {
+            fprintf (stderr,"\t issuer: %s\n", str);
+            free(str);
+        }
+        
+        X509_free (server_cert);
+    } else {
+        fprintf(stderr,"The SSL server does not have certificate.\n");
+    }
+
+    #endif
+
+    return ssl;
+    
+error:
+    if ( ssl ) SSL_free(ssl);
+    return NULL;
+}
+
+SKLOG_RETURN
+conn_close(SKLOG_CONNECTION    *conn)
+{
+    SSL_shutdown(conn->ssl);
+    close(conn->socket);
+    SSL_free(conn->ssl);
+    SSL_CTX_free(conn->ssl_ctx);
+
+    return SKLOG_SUCCESS;
 }

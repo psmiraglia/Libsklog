@@ -58,13 +58,9 @@
 }
 
 #define TO_IMPLEMENT {\
-    fprintf(stderr,\
-"\
-#--------------------------------------------------------------\n\
-# The function %s()                                            \n\
-# will be implemented as soon as possible. Can you help me? :-)\n\
-#--------------------------------------------------------------\n"\
-    , __func__);\
+    fprintf(stderr,"\n# Function %s() will be implemented as soon as \
+possible. Could you help me? :-D\n\n"\
+    , __func__); \
 }
 
 /*--------------------------------------------------------------------*/
@@ -157,6 +153,9 @@ enum sklog_tlv_type {
     LE_FLUSH_END     = 0x0000001b,
     LE_ACK           = 0x0000001c,
     LE_NACK          = 0x0000001d,
+
+    RETR_LOG_FILES   = 0x0000001e,
+    LOG_FILES        = 0x0000001f,
 
     X509_CERT        = 0x000000fc,
 
