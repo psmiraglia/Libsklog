@@ -46,11 +46,19 @@ struct sklog_v_ctx {
     
     int context_state;
 
+    
     X509            *v_cert;
+    char            v_cert_file_path[MAX_FILE_PATH_LEN];
+    
     EVP_PKEY        *v_privkey;
-    char            t_cert_path[512];
-    char            t_address[512];
+    char            v_privkey_file_path[MAX_FILE_PATH_LEN];
+
+    char            t_cert_file_path[MAX_FILE_PATH_LEN];
+
+    char            t_address[IPADDR_LEN];
     short int       t_port;
+
+    char            verifiable_logfiles[LOGFILE_LIST_SIZE][UUID_STR_LEN+1];
     
 };
 
@@ -67,6 +75,12 @@ SKLOG_RETURN
 SKLOG_V_FreeCtx(SKLOG_V_Ctx **ctx);
 
 SKLOG_RETURN
-SKLOG_V_RetrieveLogFiles(SKLOG_V_Ctx *v_ctx);
+SKLOG_V_RetrieveLogFiles(SKLOG_V_Ctx         *v_ctx,
+                         SKLOG_CONNECTION    *c);
+
+SKLOG_RETURN
+SKLOG_V_VerifyLogFile(SKLOG_V_Ctx         *v_ctx,
+                      SKLOG_CONNECTION    *c,
+                      unsigned int        logfile_id);
 
 #endif /* SKLOG_V_H */

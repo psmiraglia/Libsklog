@@ -29,6 +29,7 @@
 
 #include <unistd.h>
 
+#include <openssl/bio.h>
 #include <openssl/ssl.h>
 
 #include <sys/types.h>
@@ -38,22 +39,22 @@
 /*--------------------------------------------------------------------*/
 
 #define DEBUG { \
-    fprintf(stderr,"[DEBUG] (%d) Libsklog (%s:%d): %s()\n", \
+    fprintf(stderr,"[DEBUG]       (%d) Libsklog (%s:%d): %s()\n", \
     getpid(),__FILE__,__LINE__,__func__); \
 }
 
 #define ERROR(msg) { \
-    fprintf(stderr,"[ERROR] (%d) Libsklog (%s:%d): %s(): %s\n", \
+    fprintf(stderr,"[ERROR]       (%d) Libsklog (%s:%d): %s(): %s\n", \
     getpid(),__FILE__,__LINE__,__func__,msg); \
 }
 
 #define NOTIFY(msg) { \
-    fprintf(stderr,"[NOTIFY] (%d) Libsklog (%s:%d): %s(): %s\n", \
+    fprintf(stderr,"[NOTIFY]      (%d) Libsklog (%s:%d): %s(): %s\n", \
     getpid(),__FILE__,__LINE__,__func__,msg); \
 }
 
 #define WARNING(msg) { \
-    fprintf(stderr,"[WARNING] (%d) Libsklog (%s): %s\n", \
+    fprintf(stderr,"[WARNING]     (%d) Libsklog (%s): %s\n", \
     getpid(),__func__,msg); \
 }
 
@@ -83,8 +84,12 @@ possible. Could you help me? :-D\n\n"\
 #define     UUID_STR_LEN              36
 #define     HOST_NAME_MAX             64
 #define     AES_KEYSIZE_256           32
+#define     MAX_FILE_PATH_LEN         512
+#define     IPADDR_LEN                15
+#define     LOGFILE_LIST_SIZE         256
+#define     INBUF_LEN                 64
 
-#define     SKLOG_BUFFER_LEN          10240
+#define     SKLOG_BUFFER_LEN          4096
 #define     SKLOG_SMALL_BUFFER_LEN    1024
 #define     SKLOG_LOG_ID_LEN          UUID_STR_LEN
 
@@ -98,8 +103,19 @@ possible. Could you help me? :-D\n\n"\
 #define     SKLOG_FAILURE             !SKLOG_SUCCESS
 #define     SKLOG_TO_IMPLEMENT        SKLOG_SUCCESS
 
-#define     SKLOG_ACK                 "LE_ACK"
-#define     SKLOG_ACK_LEN             6
+//~ #define     SKLOG_ACK                 "LE_ACK"
+//~ #define     SKLOG_ACK_LEN             6
+
+#define     DO_VERIFY                 1
+#define     DO_NOT_VERIFY             !DO_VERIFY
+
+#define     RSA_DEFAULT_PASSPHRASE    "123456"             //~ temporary
+#define     USE_BIO                                        //~ temporary
+
+
+//~ #define     SKLOG_TLV_NODATA_LEN      8
+//~ #define     SKLOG_SEPARATOR           ';'
+
 
 /*--------------------------------------------------------------------*/
 /*                              types                                 */
@@ -159,13 +175,32 @@ enum sklog_tlv_type {
 
     X509_CERT        = 0x000000fc,
 
+    LOGFILE_UPLOAD_REQ,
+    LOGFILE_UPLOAD_READY,
+    LOGFILE_UPLOAD_END,
+    UPLOAD_LOGENTRY,
+    UPLOAD_LOGENTRY_ACK,
+    UPLOAD_LOGENTRY_NACK,
+
+    VERIFY_LOGFILE,
+    VERIFY_LOGFILE_SUCCESS,
+    VERIFY_LOGFILE_FAILURE,
+    
+    
+    
+    
+
     NOTYPE           = 0xffffffff,
 };
 
 struct sklog_connection {
     SSL        *ssl;
     SSL_CTX    *ssl_ctx;
-    int        socket;
+
+    BIO        *bio;
+
+    int        lsock;
+    int        csock;
 };
 
 #endif /* SKLOG_COMMONS_H */

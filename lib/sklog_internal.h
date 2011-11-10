@@ -82,11 +82,11 @@ aes256_decrypt(unsigned char    *cipher,
 /*                         tlv management                             */
 /*--------------------------------------------------------------------*/
 
-SKLOG_RETURN
-tlv_create(uint32_t         type,
-           unsigned int     data_len,
-           void             *data,
-           unsigned char    *buffer);
+//~ SKLOG_RETURN
+//~ tlv_create(uint32_t         type,
+           //~ unsigned int     data_len,
+           //~ void             *data,
+           //~ unsigned char    *buffer);
 
 SKLOG_RETURN
 tlv_parse(unsigned char    *tlv_msg,
@@ -104,7 +104,6 @@ tlv_get_len(unsigned char    *tlv_msg,
 
 SKLOG_RETURN
 tlv_get_value(unsigned char    *tlv_msg,
-              unsigned int     len,
               unsigned char    **value);
 
 SKLOG_RETURN
@@ -118,8 +117,8 @@ SKLOG_RETURN
 tlv_create_message(uint32_t         type,
                    unsigned int     len,
                    unsigned char    *value,
-                   unsigned int     *message_len,
-                   unsigned char    **message);
+                   unsigned char    **message,
+                   unsigned int     *message_len);
 
 /*--------------------------------------------------------------------*/
 /*                      timestamp management                          */
@@ -152,7 +151,12 @@ mem_free(void      **mem);
 /*--------------------------------------------------------------------*/
 
 SKLOG_RETURN
+#ifdef USE_SSL
 flush_logfile_send_logentry(SSL              *ssl,
+#endif
+#ifdef USE_BIO
+flush_logfile_send_logentry(BIO              *bio,
+#endif
                             char             *f_uuid,
                             unsigned char    *type,
                             unsigned int     type_len,
@@ -167,21 +171,54 @@ flush_logfile_send_logentry(SSL              *ssl,
 /*                         conenctions                                */
 /*--------------------------------------------------------------------*/
 
-SSL_CTX*
-init_ssl_ctx_c(X509        *client_cert,
-               EVP_PKEY    *client_privkey,
-               char        *ca_cert_path,
-               int         verify);
+SKLOG_CONNECTION*
+new_connection(void);
 
+SKLOG_RETURN
+free_conenction(SKLOG_CONNECTION *c);
+
+SKLOG_RETURN
+setup_ssl_connection(SKLOG_CONNECTION    *c,
+                     const char          *s_addr,
+                     short int           s_port,
+                 //~ const char          *cert_file_path,
+                     X509                *cert,
+                 //~ const char          *key_file_path,
+                     EVP_PKEY            *privkey,
+                     const char          *cacert_file_path,
+                     int                 enable_verify);
+
+SKLOG_RETURN
+destroy_ssl_connection(SKLOG_CONNECTION *c);                     
+
+//~ SSL_CTX*
+//~ init_ssl_ctx(const char    *cert_file_path,
+             //~ const char    *key_file_path,
+             //~ const char    *ca_file_path,
+             //~ int           enable_verify);
+
+
+//~ SSL*
+//~ init_ssl_structure_s(SSL_CTX    *ctx,
+                     //~ int        socket,
+                     //~ int        verify);
+
+//~ SSL*
+//~ init_ssl_structure_c(SSL_CTX    *ctx,
+                     //~ int        socket);
+
+int
+tcp_bind(const char    *address,
+         short int     port);
 int
 tcp_connect(const char    *address,
             short int     port);
 
-SSL*
-init_ssl_structure_c(SSL_CTX    *ctx,
-                     int        socket);
+//~ int
+//~ sock_connect(const char *s_addr,
+             //~ short int s_port);
 
-SKLOG_RETURN
-conn_close(SKLOG_CONNECTION    *conn);                   
+//~ SKLOG_RETURN
+//~ conn_close(SKLOG_CONNECTION    *conn);
 
 #endif /* SKLOG_INTERNAL_H */

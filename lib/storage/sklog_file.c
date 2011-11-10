@@ -92,7 +92,8 @@ error:
 SKLOG_RETURN
 sklog_file_u_flush_logfile(uuid_t            logfile_id,
                            struct timeval    *now,
-                           SSL               *ssl)
+                           //~ SSL               *ssl)
+                           SKLOG_CONNECTION  *c)
 {
     #ifdef DO_TRACE
     DEBUG
@@ -189,12 +190,25 @@ sklog_file_u_flush_logfile(uuid_t            logfile_id,
         
         SKLOG_free(&line);
 
-        if ( flush_logfile_send_logentry(ssl,f_uuid,type,type_len,
+        #ifdef USE_SSL
+        if ( flush_logfile_send_logentry(c->ssl,f_uuid,type,type_len,
                 enc_data,enc_data_len,y,y_len,z,z_len)
                                                     == SKLOG_FAILURE ) {
             ERROR("flush_logfile_send_logentry() failure")
             goto error;
         }
+        #endif
+
+        #ifdef USE_BIO
+        if ( flush_logfile_send_logentry(c->bio,f_uuid,type,type_len,
+                enc_data,enc_data_len,y,y_len,z,z_len)
+                                                    == SKLOG_FAILURE ) {
+            ERROR("flush_logfile_send_logentry() failure")
+            goto error;
+        }
+        #endif
+
+        
 
         SKLOG_free(&type);
         SKLOG_free(&enc_data);

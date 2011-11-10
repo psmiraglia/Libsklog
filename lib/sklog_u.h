@@ -56,20 +56,29 @@ struct sklog_u_ctx {
 
     int context_state;
 
-    //~ U information
+    // u-node informtion ---------------------------------------------//
+    
     char            u_id[HOST_NAME_MAX+1];
     unsigned int    u_id_len;
-    int             u_timeout;
-    X509            *u_cert;
-    EVP_PKEY        *u_privkey;
 
-    //~ T information
+    int             u_timeout;
+
+    X509            *u_cert;
+    char            u_cert_file_path[MAX_FILE_PATH_LEN];
+    
+    EVP_PKEY        *u_privkey;
+    char            u_privkey_file_path[MAX_FILE_PATH_LEN];
+
+    // t-node information --------------------------------------------//
+    
     X509            *t_cert;
-    char            t_cert_path[512];
+    char            t_cert_file_path[MAX_FILE_PATH_LEN];
+
     char            t_address[512];
     short int       t_port;
 
-    //~ Logging session information
+    // logging session information -----------------------------------//
+    
     int             logfile_size;
     int             logfile_counter;
     uuid_t          logfile_id;
@@ -80,7 +89,8 @@ struct sklog_u_ctx {
 
     unsigned char   x0_hash[SHA256_LEN];
 
-    //~ storage driver
+    // log-entries storage driver ------------------------------------//
+    
     SKLOG_U_STORAGE_DRIVER *lsdriver;
 
 };
@@ -90,7 +100,7 @@ struct sklog_u_storage_driver {
     SKLOG_RETURN (*store_logentry)    (uuid_t,SKLOG_DATA_TYPE,
                                        unsigned char *,unsigned int,
                                        unsigned char *,unsigned char *);
-    SKLOG_RETURN (*flush_logfile)     (uuid_t,struct timeval *,SSL *);
+    SKLOG_RETURN (*flush_logfile)     (uuid_t,struct timeval *,SKLOG_CONNECTION *);
     SKLOG_RETURN (*init_logfile)      (uuid_t,struct timeval *);
 };
 

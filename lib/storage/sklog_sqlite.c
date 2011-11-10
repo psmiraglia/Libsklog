@@ -116,7 +116,8 @@ error:
 SKLOG_RETURN
 sklog_sqlite_u_flush_logfile(uuid_t    logfile_id,
                              struct timeval *now,
-                             SSL       *ssl)
+                             SKLOG_CONNECTION       *c)
+                             //~ SSL       *ssl)
 {
     #ifdef DO_TRACE
     DEBUG
@@ -215,7 +216,12 @@ sklog_sqlite_u_flush_logfile(uuid_t    logfile_id,
                 }
                 memcpy(z,tmp,z_len);
 
-                if ( flush_logfile_send_logentry(ssl,f_uuid,
+                #ifdef USE_SSL
+                if ( flush_logfile_send_logentry(c->ssl,f_uuid,
+                #endif
+                #ifdef USE_BIO
+                if ( flush_logfile_send_logentry(c->bio,f_uuid,
+                #endif
                                                  type,type_len,
                                                  enc_data,enc_data_len,
                                                  y,y_len,
@@ -543,5 +549,89 @@ error:
     return SKLOG_FAILURE;
 }
 
+SKLOG_RETURN
+sklog_sqlite_t_retrieve_logfiles(unsigned char    **uuid_list,
+                                 unsigned int     *uuid_list_len)
+{
+    #ifdef DO_TRACE
+    DEBUG
+    #endif
+
+    unsigned char str[SKLOG_BUFFER_LEN] = { 0 };
+
+    const unsigned char *token = 0;
+    unsigned int token_len = 0;
+    unsigned int ds = 0;
+
+    sqlite3 *db = 0;
+    sqlite3_stmt *stmt = 0;
+    char query[SKLOG_BUFFER_LEN] = { 0 };
+    unsigned int query_len = 0;
+    char *err_msg = 0;
+    int sql_step = 0;
+
+    int go_next = 1;
+
+    //~ open database
+    sqlite3_open(SKLOG_T_DB,&db);
+    
+    if ( db == NULL ) {
+        fprintf(stderr,
+            "SQLite3: Can't open database: %s\n",sqlite3_errmsg(db));
+        goto error;
+    }
+
+    //~ compose query
+    
+    query_len = sprintf(query,"select * from AUTHKEY");
+
+    if ( sqlite3_prepare_v2(db,query,query_len+1,
+                            &stmt,NULL) != SQLITE_OK ) {
+        fprintf(stderr,
+                "SQLite3: sqlite3_prepare_v2() failure: %s\n",
+                sqlite3_errmsg(db));
+        goto error;
+    }
+
+    //~ flush logfile
+    
+    while ( go_next ) {
+        sql_step = sqlite3_step(stmt);
+
+        switch ( sql_step ) {
+            case SQLITE_ROW:
+            
+                token = sqlite3_column_text(stmt,2);
+                token_len = sqlite3_column_bytes(stmt,2);
+
+                memcpy(str+ds,token,token_len); ds+= token_len;
+                str[ds++] = ';';
+
+                break;
+            case SQLITE_DONE:
+                go_next = 0;
+                str[ds++] = '\0';
+                
+                break;
+            default:
+                fprintf(stderr,"SQLite3: %s\n",sqlite3_errmsg(db));
+                goto error;
+                break;
+        }
+    }
+
+    *uuid_list_len = ds;
+    *uuid_list = calloc(ds,sizeof(unsigned char));
+    memcpy(*uuid_list,str,ds);
+
+    if ( db ) sqlite3_close(db);
+    if ( err_msg ) sqlite3_free(err_msg);
+    return SKLOG_SUCCESS;
+
+error:
+    if ( db ) sqlite3_close(db);
+    if ( err_msg ) sqlite3_free(err_msg);
+    return SKLOG_FAILURE;
+}
 #endif /* USE_SQLITE */
 

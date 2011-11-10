@@ -54,7 +54,8 @@ sklog_sqlite_u_store_logentry(uuid_t             logfile_id,
 SKLOG_RETURN
 sklog_sqlite_u_flush_logfile(uuid_t    logfile_id,
                              struct timeval *now,
-                             SSL       *ssl);
+                             SKLOG_CONNECTION       *c);
+                             //~ SSL       *ssl);
 
 SKLOG_RETURN
 sklog_sqlite_u_init_logfile(uuid_t            logfile_id,
@@ -72,6 +73,10 @@ sklog_sqlite_t_store_authkey(char             *u_ip,
 SKLOG_RETURN
 sklog_sqlite_t_store_logentry(unsigned char    *blob,
                               unsigned int     blob_len);
+
+SKLOG_RETURN
+sklog_sqlite_t_retrieve_logfiles(unsigned char    **uuid_list,
+                                 unsigned int     *uuid_list_len);
 #endif /* USE_SQLITE */
 
 #endif /* SKLOG_SQLITE */
