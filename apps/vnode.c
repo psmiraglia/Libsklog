@@ -2,6 +2,8 @@
 
 #define RBUF_LEN 1024
 
+void main_menu(void);
+
 void show_menu(void);
 
 int main (int argc, char **argv) {
@@ -20,10 +22,9 @@ int main (int argc, char **argv) {
 
     SKLOG_V_InitCtx(vctx);
 
-
     while ( 1 ) {
 
-        show_menu();
+        main_menu();
         memset(inbuf,0,INBUF_LEN); gets(inbuf);
         
         switch ( inbuf[0] ) {
@@ -96,6 +97,9 @@ int main (int argc, char **argv) {
 
                 if ( SKLOG_V_VerifyLogFile(vctx,c,index) == SKLOG_FAILURE ) {
                     ERROR("SKLOG_V_VerifyLogFile() failure");
+                    fprintf(stdout,"LOGFILE VERIFICATION FAILS!!!\n");
+                } else {
+                    fprintf(stdout,"LOGFILE VERIFICATION SUCCESSFUL!!!\n");
                 }
 
                 //----------------------------------------------------//
@@ -118,12 +122,21 @@ int main (int argc, char **argv) {
     }
     
 terminate:
-
     SKLOG_V_FreeCtx(&vctx);
-        
     return 0;
 }
 
+
+void main_menu(void)
+{
+    fprintf(stdout,"Verifier Action Menu\n");
+    fprintf(stdout,"---------------------------------------------------"
+        "---------------------");
+    fprintf(stdout,"\n -> (s)how verifiable logfiles");
+    fprintf(stdout,"\n -> (v)erify logfile");
+    fprintf(stdout,"\n -> e(x)it");
+    fprintf(stdout,"\n\nSelect action [s|v|x]: ");
+}
 
 void show_menu(void)
 {

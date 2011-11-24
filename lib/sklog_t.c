@@ -1144,6 +1144,7 @@ SKLOG_T_NewCtx(void)
     ctx->lsdriver->store_authkey =     &sklog_sqlite_t_store_authkey;
     ctx->lsdriver->store_logentry =    &sklog_sqlite_t_store_logentry;
     ctx->lsdriver->retrieve_logfiles = &sklog_sqlite_t_retrieve_logfiles;
+    ctx->lsdriver->verify_logfile =    &sklog_sqlite_t_verify_logfile;
     #else
     //~ todo: manage default case
     #endif
@@ -1305,7 +1306,12 @@ SKLOG_T_ManageLoggingSessionInit(SKLOG_T_Ctx      *t_ctx,
     unsigned int m1_tmp_len = 0;
 
     //~ parse m0
-    if ( parse_m0(t_ctx,&m0[8],m0_len,&p,&logfile_id,&pke_t_k0,
+    //~ if ( parse_m0(t_ctx,&m0[8],m0_len,&p,&logfile_id,&pke_t_k0,
+                  //~ &pke_t_k0_len,&e_k0,&e_k0_len) == SKLOG_FAILURE ) {
+        //~ ERROR("parse_m0() failure")
+        //~ goto error;
+    //~ }
+    if ( parse_m0(t_ctx,m0,m0_len,&p,&logfile_id,&pke_t_k0,
                   &pke_t_k0_len,&e_k0,&e_k0_len) == SKLOG_FAILURE ) {
         ERROR("parse_m0() failure")
         goto error;
@@ -1631,51 +1637,19 @@ SKLOG_T_ManageLogfileVerify(SKLOG_T_Ctx         *t_ctx,
     unsigned char wbuf[SKLOG_BUFFER_LEN] = { 0 };
     unsigned int wlen = 0;
 
-    //~ unsigned char value[SKLOG_BUFFER_LEN] = { 0 };
-    //~ unsigned int len = 0;
+    unsigned char uuid[UUID_STR_LEN+1] = { 0 };
+
     unsigned char *tlv = 0;
 
+    memcpy(uuid,logfile_id,UUID_STR_LEN);
 
-    /**
-     * slect e_type,e_data,e_hash,e_hmac from LOGENTRY where f_uuid = 'logfile_id'
-     *
-     * Y_prev = { 0 }
-     *
-     * foreac row in 
-     *
-     *      Y_curr = hash(Y_prev,row.e_data,row.e_type)
-     *
-     *      if ( Y_curr != row.e_hash)
-     *          verification fails at logentry 
-     *
-     *      Z_curr = hash(Y_curr)
-     *      Y_prev = Y_curr
-     */
-
-    //~ slect e_type,e_data,e_hash,e_hmac from LOGENTRY where f_uuid = 'logfile_id'
-
-    //~ Y_prev = { 0 }
-
-    //~ while ()
-    //~ Y_curr = hash(Y_prev,e_data,e_type)
-    //~ Z_curr = hash{Y_curr}
-    //~ Y_prev = Y_curr
-
-    
-     //~ Y_n = hash(Y_n-1,e_data,e_type)
-     //~ Z_n = hash(Y_n)
-
-
-
-
-
-
-
-
-    
-
-    tlv_create_message(VERIFY_LOGFILE_SUCCESS,0,NULL,&tlv,&wlen);
-    memcpy(wbuf,tlv,wlen); free(tlv);
+    if ( t_ctx->lsdriver->verify_logfile(uuid) == SKLOG_FAILURE ) {
+        tlv_create_message(VERIFY_LOGFILE_FAILURE,0,NULL,&tlv,&wlen);
+        memcpy(wbuf,tlv,wlen); free(tlv);
+    } else {
+        tlv_create_message(VERIFY_LOGFILE_SUCCESS,0,NULL,&tlv,&wlen);
+        memcpy(wbuf,tlv,wlen); free(tlv);
+    }
 
     #ifdef USE_BIO
     if ( BIO_write(c->bio,wbuf,wlen) <= 0 ) {
@@ -1715,6 +1689,11 @@ SKLOG_T_RunServer(SKLOG_T_Ctx    *t_ctx)
     SKLOG_CONNECTION *c = 0;
     int enable_verify = 0;
 
+    unsigned char rbuf[SKLOG_BUFFER_LEN] = { 0 };
+    int  rlen = 0;
+    unsigned char wbuf[SKLOG_BUFFER_LEN] = { 0 };
+    int  wlen = 0;
+
     int ret = 0;
 
     struct sockaddr_in    sa_cli;
@@ -1722,9 +1701,17 @@ SKLOG_T_RunServer(SKLOG_T_Ctx    *t_ctx)
 
     pid_t pid = 0;
 
+    char logfile_uuid[UUID_STR_LEN+1] = { 0 };
+
+    uint32_t msg_type = 0;
+    unsigned int len = 0;
+    unsigned char *value = 0;
+
     c = new_connection();
 
-    //-------------initialize SSL_CTX and SSL structures--------------//
+    //----------------------------------------------------------------//
+    //             initialize SSL_CTX and SSL structures              //
+    //----------------------------------------------------------------//
     
     SSL_library_init();
     SSL_load_error_strings();
@@ -1789,8 +1776,9 @@ SKLOG_T_RunServer(SKLOG_T_Ctx    *t_ctx)
         return SKLOG_FAILURE;
     }
 
-//--------------------------------------------------------------------//
-//--------------------------------------------------------------------//
+    //----------------------------------------------------------------//
+    //                          SERVER WORK                           //
+    //----------------------------------------------------------------//
 
     signal(SIGCHLD,sigchld_h);
     
@@ -1802,19 +1790,17 @@ SKLOG_T_RunServer(SKLOG_T_Ctx    *t_ctx)
         pid = fork();
 
         if ( pid < 0 ) {
+        //------------------------------------------------------------//
+        //                        fork() error                        //
+        //------------------------------------------------------------//
             
             ERROR("fork() fails")
             return SKLOG_FAILURE;
             
-        } else if ( pid == 0 ) { // children
-
-            unsigned char rbuf[SKLOG_BUFFER_LEN] = { 0 };
-            int  rlen = 0;
-            
-            //~ unsigned char wbuf[SKLOG_BUFFER_LEN] = { 0 };
-            //~ int  wlen = 0;
-
-            SKLOG_TLV_TYPE type = 0;
+        } else if ( pid == 0 ) {
+        //------------------------------------------------------------//
+        //                       children process                     //
+        //------------------------------------------------------------//
 
             //~ close lsock
             close(c->lsock);
@@ -1834,71 +1820,121 @@ SKLOG_T_RunServer(SKLOG_T_Ctx    *t_ctx)
             }
 
             //~ parse received data
-            if ( tlv_get_type(rbuf,&type) == SKLOG_FAILURE ) {
+            if ( tlv_get_type(rbuf,&msg_type) == SKLOG_FAILURE ) {
                 ERROR("tlv_get_type() failure")
                 goto failure;
             }
 
-            char logfile_id[] = "15460827-8453-4091-bccb-1f9a4a7c9938";
-    
-            switch ( type ) {
+            switch ( msg_type ) {
+                
                 case M0_MSG:
-                    NOTIFY("received M0 message");
+                //----------------------------------------------------//
+                //              initialize logging session            //
+                //----------------------------------------------------//
+                    #ifdef DO_TRACE
+                    NOTIFY("received M0_MSG message");
+                    #endif
 
                     unsigned char *m0 = 0;
+                    unsigned int  m0_len = 0;
+
                     unsigned char *m1 = 0;
-                    unsigned int m0_len = 0;
-                    unsigned int m1_len = 0;
+                    unsigned int  m1_len = 0;
+
                     char u_address[INET_ADDRSTRLEN] = { 0 };
 
-                    m0_len = rlen;
-                    if ( SKLOG_alloc(&m0,unsigned char,m0_len) == SKLOG_FAILURE ) {
-                        ERROR("SKLOG_alloc() failure");
-                        ret = SKLOG_FAILURE;
-                    }
-                    memcpy(m0,rbuf,m0_len);
+                    tlv_get_len(rbuf,&m0_len);
+                    tlv_get_value(rbuf,&m0);
 
                     inet_ntop(AF_INET,&(sa_cli.sin_addr),u_address,INET_ADDRSTRLEN);
 
-                    SKLOG_T_ManageLoggingSessionInit(t_ctx,m0,m0_len,u_address,&m1,&m1_len);
+                    ret = SKLOG_T_ManageLoggingSessionInit(t_ctx,
+                        m0,m0_len,u_address,&m1,&m1_len);
 
-                    if ( (ret = send_m1(t_ctx,c,m1,m1_len) ) == SKLOG_FAILURE ) {
-                        ERROR("send_m1() failure");
+                    if ( ret == SKLOG_FAILURE ) {
+                        ERROR("SKLOG_T_ManageLoggingSessionInit() failure");
+                        goto failure;
                     }
-                    break;
-                case LOGFILE_UPLOAD_REQ:
-                    NOTIFY("received LOGFILE_UPLOAD_REQ");
 
-                    SKLOG_T_ManageLogfileUpload(t_ctx,c);
+                    memcpy(wbuf,m1,m1_len);
+                    wlen = m1_len; free(m1);
+
+                    if ( (ret = send_m1(t_ctx,c,wbuf,wlen) ) == SKLOG_FAILURE ) {
+                        ERROR("send_m1() failure");
+                        goto failure;
+                    }
+                    
+                    break;
+                    
+                case LOGFILE_UPLOAD_REQ:
+                //----------------------------------------------------//
+                //                logfile upload request              //
+                //----------------------------------------------------//
+                    #ifdef DO_TRACE
+                    NOTIFY("received LOGFILE_UPLOAD_REQ message");
+                    #endif
+                    
+                    ret = SKLOG_T_ManageLogfileUpload(t_ctx,c);
+                    
+                    if ( ret == SKLOG_FAILURE ) {
+                        ERROR("SKLOG_T_ManageLogfileUpload() failure");
+                        goto failure;
+                    }
                     
                     break;
                 case RETR_LOG_FILES:
-                    NOTIFY("received RETR_LOG_FILES");
-                    SKLOG_T_ManageLogfileRetrieve(t_ctx,c);
+                //----------------------------------------------------//
+                //             retrieve logfile list request          //
+                //----------------------------------------------------//
+                    #ifdef DO_TRACE
+                    NOTIFY("received RETR_LOG_FILES message");
+                    #endif
+
+                    ret = SKLOG_T_ManageLogfileRetrieve(t_ctx,c);
+
+                    if ( ret == SKLOG_FAILURE ) {
+                        ERROR("SKLOG_T_ManageLogfileRetrieve() failure");
+                        goto failure;
+                    }
+
                     break;
 
                 case VERIFY_LOGFILE:
-                    NOTIFY("received VERIFY_LOGFILE");
-                    SKLOG_T_ManageLogfileVerify(t_ctx,c,logfile_id);
+                //----------------------------------------------------//
+                //              logfile verification request          //
+                //----------------------------------------------------//
+                    #ifdef DO_TRACE
+                    NOTIFY("received VERIFY_LOGFILE message");
+                    #endif
+                    
+                    tlv_get_len(rbuf,&len);
+                    tlv_get_value(rbuf,&value);
+
+                    memcpy(logfile_uuid,value,UUID_STR_LEN);
+                    
+                    
+                    SKLOG_T_ManageLogfileVerify(t_ctx,c,logfile_uuid);
                     break;
                 default:
                     NOTIFY("protocol error");
                     break;
             }
-        failure:
+failure:
             destroy_ssl_connection(c);
             free_conenction(c);
             exit(0);
-        } else { // parent
+            
+        } else {
+        //------------------------------------------------------------//
+        //                     parent process                         //
+        //------------------------------------------------------------//
 
-             close(c->csock);
+            NOTIFY("Server says: goodbye...");
+            close(c->csock);
 
         }
     }
 
-//--------------------------------------------------------------------//
-//--------------------------------------------------------------------//
-    
     destroy_ssl_connection(c);
     free_conenction(c);
     return SKLOG_SUCCESS;

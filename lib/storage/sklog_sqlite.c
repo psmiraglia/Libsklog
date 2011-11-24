@@ -633,5 +633,269 @@ error:
     if ( err_msg ) sqlite3_free(err_msg);
     return SKLOG_FAILURE;
 }
+
+SKLOG_RETURN
+sklog_sqlite_t_verify_logfile(unsigned char *uuid)
+{
+    #ifdef DO_TRACE
+    DEBUG;
+    #endif
+
+    int rv = 0;
+
+    char rbuf[SKLOG_BUFFER_LEN] = { 0 };
+
+    const unsigned char *tmps = 0;
+    unsigned int tmps_len = 0;
+    unsigned int tmpi = 0;
+
+    sqlite3 *db = 0;
+    sqlite3_stmt *stmt = 0;
+    char query[SKLOG_BUFFER_LEN] = { 0 };
+    int  query_len = 0;
+    int sqlite_ret = 0;
+
+    uint32_t w = 0;
+
+    unsigned char e_type[SKLOG_BUFFER_LEN] = { 0 };
+    unsigned int  e_type_len = 0;
+
+    unsigned char e_data[SKLOG_BUFFER_LEN] = { 0 };
+    unsigned int  e_data_len = 0;
+
+    unsigned char e_hash[SKLOG_HASH_CHAIN_LEN] = { 0 };
+    unsigned char e_hmac[SKLOG_HMAC_LEN] = { 0 };
+    
+    unsigned char e_hash_prev[SKLOG_HASH_CHAIN_LEN] = { 0 };
+    unsigned char e_hash_curr[SKLOG_HASH_CHAIN_LEN] = { 0 };
+    unsigned char e_hmac_curr[SKLOG_HMAC_LEN] = { 0 };
+
+    unsigned char authkey[SKLOG_AUTH_KEY_LEN] = { 0 };
+    unsigned char buf[SKLOG_AUTH_KEY_LEN] = { 0 };
+
+    int i = 0 , j = 0 , c = 0;
+
+    EVP_MD_CTX mdctx;
+
+    OpenSSL_add_all_digests();
+    ERR_load_crypto_strings();
+
+    //----------------------------------------------------------------//
+    //                        get authkey                             //
+    //----------------------------------------------------------------//
+
+    //~ compose query
+    query_len = sprintf(query,"SELECT authkey FROM AUTHKEY WHERE f_uuid='%s'",uuid);
+
+    //~ open database
+    sqlite3_open(SKLOG_T_DB,&db);
+    
+    if ( db == NULL ) {
+        fprintf(stderr,"SQLite3: Can't open database: %s\n",sqlite3_errmsg(db));
+        goto error;
+    }
+
+    //~ exec query
+    if ( sqlite3_prepare_v2(db,query,query_len+1,&stmt,NULL) != SQLITE_OK ) {
+        fprintf(stderr,"SQLite3: sqlite3_prepare_v2() failure: %s\n",sqlite3_errmsg(db));
+        goto error;
+    }
+
+    while ( 1 ) {
+
+        sqlite_ret = sqlite3_step(stmt);
+
+        switch ( sqlite_ret ) {
+            case SQLITE_ROW:
+                tmps = sqlite3_column_text(stmt,0);
+                tmps_len = sqlite3_column_bytes(stmt,0);
+                memcpy(rbuf,tmps,tmps_len);
+
+                for ( i = 0 , j = 0 ; i < tmps_len ; i += 2 , j++ ) {
+                    sscanf(rbuf+i,"%2x",&c); authkey[j] = c;
+                }
+
+                memset(rbuf,0,SKLOG_BUFFER_LEN);
+                break;
+            case SQLITE_DONE:
+                goto terminate_authkey;
+                break;
+            default:
+                goto error;
+                break;
+        }
+    }
+
+terminate_authkey:
+
+    //~ close database
+    sqlite3_close(db);
+
+    //----------------------------------------------------------------//
+    //                           verify                               //
+    //----------------------------------------------------------------//
+    
+
+    //~ compose query
+    query_len = sprintf(query,"SELECT e_type,e_data,e_hash,e_hmac FROM LOGENTRY WHERE f_uuid = '%s'",uuid);
+
+    //~ open database
+    sqlite3_open(SKLOG_T_DB,&db);
+    
+    if ( db == NULL ) {
+        fprintf(stderr,"SQLite3: Can't open database: %s\n",sqlite3_errmsg(db));
+        goto error;
+    }
+
+    //~ exec query
+    if ( sqlite3_prepare_v2(db,query,query_len+1,&stmt,NULL) != SQLITE_OK ) {
+        fprintf(stderr,"SQLite3: sqlite3_prepare_v2() failure: %s\n",sqlite3_errmsg(db));
+        goto error;
+    }
+
+    while ( 1 ) {
+
+        sqlite_ret = sqlite3_step(stmt);
+
+        switch ( sqlite_ret ) {
+            case SQLITE_ROW:
+
+                //----------------------------------------------------//
+                //                     parse row                      //
+                //----------------------------------------------------//
+                
+                //~ get e_type
+                tmpi = sqlite3_column_int(stmt,0); w = tmpi; e_type_len = sizeof(w);
+                memcpy(e_type,&w,e_type_len);
+
+                //~ get e_data
+                tmps = sqlite3_column_text(stmt,1);
+                tmps_len = sqlite3_column_bytes(stmt,1);
+
+                memcpy(rbuf,tmps,tmps_len);
+
+                for ( i = 0 , j = 0 ; i < tmps_len ; i += 2 , j++ ) {
+                    sscanf(&rbuf[i],"%2x",&c); e_data[j] = c;
+                }
+                e_data_len = tmps_len/2;
+                memset(rbuf,0,SKLOG_BUFFER_LEN);
+                
+                //~ get e_hash
+                tmps = sqlite3_column_text(stmt,2);
+                tmps_len = sqlite3_column_bytes(stmt,2);
+                memcpy(rbuf,tmps,tmps_len);
+
+                for ( i = 0 , j = 0 ; i < tmps_len ; i += 2 , j++ ) {
+                    sscanf(&rbuf[i],"%2x",&c); e_hash[j] = c;
+                }
+                memset(rbuf,0,SKLOG_BUFFER_LEN);
+
+                //~ get e_hmac
+                tmps = sqlite3_column_text(stmt,3);
+                tmps_len = sqlite3_column_bytes(stmt,3);
+                memcpy(rbuf,tmps,tmps_len);
+
+                for ( i = 0 , j = 0 ; i < tmps_len ; i += 2 , j++ ) {
+                    sscanf(&rbuf[i],"%2x",&c); e_hmac[j] = c;
+                }
+                memset(rbuf,0,SKLOG_BUFFER_LEN);
+
+                //----------------------------------------------------//
+                //                regenerate hash chain               //
+                //----------------------------------------------------//
+
+                EVP_MD_CTX_init(&mdctx);
+    
+                if ( EVP_DigestInit_ex(&mdctx,EVP_sha256(),NULL) == 0 ) {
+                    ERR_print_errors_fp(stderr);
+                    goto error;
+                }
+            
+                if ( EVP_DigestUpdate(&mdctx,e_hash_prev,SKLOG_HASH_CHAIN_LEN) == 0 ) {
+                    ERR_print_errors_fp(stderr);
+                    goto error;
+                }
+                
+                if ( EVP_DigestUpdate(&mdctx,e_data,e_data_len) == 0 ) {
+                    ERR_print_errors_fp(stderr);
+                    goto error;
+                }
+                
+                if ( EVP_DigestUpdate(&mdctx,e_type,e_type_len) == 0 ) {
+                    ERR_print_errors_fp(stderr);
+                    goto error;
+                }
+            
+                if ( EVP_DigestFinal_ex(&mdctx,e_hash_curr,NULL) == 0 ) {
+                    ERR_print_errors_fp(stderr);
+                    goto error;
+                }
+            
+                EVP_MD_CTX_cleanup(&mdctx);
+
+                //----------------------------------------------------//
+                //                    generate hmac                   //
+                //----------------------------------------------------//
+
+                rv = hmac(e_hash_curr,
+                    SKLOG_HASH_CHAIN_LEN,
+                    authkey,
+                    SKLOG_AUTH_KEY_LEN,
+                    e_hmac_curr,NULL);
+
+                if ( rv == SKLOG_FAILURE ) {
+                    ERROR("hmac() failure");
+                    goto error;
+                }
+
+                //----------------------------------------------------//
+                //                    verify results                  //
+                //----------------------------------------------------//
+
+                if ( memcmp(e_hash_curr,e_hash,SKLOG_HASH_CHAIN_LEN) != 0 ) {
+                    ERROR("Verification Failure: message digests are not equal");
+                    goto error;
+                }
+                
+                if ( memcmp(e_hmac_curr,e_hmac,SKLOG_HMAC_LEN) != 0 ) {
+                    ERROR("Verification Failure: hmac are not equal");
+                    goto error;
+                }
+
+                //----------------------------------------------------//
+                //                    renew authkey                   //
+                //----------------------------------------------------//
+
+                sha256(authkey,SKLOG_AUTH_KEY_LEN,buf,NULL);
+                memcpy(authkey,buf,SKLOG_AUTH_KEY_LEN);
+
+                //----------------------------------------------------//
+                //                      save data                     //
+                //----------------------------------------------------//
+                memcpy(e_hash_prev,e_hash_curr,SKLOG_HASH_CHAIN_LEN);
+                memset(e_hash_curr,0,SKLOG_HASH_CHAIN_LEN);
+            
+                break;
+            case SQLITE_DONE:
+                goto terminate_verify;
+                break;
+            default:
+                goto error;
+                break;
+        }
+    }
+terminate_verify:
+
+    //~ close db
+    sqlite3_close(db);
+    
+    return SKLOG_SUCCESS;
+    
+error:
+    //~ close db
+    sqlite3_close(db);
+    return SKLOG_FAILURE;
+}
+
 #endif /* USE_SQLITE */
 

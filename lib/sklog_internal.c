@@ -409,22 +409,23 @@ aes256_encrypt(unsigned char    *plain,
     #endif
 
     int ret = 0;
-    
     int rounds = 5;
+
     unsigned char enc_key[AES_KEYSIZE_256] = { 0 };
     unsigned char iv[AES_BLOCK_SIZE] = { 0 };
     unsigned char salt[8] = {0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07};
 
     EVP_CIPHER_CTX ctx;
+
     int c_len = 0;
     int f_len = 0;
 
     OpenSSL_add_all_digests();
     ERR_load_crypto_strings();
 
+    //----------------------------------------------------------------//
 
     //~ derive encryption key
-    
     ret = EVP_BytesToKey(EVP_aes_256_cbc(),EVP_sha256(),
                          salt,
                          key,key_len,
@@ -439,7 +440,6 @@ aes256_encrypt(unsigned char    *plain,
     }
 
     //~ initialize EVP context
-
     EVP_CIPHER_CTX_init(&ctx);
 
     if ( !EVP_EncryptInit_ex(&ctx,EVP_aes_256_cbc(),NULL,enc_key,iv) ) {
@@ -449,7 +449,6 @@ aes256_encrypt(unsigned char    *plain,
     }
 
     //~ allocate memory for the cipher-text
-    
     c_len = plain_len+EVP_CIPHER_CTX_block_size(&ctx);
     *cipher = calloc(c_len,sizeof(char));
 
@@ -460,7 +459,6 @@ aes256_encrypt(unsigned char    *plain,
     }
 
     //~ encrypt plain-text
-
     if ( !EVP_EncryptUpdate(&ctx,*cipher,&c_len,plain,plain_len)) {
         ERR_print_errors_fp(stderr);
         EVP_CIPHER_CTX_cleanup(&ctx);
@@ -474,6 +472,8 @@ aes256_encrypt(unsigned char    *plain,
     }
 
     *cipher_len = c_len + f_len;
+
+    //----------------------------------------------------------------//
 
     //~ some free's
     
@@ -570,6 +570,134 @@ aes256_decrypt(unsigned char    *cipher,
     return SKLOG_SUCCESS;
 }
 
+SKLOG_RETURN
+sha256(unsigned char    *message,
+       unsigned int     message_len,
+       unsigned char    *hash,
+       unsigned int     *hash_len)
+{
+    #ifdef DO_TRACE
+    DEBUG;
+    #endif
+
+    int retval = 0;
+    
+    unsigned char md[SHA256_LEN] = { 0 };
+    unsigned int md_len = 0;
+
+    EVP_MD_CTX mdctx;
+
+    OpenSSL_add_all_digests();
+    ERR_load_crypto_strings();
+    
+    EVP_MD_CTX_init(&mdctx);
+    retval = EVP_DigestInit_ex(&mdctx,EVP_sha256(),NULL);
+
+    if ( retval == 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+    
+    retval = EVP_DigestUpdate(&mdctx,message,message_len);
+    if ( retval == 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+    
+    retval = EVP_DigestFinal_ex(&mdctx,md,&md_len);
+    if ( retval == 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+    
+    EVP_MD_CTX_cleanup(&mdctx);
+    memcpy(hash,md,md_len);
+    if ( hash_len > 0 )
+        *hash_len = md_len;
+
+    ERR_free_strings();
+    EVP_cleanup();
+    return SKLOG_SUCCESS;
+    
+error:
+    ERR_free_strings();
+    EVP_cleanup();
+    return SKLOG_FAILURE;
+}
+
+
+SKLOG_RETURN
+hmac(unsigned char    *message,
+     unsigned int     message_len,
+     unsigned char    *key,
+     unsigned int     key_len,
+     unsigned char    *hmac,
+     unsigned int     *hmac_len)
+{
+    #ifdef DO_TRACE
+    DEBUG
+    #endif
+
+    unsigned char buf[SKLOG_BUFFER_LEN] = { 0 };
+    unsigned int bufl = 0;
+
+    HMAC_CTX mdctx;
+
+    OpenSSL_add_all_digests();
+    ERR_load_crypto_strings();
+
+    //----------------------------------------------------------------//
+
+    HMAC_CTX_init(&mdctx);
+
+    if ( !message ) {
+        ERROR("hmac() error: 1st argument must be not null");
+        goto error;
+    }
+
+    if ( !key ) {
+        ERROR("hmac() error: 3rd argument must be not null");
+        goto error;
+    }
+
+    if ( !hmac ) {
+        ERROR("hmac() error: 5th argument must be not null");
+        goto error;
+    }
+
+    if ( HMAC_Init_ex(&mdctx,key,key_len,EVP_sha256(),NULL) == 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+
+    if ( HMAC_Update(&mdctx,message,message_len) == 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+
+    if ( HMAC_Final(&mdctx,buf,&bufl) == 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+
+    HMAC_CTX_cleanup(&mdctx);
+
+    memcpy(hmac,buf,bufl);
+
+    if ( hmac_len != 0) 
+        *hmac_len = bufl;
+
+    //----------------------------------------------------------------//
+
+    ERR_free_strings();
+    return SKLOG_SUCCESS;
+
+error:
+    HMAC_CTX_cleanup(&mdctx);
+    ERR_free_strings();
+    return SKLOG_FAILURE;
+}
+
 /*--------------------------------------------------------------------*/
 /*                         tlv management                             */
 /*--------------------------------------------------------------------*/
@@ -619,7 +747,7 @@ tlv_parse(unsigned char    *tlv_msg,
           void             *data,
           unsigned int     *data_len)
 {
-    #ifdef DO_TRACE_X
+    #ifdef DO_DEEP_TRACE
     DEBUG
     #endif
 
@@ -728,7 +856,7 @@ tlv_parse_message(unsigned char    *msg,
                   unsigned int     *len,
                   unsigned char    **value)
 {
-    #ifdef DO_TRACE
+    #ifdef DO_DEEP_TRACE
     DEBUG
     #endif
 
@@ -779,7 +907,7 @@ tlv_create_message(uint32_t         type,
                    unsigned char    **message,
                    unsigned int     *message_len)
 {
-    #ifdef DO_TRACE
+    #ifdef DO_DEEP_TRACE
     DEBUG
     #endif
 
@@ -881,7 +1009,7 @@ mem_alloc_n(void      **mem,
             size_t    size,
             size_t    count)
 {
-    #ifdef DO_TRACE
+    #ifdef DO_DEEP_TRACE
     DEBUG
     #endif
 
@@ -894,7 +1022,7 @@ mem_alloc_n(void      **mem,
 SKLOG_RETURN
 mem_free(void      **mem)
 {
-    #ifdef DO_TRACE
+    #ifdef DO_DEEP_TRACE
     DEBUG
     #endif
 
@@ -1205,11 +1333,12 @@ destroy_ssl_connection(SKLOG_CONNECTION *c)
     DEBUG
     #endif
 
-    SSL_shutdown(c->ssl);
-    
     BIO_free_all(c->bio);
+    
+    SSL_shutdown(c->ssl);
     SSL_free(c->ssl);
     SSL_CTX_free(c->ssl_ctx);
+
     close(c->csock);
 
     return SKLOG_SUCCESS;

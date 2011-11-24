@@ -59,9 +59,13 @@
 }
 
 #define TO_IMPLEMENT {\
-    fprintf(stderr,"\n# Function %s() will be implemented as soon as \
-possible. Could you help me? :-D\n\n"\
-    , __func__); \
+    fprintf(stderr,\
+        "\n%s()"\
+        "\n---------------------------------------------------------"\
+        "\n# This function will be implemented as soon as possible #"\
+        "\n---------------------------------------------------------"\
+        "\n\n",\
+        __func__); \
 }
 
 /*--------------------------------------------------------------------*/
@@ -89,7 +93,7 @@ possible. Could you help me? :-D\n\n"\
 #define     LOGFILE_LIST_SIZE         256
 #define     INBUF_LEN                 64
 
-#define     SKLOG_BUFFER_LEN          4096
+#define     SKLOG_BUFFER_LEN          5120
 #define     SKLOG_SMALL_BUFFER_LEN    1024
 #define     SKLOG_LOG_ID_LEN          UUID_STR_LEN
 
@@ -103,38 +107,34 @@ possible. Could you help me? :-D\n\n"\
 #define     SKLOG_FAILURE             !SKLOG_SUCCESS
 #define     SKLOG_TO_IMPLEMENT        SKLOG_SUCCESS
 
-//~ #define     SKLOG_ACK                 "LE_ACK"
-//~ #define     SKLOG_ACK_LEN             6
-
 #define     DO_VERIFY                 1
 #define     DO_NOT_VERIFY             !DO_VERIFY
 
-#define     RSA_DEFAULT_PASSPHRASE    "123456"             //~ temporary
-#define     USE_BIO                                        //~ temporary
+/*--------------------------------------------------------------------*/
+/*                        temporary defines                           */
+/*--------------------------------------------------------------------*/
 
+#define     RSA_DEFAULT_PASSPHRASE    "123456"
+#define     DEBUG_FILE                "/home/paolo/libsklog.dbg"
 
-//~ #define     SKLOG_TLV_NODATA_LEN      8
-//~ #define     SKLOG_SEPARATOR           ';'
-
+#define     USE_BIO
 
 /*--------------------------------------------------------------------*/
 /*                              types                                 */
 /*--------------------------------------------------------------------*/
 
-typedef     int                            SKLOG_RETURN;
-typedef     int                            SKLOG_PROTOCOL_STEP;
-typedef     enum       sklog_data_type     SKLOG_DATA_TYPE;
-typedef     enum       sklog_tlv_type      SKLOG_TLV_TYPE;
-typedef     struct     sklog_connection    SKLOG_CONNECTION;
+typedef     int                           SKLOG_RETURN;
+typedef     int                           SKLOG_PROTOCOL_STEP;
+typedef     enum       sklog_data_type    SKLOG_DATA_TYPE;
+typedef     enum       sklog_tlv_type     SKLOG_TLV_TYPE;
+typedef     struct     sklog_connection   SKLOG_CONNECTION;
 
 enum sklog_data_type {
-    LogfileInitializationType   = 0x00000000,
-    ResponseMessageType         = 0x00000011,
-    
-    NoType                      = 0x11223344,
-
-    AbnormalCloseType           = 0x00000022,
-    NormalCloseMessage          = 0xffffffff,
+    LogfileInitializationType,
+    ResponseMessageType,
+    AbnormalCloseType,
+    NormalCloseMessage,
+    Undefined
 };
 
 enum sklog_tlv_type {

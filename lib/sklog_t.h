@@ -76,6 +76,7 @@ struct sklog_t_storage_driver {
     SKLOG_RETURN (*store_authkey) (char*,uuid_t,unsigned char*);
     SKLOG_RETURN (*store_logentry) (unsigned char*,unsigned int);
     SKLOG_RETURN (*retrieve_logfiles) (unsigned char **,unsigned int *);
+    SKLOG_RETURN (*verify_logfile) (unsigned char *);
 };
 
 /*--------------------------------------------------------------------*/

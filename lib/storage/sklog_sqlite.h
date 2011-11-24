@@ -77,6 +77,10 @@ sklog_sqlite_t_store_logentry(unsigned char    *blob,
 SKLOG_RETURN
 sklog_sqlite_t_retrieve_logfiles(unsigned char    **uuid_list,
                                  unsigned int     *uuid_list_len);
+
+SKLOG_RETURN
+sklog_sqlite_t_verify_logfile(unsigned char *uuid);
+
 #endif /* USE_SQLITE */
 
 #endif /* SKLOG_SQLITE */

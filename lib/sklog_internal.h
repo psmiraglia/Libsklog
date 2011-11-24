@@ -78,6 +78,19 @@ aes256_decrypt(unsigned char    *cipher,
                unsigned char    **plain,
                unsigned int     *plain_len);
 
+SKLOG_RETURN
+sha256(unsigned char    *message,
+       unsigned int     message_len,
+       unsigned char    *hash,
+       unsigned int     *hash_len);
+
+SKLOG_RETURN
+hmac(unsigned char    *message,
+     unsigned int     message_len,
+     unsigned char    *key,
+     unsigned int     key_len,
+     unsigned char    *hmac,
+     unsigned int     *hmac_len);
 /*--------------------------------------------------------------------*/
 /*                         tlv management                             */
 /*--------------------------------------------------------------------*/
