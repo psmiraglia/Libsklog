@@ -315,6 +315,8 @@ SKLOG_V_VerifyLogFile(SKLOG_V_Ctx         *v_ctx,
     char inbuf[INBUF_LEN] = {0};
     int id = 0;
 
+    int retval = SKLOG_SUCCESS;
+
     SSL_load_error_strings();
 
     id = logfile_id;
@@ -373,14 +375,16 @@ SKLOG_V_VerifyLogFile(SKLOG_V_Ctx         *v_ctx,
             break;
         case VERIFY_LOGFILE_FAILURE:
             NOTIFY("Logfile verification fails");
+            retval = SKLOG_FAILURE;
             break;
         default:
             ERROR("Protocol Error");
+            retval = SKLOG_FAILURE;
             break;
     } 
     
     ERR_free_strings();
-    return SKLOG_SUCCESS;
+    return retval;
 
 error:
     ERR_free_strings();

@@ -1707,6 +1707,14 @@ SKLOG_T_RunServer(SKLOG_T_Ctx    *t_ctx)
     unsigned int len = 0;
     unsigned char *value = 0;
 
+    unsigned char *m0 = 0;
+    unsigned int  m0_len = 0;
+
+    unsigned char *m1 = 0;
+    unsigned int  m1_len = 0;
+
+    char u_address[INET_ADDRSTRLEN] = { 0 };
+
     c = new_connection();
 
     //----------------------------------------------------------------//
@@ -1834,14 +1842,6 @@ SKLOG_T_RunServer(SKLOG_T_Ctx    *t_ctx)
                     #ifdef DO_TRACE
                     NOTIFY("received M0_MSG message");
                     #endif
-
-                    unsigned char *m0 = 0;
-                    unsigned int  m0_len = 0;
-
-                    unsigned char *m1 = 0;
-                    unsigned int  m1_len = 0;
-
-                    char u_address[INET_ADDRSTRLEN] = { 0 };
 
                     tlv_get_len(rbuf,&m0_len);
                     tlv_get_value(rbuf,&m0);
