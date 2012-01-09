@@ -22,12 +22,23 @@ int main (int argc, char **argv) {
 
     SKLOG_V_InitCtx(vctx);
 
+    fprintf(stdout,"Welcome to Libsklog verifier shell!\nPress H to visualize the available commands or X to quit.\n");
+
     while ( 1 ) {
 
         main_menu();
-        memset(inbuf,0,INBUF_LEN); gets(inbuf);
+
+        memset(inbuf,0,INBUF_LEN);
+        gets(inbuf);
         
         switch ( inbuf[0] ) {
+            case 'H':
+            case 'h':
+                fprintf(stdout,"  H - show this help\n");
+                fprintf(stdout,"  S - retrieve and show verifiable logfiles\n");
+                fprintf(stdout,"  V - verify the selected logfile\n");
+                fprintf(stdout,"  X - terminate the shell\n");
+                break;
             case 'S':
             case 's':
 
@@ -47,22 +58,31 @@ int main (int argc, char **argv) {
                 }
 
                 //----------------------------------------------------//
+                //----------------------------------------------------//
 
-                
-
-                fprintf(stdout,"\nVerifiable logfile available at %s:%d\n---------------------------------------------------------------------\n",
+                /*
+                fprintf(stdout,
+                    "\nVerifiable logfile available at %s:%d"\
+                    "\n---------------------------------------------------------------------\n",
                     vctx->t_address,vctx->t_port);
+                */
                     
                 SKLOG_V_RetrieveLogFiles(vctx,c);
 
-                fprintf(stdout,"    id | uuid\n  --------------------------------------------\n",
-                    index,vctx->verifiable_logfiles[index]);
+                fprintf(stdout,"\n"\
+                    "  +------+--------------------------------------+\n"\
+                    "  |   id | uuid                                 |\n"\
+                    "  +------+--------------------------------------+\n");
 
                 for ( index = 0 ; index < 256 ; index++ ) {
                     if ( strlen(vctx->verifiable_logfiles[index]) > 0 ) 
-                        fprintf(stdout,"   %3d | %s\n",index,vctx->verifiable_logfiles[index]);
+                        fprintf(stdout,"  | %4d | %s |\n",index,vctx->verifiable_logfiles[index]);
                 }
 
+                fprintf(stdout,
+                    "  +------+--------------------------------------+\n");
+
+                //----------------------------------------------------//
                 //----------------------------------------------------//
                 
                 //~ close connection
@@ -73,7 +93,7 @@ int main (int argc, char **argv) {
             case 'V':
             case 'v':
 
-                fprintf(stdout,"\nSelect logfile id: ");
+                fprintf(stdout,"\n  select logfile id: ");
                 memset(inbuf,0,INBUF_LEN); gets(inbuf);
 
                 sscanf(inbuf,"%d",&index);
@@ -97,9 +117,9 @@ int main (int argc, char **argv) {
 
                 if ( SKLOG_V_VerifyLogFile(vctx,c,index) == SKLOG_FAILURE ) {
                     ERROR("SKLOG_V_VerifyLogFile() failure");
-                    fprintf(stdout,"LOGFILE VERIFICATION FAILS!!!\n");
+                    fprintf(stdout,"  LOGFILE VERIFICATION FAILS!!!\n");
                 } else {
-                    fprintf(stdout,"LOGFILE VERIFICATION SUCCESSFUL!!!\n");
+                    fprintf(stdout,"  LOGFILE VERIFICATION SUCCESSFUL!!!\n");
                 }
 
                 //----------------------------------------------------//
@@ -111,10 +131,10 @@ int main (int argc, char **argv) {
                 break;
             case 'X':
             case 'x':
-                fprintf(stdout,"Bye...\n");
+                fprintf(stdout,"  Bye...\n");
                 goto terminate;
             default:
-                fprintf(stdout,"\n\nUnknown command\n\n");
+                fprintf(stdout,"\n\n  Unknown command\n\n");
                 break;
         }
         
@@ -129,6 +149,7 @@ terminate:
 
 void main_menu(void)
 {
+    /*
     fprintf(stdout,"Verifier Action Menu\n");
     fprintf(stdout,"---------------------------------------------------"
         "---------------------");
@@ -136,19 +157,7 @@ void main_menu(void)
     fprintf(stdout,"\n -> (v)erify logfile");
     fprintf(stdout,"\n -> e(x)it");
     fprintf(stdout,"\n\nSelect action [s|v|x]: ");
-}
-
-void show_menu(void)
-{
-    const char *menu = "\n\
-Verifier Action Menu:\n\
----------------------------------------------------------------------\n\
-  - show verifiable logfiles [s]\n\
-  - verify logfile [v]\n\
-  - exit [x]\n\
-\n\
-Select action: ";
-
-    fprintf(stdout,"%s",menu);
+    */
+    fprintf(stdout,"\nverifier: ");
 }
 

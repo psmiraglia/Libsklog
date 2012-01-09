@@ -256,7 +256,9 @@ SKLOG_V_RetrieveLogFiles(SKLOG_V_Ctx         *v_ctx,
 
     switch ( type ) {
         case LOG_FILES:
+            #ifdef DO_TRACE
             NOTIFY("Received LOG_FILES");
+            #endif
 
             if ( tlv_parse_message(rbuf,LOG_FILES,NULL,&len,&value) == SKLOG_FAILURE ) {
                 ERROR("tlv_parse_message() failure");
@@ -371,10 +373,14 @@ SKLOG_V_VerifyLogFile(SKLOG_V_Ctx         *v_ctx,
 
     switch ( type ) {
         case VERIFY_LOGFILE_SUCCESS:
+            #ifdef DO_TRACE
             NOTIFY("Logfile verification successful");
+            #endif
             break;
         case VERIFY_LOGFILE_FAILURE:
+            #ifdef DO_TRACE
             NOTIFY("Logfile verification fails");
+            #endif
             retval = SKLOG_FAILURE;
             break;
         default:

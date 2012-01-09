@@ -234,4 +234,13 @@ tcp_connect(const char    *address,
 //~ SKLOG_RETURN
 //~ conn_close(SKLOG_CONNECTION    *conn);
 
+/*--------------------------------------------------------------------*/
+/*                      user messages management                      */
+/*--------------------------------------------------------------------*/
+
+#define TERM_LINE 72
+
+void
+sklog_msg_to_implement(const char *f);
+
 #endif /* SKLOG_INTERNAL_H */

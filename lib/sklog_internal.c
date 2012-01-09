@@ -227,7 +227,9 @@ sign_verify(EVP_PKEY         *verify_key,
     }
 
     if ( retval > 0 ) {
-        NOTIFY("signature verification successfull :-D")
+        #ifdef DO_TRACE
+        NOTIFY("signature verification successfull :-D");
+        #endif
         ERR_free_strings();
         return SKLOG_SUCCESS;
     } else {
@@ -1654,3 +1656,41 @@ conn_close(SKLOG_CONNECTION    *conn)
     return SKLOG_SUCCESS;
 }
 */
+
+/*--------------------------------------------------------------------*/
+/*                      user messages management                      */
+/*--------------------------------------------------------------------*/
+
+void sklog_msg_to_implement(const char *f) {
+
+    fprintf(stderr,"\n+----------------------------------------------------------------------+");
+    fprintf(stderr,"\n| %-68s |",f);
+    fprintf(stderr,"\n+----------------------------------------------------------------------+");
+    fprintf(stderr,"\n|                                                                      |");
+    fprintf(stderr,"\n|    This function will be implemented as soon as possible             |");
+    fprintf(stderr,"\n|                                                                      |");
+    fprintf(stderr,"\n+----------------------------------------------------------------------+");
+    fprintf(stderr,"\n\n");
+
+    return;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

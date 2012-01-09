@@ -58,15 +58,8 @@
     getpid(),__func__,msg); \
 }
 
-#define TO_IMPLEMENT {\
-    fprintf(stderr,\
-        "\n%s()"\
-        "\n---------------------------------------------------------"\
-        "\n# This function will be implemented as soon as possible #"\
-        "\n---------------------------------------------------------"\
-        "\n\n",\
-        __func__); \
-}
+#define TO_IMPLEMENT \
+    sklog_msg_to_implement(__func__);
 
 /*--------------------------------------------------------------------*/
 /*                    memory management macros                        */
