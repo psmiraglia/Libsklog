@@ -1714,6 +1714,30 @@ initialize_context(SKLOG_U_Ctx    *u_ctx)
     //~ init x0_hash
     memset(u_ctx->x0_hash,0,SKLOG_HASH_CHAIN_LEN);
 
+    // init storage callbacks
+    u_ctx->lsdriver = calloc(1,sizeof(SKLOG_U_STORAGE_DRIVER));
+
+    if ( u_ctx->lsdriver == NULL ) {
+        ERROR("calloc() failure");
+        goto error;
+    }
+
+    #ifdef USE_FILE
+    u_ctx->lsdriver->store_logentry =    &sklog_file_u_store_logentry;
+    u_ctx->lsdriver->flush_logfile =     &sklog_file_u_flush_logfile;
+    u_ctx->lsdriver->init_logfile =      &sklog_file_u_init_logfile;
+    #elif USE_SYSLOG
+    u_ctx->lsdriver->store_logentry =    &sklog_syslog_u_store_logentry;
+    u_ctx->lsdriver->flush_logfile =     &sklog_syslog_u_flush_logfile;
+    u_ctx->lsdriver->init_logfile =      &sklog_syslog_u_init_logfile;
+    #elif USE_SQLITE
+    u_ctx->lsdriver->store_logentry =    &sklog_sqlite_u_store_logentry;
+    u_ctx->lsdriver->flush_logfile =     &sklog_sqlite_u_flush_logfile;
+    u_ctx->lsdriver->init_logfile =      &sklog_sqlite_u_init_logfile;
+    #else
+    //~ todo: manage default case
+    #endif
+
     //~ set context_state
     u_ctx->context_state = SKLOG_U_CTX_INITIALIZED;
 
@@ -2166,14 +2190,15 @@ SKLOG_U_NewCtx(void)
         ERROR("calloc() failure");
         return NULL;
     }
-    
+
+    /*
     ctx->lsdriver = calloc(1,sizeof(SKLOG_U_STORAGE_DRIVER));
 
     if ( ctx->lsdriver == NULL ) {
         ERROR("calloc() failure");
         return NULL;
     }
-
+    
     #ifdef USE_FILE
     ctx->lsdriver->store_logentry =    &sklog_file_u_store_logentry;
     ctx->lsdriver->flush_logfile =     &sklog_file_u_flush_logfile;
@@ -2189,6 +2214,7 @@ SKLOG_U_NewCtx(void)
     #else
     //~ todo: manage default case
     #endif
+    */
 
     return ctx;
 }

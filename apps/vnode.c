@@ -70,9 +70,11 @@ int main (int argc, char **argv) {
                 SKLOG_V_RetrieveLogFiles(vctx,c);
 
                 fprintf(stdout,"\n"\
+                    "  Verifiable logfile at host %s\n"\
                     "  +------+--------------------------------------+\n"\
                     "  |   id | uuid                                 |\n"\
-                    "  +------+--------------------------------------+\n");
+                    "  +------+--------------------------------------+\n",
+                    vctx->t_address);
 
                 for ( index = 0 ; index < 256 ; index++ ) {
                     if ( strlen(vctx->verifiable_logfiles[index]) > 0 ) 
@@ -149,15 +151,6 @@ terminate:
 
 void main_menu(void)
 {
-    /*
-    fprintf(stdout,"Verifier Action Menu\n");
-    fprintf(stdout,"---------------------------------------------------"
-        "---------------------");
-    fprintf(stdout,"\n -> (s)how verifiable logfiles");
-    fprintf(stdout,"\n -> (v)erify logfile");
-    fprintf(stdout,"\n -> e(x)it");
-    fprintf(stdout,"\n\nSelect action [s|v|x]: ");
-    */
     fprintf(stdout,"\nverifier: ");
 }
 

@@ -49,6 +49,10 @@ sklog_syslog_u_store_logentry(uuid_t             logfile_id,
     char buf_hash[1+(SKLOG_HASH_CHAIN_LEN*2)] = { 0 };
     char buf_hmac[1+(SKLOG_HMAC_LEN*2)] = { 0 };
 
+    char buf[SKLOG_BUFFER_LEN] = { 0 };
+    unsigned int bufl = 0;
+    char msg[SYSLOG_MESSAGE_MAX_LEN+1] = { 0 };
+
     //~ create log ident
     uuid_unparse_lower(logfile_id,ident);
     ident[UUID_STR_LEN] = '\0';
@@ -75,14 +79,57 @@ sklog_syslog_u_store_logentry(uuid_t             logfile_id,
         sprintf(buf_hmac+j,"%2.2x",hmac[i]);
     buf_hmac[SKLOG_HMAC_LEN*2] = '\0';
 
-    //~ open connection to syslogd
-    openlog(ident,LOG_NDELAY,SKLOG_FACILITY);
+    //~ generate message
+    bufl = snprintf(buf,SKLOG_BUFFER_LEN-1,"[W:%d] [D:%s] [Z:%s] [Y:%s]",type,buf_data,buf_hash,buf_hmac);
+
+    if ( bufl <= SYSLOG_MESSAGE_MAX_LEN ) {
+        
+        //~ open connection to syslogd
+        openlog(ident,LOG_NDELAY,SKLOG_FACILITY);
+
+        //~ send message to syslogd
+        syslog(SKLOG_SEVERITY,"%s",buf);
+
+        //~ close connection with syslogd
+        closelog();
+        
+    } else {
+
+        i = 0;
+        j = 0;
+
+        //~ open connection to syslogd
+        openlog(ident,LOG_NDELAY,SKLOG_FACILITY);
+
+        syslog(SKLOG_SEVERITY,"TOKENIZED MESSAGE -- START");
+
+        //~ send splitted message to syslogd
+        while ( bufl >= SYSLOG_MESSAGE_MAX_LEN ) {
+            memcpy(msg,buf+i,SYSLOG_MESSAGE_MAX_LEN);
+            
+            syslog(SKLOG_SEVERITY,"{token:%d} %s",j,msg);
+
+            memset(msg,0,SYSLOG_MESSAGE_MAX_LEN);
+            bufl -= SYSLOG_MESSAGE_MAX_LEN;
+            i += SYSLOG_MESSAGE_MAX_LEN;
+            j++;
+        }
+
+        if ( bufl > 0 ) {
+            memcpy(msg,buf+i,SYSLOG_MESSAGE_MAX_LEN);
+            syslog(SKLOG_SEVERITY,"{token:%d} %s",j,msg);
+        }
+
+        syslog(SKLOG_SEVERITY,"TOKENIZED MESSAGE -- END");
+
+        //~ close connection with syslogd
+        closelog();
+    }
 
     //~ send message to syslogd
-    syslog(SKLOG_SEVERITY,"[%d] [%s] [%s] [%s]",type,buf_data,buf_hash,buf_hmac);
+    syslog(SKLOG_SEVERITY,"[W:%d] [D:%s] [Z:%s] [Y:%s]",type,buf_data,buf_hash,buf_hmac);
     
-    //~ close connection with syslogd
-    closelog();
+    
     
     return SKLOG_SUCCESS;
 }                        

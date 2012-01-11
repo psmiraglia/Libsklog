@@ -38,6 +38,7 @@
 
 #define  SKLOG_FACILITY  LOG_LOCAL7
 #define  SKLOG_SEVERITY  LOG_NOTICE
+#define  SYSLOG_MESSAGE_MAX_LEN 1014 //~ to fix
 
 /*--------------------------------------------------------------------*/
 /*                             u                                      */

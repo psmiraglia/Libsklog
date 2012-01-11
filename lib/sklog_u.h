@@ -35,7 +35,7 @@
 /*--------------------------------------------------------------------*/
 
 #define  SKLOG_U_CONFIG_FILE_PATH  ETC_PREFIX"/libsklog/libsklog-u.conf"
-#define  SKLOG_DEF_LOGFILE_SIZE  7
+#define  SKLOG_DEF_LOGFILE_SIZE  100
 #define  SKLOG_DEF_T_CERT_PATH  ETC_PREFIX"/libsklog/certs/ca/ca_cert.pem"
 #define  SKLOG_DEF_T_ADDRESS  "127.0.0.1"
 #define  SKLOG_DEF_T_PORT  5555
