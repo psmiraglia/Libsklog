@@ -208,6 +208,7 @@ AC_CONFIG_FILES([\
     docs/certs/Makefile \
     docs/config/Makefile \
     docs/sql/Makefile \
+    docs/rsyslog.d/Makefile \
     include/Makefile \
     lib/Makefile\
 ])

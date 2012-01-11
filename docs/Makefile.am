@@ -1,1 +1,1 @@
-SUBDIRS = sql certs config
+SUBDIRS = sql certs config rsyslog.d
