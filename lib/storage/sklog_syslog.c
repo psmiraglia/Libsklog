@@ -40,23 +40,30 @@ sklog_syslog_u_store_logentry(uuid_t             logfile_id,
     DEBUG
     #endif
 
-    int i = 0;
-    int j = 0;
+    //~  int i = 0;
+    //~  int j = 0;
 
     char ident[UUID_STR_LEN+1] = { 0 };
 
-    char *buf_data = 0;
-    char buf_hash[1+(SKLOG_HASH_CHAIN_LEN*2)] = { 0 };
-    char buf_hmac[1+(SKLOG_HMAC_LEN*2)] = { 0 };
+    //~  char *buf_data = 0;
+    //~  char buf_hash[1+(SKLOG_HASH_CHAIN_LEN*2)] = { 0 };
+    //~  char buf_hmac[1+(SKLOG_HMAC_LEN*2)] = { 0 };
 
     char buf[SKLOG_BUFFER_LEN] = { 0 };
-    unsigned int bufl = 0;
-    char msg[SYSLOG_MESSAGE_MAX_LEN+1] = { 0 };
+    char *tbuf = 0;
+    //~  unsigned int bufl = 0;
+    //~  char msg[SYSLOG_MESSAGE_MAX_LEN+1] = { 0 };
+
+    //~  base64
+    BIO *b64 = 0;
+    BIO *mem = 0;
+    BUF_MEM *mptr = 0;
 
     //~ create log ident
     uuid_unparse_lower(logfile_id,ident);
-    ident[UUID_STR_LEN] = '\0';
+    //~  ident[UUID_STR_LEN] = '\0';
 
+    /*
     //~ serialize data
     buf_data = calloc(1+(data_len*2),sizeof(char));
     
@@ -78,8 +85,10 @@ sklog_syslog_u_store_logentry(uuid_t             logfile_id,
     for ( i = 0 , j = 0 ; i < SKLOG_HMAC_LEN ; i++ , j += 2)
         sprintf(buf_hmac+j,"%2.2x",hmac[i]);
     buf_hmac[SKLOG_HMAC_LEN*2] = '\0';
+    */
 
     //~ generate message
+    /*
     bufl = snprintf(buf,SKLOG_BUFFER_LEN-1,"[W:%d] [D:%s] [Z:%s] [Y:%s]",type,buf_data,buf_hash,buf_hmac);
 
     if ( bufl <= SYSLOG_MESSAGE_MAX_LEN ) {
@@ -128,8 +137,71 @@ sklog_syslog_u_store_logentry(uuid_t             logfile_id,
 
     //~ send message to syslogd
     syslog(SKLOG_SEVERITY,"[W:%d] [D:%s] [Z:%s] [Y:%s]",type,buf_data,buf_hash,buf_hmac);
+    */
+
+    tbuf = calloc(1,sizeof(type));
+    if ( tbuf < 0 ) {
+        ERROR("calloc() failure");
+        return SKLOG_FAILURE;
+    }
+    memcpy(tbuf,&type,sizeof(type));
+
+    if ( ( b64 = BIO_new(BIO_f_base64()) ) == NULL ) {
+        ERROR("BIO_new() failure");
+        return SKLOG_FAILURE;
+    }
+
+    if ( ( mem = BIO_new(BIO_s_mem()) ) == NULL ) {
+        ERROR("BIO_new() failure");
+        return SKLOG_FAILURE;
+    }
     
+    b64 = BIO_push(b64,mem);
+
+    if ( BIO_write(b64,tbuf,sizeof(type)) < 0 ) {
+        ERROR("BIO_write() failure");
+        return SKLOG_FAILURE;
+    }
     
+    if ( BIO_write(b64,hash,SKLOG_HASH_CHAIN_LEN) < 0 ) {
+        ERROR("BIO_write() failure");
+        return SKLOG_FAILURE;
+    }
+    
+    if ( BIO_write(b64,hmac,SKLOG_HMAC_LEN) < 0 ) {
+        ERROR("BIO_write() failure");
+        return SKLOG_FAILURE;
+    }
+    
+    if ( BIO_write(b64,data,data_len) < 0 ) {
+        ERROR("BIO_write() failure");
+        return SKLOG_FAILURE;
+    }
+
+    if ( BIO_flush(b64) < 0 ) {
+        ERROR("BIO_flush() failure");
+        return SKLOG_FAILURE;
+    }
+    
+    BIO_get_mem_ptr(b64,&mptr);
+
+    if ( mptr == NULL ) {
+        ERROR("BIO_get_mem_ptr() failure");
+        return SKLOG_FAILURE;
+    }
+    
+    memcpy(buf,mptr->data,mptr->length-1);
+
+    BIO_free_all(b64);
+
+    //~ open connection to syslogd
+    openlog(ident,LOG_NDELAY,SKLOG_FACILITY);
+
+    //~ send message to syslogd
+    syslog(SKLOG_SEVERITY,"%s",buf);
+
+    //~ close connection with syslogd
+    closelog();
     
     return SKLOG_SUCCESS;
 }                        
