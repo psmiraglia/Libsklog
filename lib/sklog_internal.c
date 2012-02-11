@@ -478,7 +478,6 @@ aes256_encrypt(unsigned char    *plain,
     //----------------------------------------------------------------//
 
     //~ some free's
-    
     EVP_CIPHER_CTX_cleanup(&ctx);
     ERR_free_strings();
 

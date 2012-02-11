@@ -630,12 +630,25 @@ create_logentry(SKLOG_U_Ctx        *u_ctx,
         goto error;
     }
 
+#ifndef DISABLE_ENCRYPTION
     //~ encrypt data using the generated encryption key
+
     if ( aes256_encrypt(data,data_len,enc_key,SKLOG_ENC_KEY_LEN,
                         &data_enc,&data_enc_len) == SKLOG_FAILURE ) {
         ERROR("encrypt_aes256() failure")
         goto error;
     }
+#else
+    data_enc = calloc(data_len,sizeof(char));
+    if ( data_enc == 0 ) {
+        ERROR("calloc() failure");
+        goto error;
+    }
+    data_enc_len = data_len;
+    memcpy(data_enc,data,data_enc_len);
+#endif
+    
+    
 
     //~ generate hash-chain element
     if ( gen_hash_chain(u_ctx,data_enc,data_enc_len,type,hash_chain) == SKLOG_FAILURE ) {

@@ -111,6 +111,7 @@
 #define     DEBUG_FILE                "/home/paolo/libsklog.dbg"
 
 #define     USE_BIO
+#define     DISABLE_ENCRYPTION
 
 /*--------------------------------------------------------------------*/
 /*                              types                                 */

@@ -75,10 +75,20 @@ sklog_sqlite_u_store_logentry(uuid_t             logfile_id,
     uuid_unparse_lower(logfile_id,f_uuid);
     f_uuid[UUID_STR_LEN] = '\0';
 
+#ifndef DISABLE_ENCRYPTION
     buf_data = calloc(1+(data_len*2),sizeof(char)); 
-
     for ( i = 0 , j = 0 ; i < data_len ; i++ , j += 2)
         sprintf(buf_data+j,"%2.2x",data[i]);
+#else
+    buf_data = calloc(data_len+1,sizeof(char));
+    if ( buf_data == 0 ) {
+        ERROR("calloc() failure");
+        goto error;
+    }
+    memcpy(buf_data,data,data_len);
+    buf_data[data_len] = 0;
+#endif
+
     for ( i = 0 , j = 0 ; i < SKLOG_HASH_CHAIN_LEN ; i++ , j += 2)
         sprintf(buf_hash+j,"%2.2x",hash[i]);
     for ( i = 0 , j = 0 ; i < SKLOG_HMAC_LEN ; i++ , j += 2)
