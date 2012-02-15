@@ -630,15 +630,7 @@ create_logentry(SKLOG_U_Ctx        *u_ctx,
         goto error;
     }
 
-#ifndef DISABLE_ENCRYPTION
-    //~ encrypt data using the generated encryption key
-
-    if ( aes256_encrypt(data,data_len,enc_key,SKLOG_ENC_KEY_LEN,
-                        &data_enc,&data_enc_len) == SKLOG_FAILURE ) {
-        ERROR("encrypt_aes256() failure")
-        goto error;
-    }
-#else
+#ifdef DISABLE_ENCRYPTION
     data_enc = calloc(data_len,sizeof(char));
     if ( data_enc == 0 ) {
         ERROR("calloc() failure");
@@ -646,6 +638,14 @@ create_logentry(SKLOG_U_Ctx        *u_ctx,
     }
     data_enc_len = data_len;
     memcpy(data_enc,data,data_enc_len);
+#else
+    //~ encrypt data using the generated encryption key
+
+    if ( aes256_encrypt(data,data_len,enc_key,SKLOG_ENC_KEY_LEN,
+                        &data_enc,&data_enc_len) == SKLOG_FAILURE ) {
+        ERROR("encrypt_aes256() failure")
+        goto error;
+    }
 #endif
     
     

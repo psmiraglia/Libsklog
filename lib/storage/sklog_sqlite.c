@@ -63,40 +63,74 @@ sklog_sqlite_u_store_logentry(uuid_t             logfile_id,
 
     char query[SKLOG_BUFFER_LEN] = { 0 };
     char f_uuid[UUID_STR_LEN+1] = { 0 };
+    /**
     int i = 0;
     int j = 0;
+    */
 
     char *buf_data = 0;
+    /** disabled
     char buf_hash[1+(SKLOG_HASH_CHAIN_LEN*2)] = { 0 };
     char buf_hmac[1+(SKLOG_HMAC_LEN*2)] = { 0 };
+    */
+    char *buf_hash = 0;
+    char *buf_hmac = 0;
 
     //~ compose query
     
     uuid_unparse_lower(logfile_id,f_uuid);
     f_uuid[UUID_STR_LEN] = '\0';
 
-#ifndef DISABLE_ENCRYPTION
+#ifdef DISABLE_ENCRYPTION
+    /**
     buf_data = calloc(1+(data_len*2),sizeof(char)); 
     for ( i = 0 , j = 0 ; i < data_len ; i++ , j += 2)
         sprintf(buf_data+j,"%2.2x",data[i]);
+    */
+    switch (type) {
+        case LogfileInitializationType:
+        case ResponseMessageType:
+        case AbnormalCloseType:
+        case NormalCloseMessage:
+            b64_enc(data,data_len,&buf_data);
+            break;
+        case Undefined:
+            buf_data = calloc(data_len+1,sizeof(char));
+            if ( buf_data == 0 ) {
+                ERROR("calloc() failure");
+                goto error;
+            }
+            memcpy(buf_data,data,data_len);
+            buf_data[data_len] = 0;
+            break;
+    }
 #else
-    buf_data = calloc(data_len+1,sizeof(char));
-    if ( buf_data == 0 ) {
-        ERROR("calloc() failure");
+    if ( b64_enc(data,data_len,&buf_data) == SKLOG_FAILURE ) {
+        ERROR("b64_enc() failure");
         goto error;
     }
-    memcpy(buf_data,data,data_len);
-    buf_data[data_len] = 0;
 #endif
 
+    /** disabled
     for ( i = 0 , j = 0 ; i < SKLOG_HASH_CHAIN_LEN ; i++ , j += 2)
         sprintf(buf_hash+j,"%2.2x",hash[i]);
     for ( i = 0 , j = 0 ; i < SKLOG_HMAC_LEN ; i++ , j += 2)
         sprintf(buf_hmac+j,"%2.2x",hmac[i]);
+    */
+
+    if ( b64_enc(hash,SKLOG_HASH_CHAIN_LEN,&buf_hash) == SKLOG_FAILURE ) {
+        ERROR("b64_enc() failure");
+        goto error;
+    }
+    
+    if ( b64_enc(hmac,SKLOG_HMAC_LEN,&buf_hmac) == SKLOG_FAILURE ) {
+        ERROR("b64_enc() failure");
+        goto error;
+    }
 
     sprintf(
         query,
-"insert into LOGENTRY (f_id,e_type,e_data,e_hash,e_hmac) \
+        "insert into LOGENTRY (f_id,e_type,e_data,e_hash,e_hmac) \
  values ((select f_id from LOGFILE where f_uuid = '%s'),%d,'%s','%s','%s')",
         f_uuid,type,buf_data,buf_hash,buf_hmac);
 
@@ -368,8 +402,9 @@ sklog_sqlite_t_store_authkey(char             *u_ip,
     char *err_msg = 0;
 
     char query[SKLOG_SMALL_BUFFER_LEN] = { 0 };
-    char key[(SKLOG_AUTH_KEY_LEN*2)+1] = { 0 };
-    int i = 0, j = 0;
+    //~ char key[(SKLOG_AUTH_KEY_LEN*2)+1] = { 0 };
+    char *key = 0;
+    //~ int i = 0, j = 0;
 
     char f_uuid[UUID_STR_LEN+1] = { 0 };
 
@@ -378,9 +413,13 @@ sklog_sqlite_t_store_authkey(char             *u_ip,
     uuid_unparse_lower(logfile_id,f_uuid);
     f_uuid[UUID_STR_LEN] = '\0';
 
+    /**
     for ( i = 0 , j = 0 ; i < SKLOG_AUTH_KEY_LEN ; i++ , j += 2)
         sprintf(key+j,"%2.2x",authkey[i]);
     key[(SKLOG_AUTH_KEY_LEN*2)] = '\0';
+    */
+
+    b64_enc(authkey,SKLOG_AUTH_KEY_LEN,&key);
 
     sprintf(
         query,
@@ -653,10 +692,24 @@ sklog_sqlite_t_verify_logfile(unsigned char *uuid)
 
     int rv = 0;
 
-    char rbuf[SKLOG_BUFFER_LEN] = { 0 };
+    /****/
 
-    const unsigned char *tmps = 0;
-    unsigned int tmps_len = 0;
+    const unsigned char *db_text_b = 0;
+    unsigned int db_text_blen = 0;
+
+    char *b64_b = 0;
+    unsigned int b64_blen = 0;
+
+    unsigned char *b = 0;
+    unsigned int blen = 0;
+    
+    /****/
+
+
+    //~ char rbuf[SKLOG_BUFFER_LEN] = { 0 };
+
+    //~ const unsigned char *tmps = 0;
+    //~ unsigned int tmps_len = 0;
     unsigned int tmpi = 0;
 
     sqlite3 *db = 0;
@@ -683,7 +736,7 @@ sklog_sqlite_t_verify_logfile(unsigned char *uuid)
     unsigned char authkey[SKLOG_AUTH_KEY_LEN] = { 0 };
     unsigned char buf[SKLOG_AUTH_KEY_LEN] = { 0 };
 
-    int i = 0 , j = 0 , c = 0;
+    //~ int i = 0 , j = 0 , c = 0;
 
     EVP_MD_CTX mdctx;
 
@@ -695,19 +748,23 @@ sklog_sqlite_t_verify_logfile(unsigned char *uuid)
     //----------------------------------------------------------------//
 
     //~ compose query
-    query_len = sprintf(query,"SELECT authkey FROM AUTHKEY WHERE f_uuid='%s'",uuid);
+    query_len = sprintf(query,
+        "SELECT authkey FROM AUTHKEY WHERE f_uuid='%s'",uuid);
 
     //~ open database
     sqlite3_open(SKLOG_T_DB,&db);
     
     if ( db == NULL ) {
-        fprintf(stderr,"SQLite3: Can't open database: %s\n",sqlite3_errmsg(db));
+        fprintf(stderr,
+            "SQLite3: Can't open database: %s\n",sqlite3_errmsg(db));
         goto error;
     }
 
     //~ exec query
     if ( sqlite3_prepare_v2(db,query,query_len+1,&stmt,NULL) != SQLITE_OK ) {
-        fprintf(stderr,"SQLite3: sqlite3_prepare_v2() failure: %s\n",sqlite3_errmsg(db));
+        fprintf(stderr,
+            "SQLite3: sqlite3_prepare_v2() failure: %s\n",
+            sqlite3_errmsg(db));
         goto error;
     }
 
@@ -717,8 +774,45 @@ sklog_sqlite_t_verify_logfile(unsigned char *uuid)
 
         switch ( sqlite_ret ) {
             case SQLITE_ROW:
-                tmps = sqlite3_column_text(stmt,0);
-                tmps_len = sqlite3_column_bytes(stmt,0);
+
+                db_text_b = sqlite3_column_text(stmt,0);
+                db_text_blen = sqlite3_column_bytes(stmt,0);
+
+                if ( ( b64_b = calloc(db_text_blen+1,sizeof(char)) ) == NULL ) {
+                    ERROR("calloc() failure");
+                    goto error;
+                }
+                memset(b64_b,0,db_text_blen+1);
+                memcpy(b64_b,db_text_b,db_text_blen);
+                b64_blen = strlen(b64_b);
+                if ( b64_dec(b64_b,b64_blen,&b,&blen) == SKLOG_FAILURE ) {
+                    ERROR("b64_dec() failure");
+                    goto error;
+                }
+
+                memcpy(authkey,b,blen);
+
+                free(b64_b);
+                /**
+                fprintf(stderr,"/n>>> ");
+                for ( i = 0 ; i < SKLOG_AUTH_KEY_LEN ; i++ )
+                    fprintf(stderr,"%2.2x ",authkey[i]);
+                fprintf(stderr,"<<</n/n");
+                getchar();
+                */
+            
+                /**
+                tmps = sqlite3_column_text(stmt,0);      // get text
+                tmps_len = sqlite3_column_bytes(stmt,0); // get text len
+
+                b64buf = calloc(tmps_len+1,sizeof(char));
+                memcpy(b64buf,tmps,tmps_len);
+
+                fprintf(stderr,">>>> %s\n\n",tmps);
+                getchar();
+
+                b64_dec("YW55IGNhcm5hbCBwbGVhc3VyZQ==\0",strlen("YW55IGNhcm5hbCBwbGVhc3VyZQ==\0"),NULL,NULL);
+
                 memcpy(rbuf,tmps,tmps_len);
 
                 for ( i = 0 , j = 0 ; i < tmps_len ; i += 2 , j++ ) {
@@ -726,6 +820,7 @@ sklog_sqlite_t_verify_logfile(unsigned char *uuid)
                 }
 
                 memset(rbuf,0,SKLOG_BUFFER_LEN);
+                */
                 break;
             case SQLITE_DONE:
                 goto terminate_authkey;
@@ -747,19 +842,23 @@ terminate_authkey:
     
 
     //~ compose query
-    query_len = sprintf(query,"SELECT e_type,e_data,e_hash,e_hmac FROM LOGENTRY WHERE f_uuid = '%s'",uuid);
+    query_len = sprintf(query,
+        "SELECT e_type,e_data,e_hash,e_hmac FROM LOGENTRY WHERE f_uuid = '%s'",uuid);
 
     //~ open database
     sqlite3_open(SKLOG_T_DB,&db);
     
     if ( db == NULL ) {
-        fprintf(stderr,"SQLite3: Can't open database: %s\n",sqlite3_errmsg(db));
+        fprintf(stderr,
+            "SQLite3: Can't open database: %s\n",sqlite3_errmsg(db));
         goto error;
     }
 
     //~ exec query
     if ( sqlite3_prepare_v2(db,query,query_len+1,&stmt,NULL) != SQLITE_OK ) {
-        fprintf(stderr,"SQLite3: sqlite3_prepare_v2() failure: %s\n",sqlite3_errmsg(db));
+        fprintf(stderr,
+            "SQLite3: sqlite3_prepare_v2() failure: %s\n",
+            sqlite3_errmsg(db));
         goto error;
     }
 
@@ -779,8 +878,67 @@ terminate_authkey:
                 memcpy(e_type,&w,e_type_len);
 
                 //~ get e_data
+#ifdef DISABLE_ENCRYPTION
+                switch ( w ) {
+                    case LogfileInitializationType:
+                    case ResponseMessageType:
+                    case AbnormalCloseType:
+                    case NormalCloseMessage:
+                        db_text_b = sqlite3_column_text(stmt,1);
+                        db_text_blen = sqlite3_column_bytes(stmt,1);
+        
+                        if ( (b64_b = calloc(db_text_blen+1,sizeof(char))) == NULL ) {
+                            ERROR("calloc() failure");
+                            goto error;
+                        }
+                        memset(b64_b,0,db_text_blen+1);
+                        memcpy(b64_b,db_text_b,db_text_blen);
+                        b64_blen = strlen(b64_b);
+                        if ( b64_dec(b64_b,b64_blen,&b,&blen) == SKLOG_FAILURE ) {
+                            ERROR("b64_dec() failure");
+                            goto error;
+                        }
+        
+                        memcpy(e_data,b,blen);
+                        e_data_len = blen;
+                        
+                        free(b64_b);
+                        break;
+                    case Undefined:
+                        db_text_b = sqlite3_column_text(stmt,1);
+                        db_text_blen = sqlite3_column_bytes(stmt,1);
+        
+                        memcpy(e_data,db_text_b,db_text_blen);
+                        e_data_len = db_text_blen;
+                        break;
+                }
+#else
+                db_text_b = sqlite3_column_text(stmt,1);
+                db_text_blen = sqlite3_column_bytes(stmt,1);
+
+                if ( (b64_b = calloc(db_text_blen+1,sizeof(char))) == NULL ) {
+                    ERROR("calloc() failure");
+                    goto error;
+                }
+                memset(b64_b,0,db_text_blen+1);
+                memcpy(b64_b,db_text_b,db_text_blen);
+                b64_blen = strlen(b64_b);
+                if ( b64_dec(b64_b,b64_blen,&b,&blen) == SKLOG_FAILURE ) {
+                    ERROR("b64_dec() failure");
+                    goto error;
+                }
+
+                memcpy(e_data,b,blen);
+                e_data_len = blen;
+                
+                free(b64_b);
+#endif
+                /**
                 tmps = sqlite3_column_text(stmt,1);
                 tmps_len = sqlite3_column_bytes(stmt,1);
+
+                fprintf(stderr,">>>> %s\n\n",tmps);
+                getchar();
 
                 memcpy(rbuf,tmps,tmps_len);
 
@@ -789,8 +947,35 @@ terminate_authkey:
                 }
                 e_data_len = tmps_len/2;
                 memset(rbuf,0,SKLOG_BUFFER_LEN);
+                */
                 
                 //~ get e_hash
+
+                db_text_b = sqlite3_column_text(stmt,2);
+                db_text_blen = sqlite3_column_bytes(stmt,2);
+
+                if ( (b64_b = calloc(db_text_blen+1,sizeof(char))) == NULL ) {
+                    ERROR("calloc() failure");
+                    goto error;
+                }
+                memset(b64_b,0,db_text_blen+1);
+                memcpy(b64_b,db_text_b,db_text_blen);
+                b64_blen = strlen(b64_b);
+                if ( b64_dec(b64_b,b64_blen,&b,&blen) == SKLOG_FAILURE ) {
+                    ERROR("b64_dec() failure");
+                    goto error;
+                }
+
+                if ( blen != SKLOG_HASH_CHAIN_LEN ) {
+                    ERROR("something goes wrong!!!");
+                    goto error;
+                }
+                
+                memcpy(e_hash,b,blen);
+                
+                free(b64_b);
+                
+                /**
                 tmps = sqlite3_column_text(stmt,2);
                 tmps_len = sqlite3_column_bytes(stmt,2);
                 memcpy(rbuf,tmps,tmps_len);
@@ -799,8 +984,35 @@ terminate_authkey:
                     sscanf(&rbuf[i],"%2x",&c); e_hash[j] = c;
                 }
                 memset(rbuf,0,SKLOG_BUFFER_LEN);
+                */
 
                 //~ get e_hmac
+
+                db_text_b = sqlite3_column_text(stmt,3);
+                db_text_blen = sqlite3_column_bytes(stmt,3);
+
+                if ( (b64_b = calloc(db_text_blen+1,sizeof(char))) == NULL ) {
+                    ERROR("calloc() failure");
+                    goto error;
+                }
+                memset(b64_b,0,db_text_blen+1);
+                memcpy(b64_b,db_text_b,db_text_blen);
+                b64_blen = strlen(b64_b);
+                if ( b64_dec(b64_b,b64_blen,&b,&blen) == SKLOG_FAILURE ) {
+                    ERROR("b64_dec() failure");
+                    goto error;
+                }
+
+                if ( blen != SKLOG_HMAC_LEN ) {
+                    ERROR("something goes wrong!!!");
+                    goto error;
+                }
+                
+                memcpy(e_hmac,b,blen);
+                
+                free(b64_b);
+                
+                /**
                 tmps = sqlite3_column_text(stmt,3);
                 tmps_len = sqlite3_column_bytes(stmt,3);
                 memcpy(rbuf,tmps,tmps_len);
@@ -809,6 +1021,7 @@ terminate_authkey:
                     sscanf(&rbuf[i],"%2x",&c); e_hmac[j] = c;
                 }
                 memset(rbuf,0,SKLOG_BUFFER_LEN);
+                */
 
                 //----------------------------------------------------//
                 //                regenerate hash chain               //

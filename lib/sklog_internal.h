@@ -91,6 +91,17 @@ hmac(unsigned char    *message,
      unsigned int     key_len,
      unsigned char    *hmac,
      unsigned int     *hmac_len);
+
+SKLOG_RETURN
+b64_enc(unsigned char    *blob,
+        unsigned int     blob_len,
+        char             **b64_blob);
+
+SKLOG_RETURN
+b64_dec(char    *b64_blob,
+        unsigned int     b64_blob_len,
+        unsigned char    **blob,
+        unsigned int     *blob_len);
 /*--------------------------------------------------------------------*/
 /*                         tlv management                             */
 /*--------------------------------------------------------------------*/

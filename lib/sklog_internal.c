@@ -699,48 +699,128 @@ error:
     return SKLOG_FAILURE;
 }
 
-/*--------------------------------------------------------------------*/
-/*                         tlv management                             */
-/*--------------------------------------------------------------------*/
-
-/** to delete
 SKLOG_RETURN
-tlv_create(uint32_t         type,
-           unsigned int     data_len,
-           void             *data,
-           unsigned char    *buffer)
+b64_enc(unsigned char    *blob,
+        unsigned int     blob_len,
+        char             **b64_blob)
 {
-    #ifdef DO_TRACE_X
+    #ifdef DO_TRACE
     DEBUG
     #endif
 
-    if ( data == NULL && data_len > 0 ) {
-        ERROR("data must be NOT NULL if data_len > 0")
-        return SKLOG_FAILURE;
+    BIO *bmem = 0;
+    BIO *b64 = 0;
+    BUF_MEM *bptr = 0;
+
+    char *out = 0;
+
+    SSL_load_error_strings();
+
+    if ( (b64 = BIO_new(BIO_f_base64())) == NULL ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
     }
 
-    uint32_t tmp = htonl(type);
-    memcpy(buffer,&tmp,sizeof(uint32_t));
+    BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
     
-    if ( data_len > 0 ) {
-        uint32_t len = htonl(data_len);
-        memcpy(&buffer[sizeof(uint32_t)],&len,sizeof(uint32_t));
-        memcpy(&buffer[sizeof(uint32_t)+sizeof(uint32_t)],data,data_len);
-    } else {
-        uint32_t len = 0;
-        memcpy(&buffer[sizeof(uint32_t)],&len,sizeof(uint32_t));
+    if ( (bmem = BIO_new(BIO_s_mem())) == NULL ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+    
+    b64 = BIO_push(b64, bmem);
+
+    if ( BIO_write(b64,blob,blob_len) < 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
     }
 
-    //~ uint32_t tmp = htonl(type);
-    //~ uint32_t len = htonl(data_len);
+    if ( BIO_flush(b64) <= 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+    
+    BIO_get_mem_ptr(b64, &bptr);
 
-    //~ memcpy(buffer,&tmp,sizeof(uint32_t));
-    //~ memcpy(&buffer[sizeof(uint32_t)],&len,sizeof(uint32_t));
-    //~ memcpy(&buffer[sizeof(uint32_t)+sizeof(uint32_t)],data,data_len);
+    if ( ( out = calloc(bptr->length+1,sizeof(char)) ) == NULL ) {
+        ERROR("calloc() failure");
+        goto error;
+    }
+    
+    memcpy(out,bptr->data,bptr->length);
+    out[bptr->length] = 0;
 
+    BIO_free_all(b64);
+
+    *b64_blob = out;
+
+    ERR_free_strings();
     return SKLOG_SUCCESS;
+
+error:
+    ERR_free_strings();
+    return SKLOG_FAILURE;
 }
-*/
+
+SKLOG_RETURN
+b64_dec(char             *b64_blob,
+        unsigned int     b64_blob_len,
+        unsigned char    **blob,
+        unsigned int     *blob_len)
+{
+    #ifdef DO_TRACE
+    DEBUG
+    #endif
+
+    BIO *b64 = 0;
+    BIO *bmem = 0;
+
+    unsigned char *buf = 0;
+    unsigned int bufl = 0;
+
+    SSL_load_error_strings();
+
+    if ( ( buf = calloc(b64_blob_len,sizeof(char)) ) == NULL ) {
+        ERROR("calloc() failure");
+        goto error;
+    }
+    memset(buf,0,b64_blob_len);
+
+    if ( (b64 = BIO_new(BIO_f_base64())) == NULL ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+
+    BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
+
+    if ( (bmem = BIO_new_mem_buf(b64_blob,b64_blob_len)) == NULL ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+
+    bmem = BIO_push(b64,bmem);
+
+    if ( (bufl = BIO_read(bmem,buf,b64_blob_len)) < 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+
+    BIO_free_all(bmem);
+
+    *blob = buf;
+    *blob_len = bufl;
+
+    ERR_free_strings();
+    return SKLOG_SUCCESS;
+    
+error:
+    ERR_free_strings();
+    return SKLOG_FAILURE;
+}
+
+/*--------------------------------------------------------------------*/
+/*                         tlv management                             */
+/*--------------------------------------------------------------------*/
 
 SKLOG_RETURN
 tlv_parse(unsigned char    *tlv_msg,
