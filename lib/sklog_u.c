@@ -601,7 +601,10 @@ static SKLOG_RETURN
 create_logentry(SKLOG_U_Ctx        *u_ctx,
                 SKLOG_DATA_TYPE    type,
                 unsigned char      *data,
-                unsigned int       data_len)
+                unsigned int       data_len,
+                int                req_blob,
+                char               **blob,
+                unsigned int       *blob_len)
 {
     #ifdef DO_TRACE
     DEBUG
@@ -647,8 +650,6 @@ create_logentry(SKLOG_U_Ctx        *u_ctx,
         goto error;
     }
 #endif
-    
-    
 
     //~ generate hash-chain element
     if ( gen_hash_chain(u_ctx,data_enc,data_enc_len,type,hash_chain) == SKLOG_FAILURE ) {
@@ -667,6 +668,75 @@ create_logentry(SKLOG_U_Ctx        *u_ctx,
         ERROR("renew_auth_key() failure")
         goto error;
     }
+
+    if ( req_blob ) { 
+        //~ generate blob
+        int i = 0;
+        char b[SKLOG_BUFFER_LEN] = { 0 };
+        char *b64b = 0;
+
+        //~ i += snprintf(b+i,SKLOG_BUFFER_LEN,"[%d",type);
+
+        switch (type) {
+            case LogfileInitializationType:
+                i += snprintf(b+i,SKLOG_BUFFER_LEN,"[ LogfileInitializationType");
+                b64_enc(data_enc,data_enc_len,&b64b);
+                i += snprintf(b+i,SKLOG_BUFFER_LEN-i," | %s",b64b);
+                free(b64b);
+                break;
+            case ResponseMessageType:
+                i += snprintf(b+i,SKLOG_BUFFER_LEN,"[ ResponseMessageType");
+                b64_enc(data_enc,data_enc_len,&b64b);
+                i += snprintf(b+i,SKLOG_BUFFER_LEN-i," | %s",b64b);
+                free(b64b);
+                break;
+            case AbnormalCloseType:
+                i += snprintf(b+i,SKLOG_BUFFER_LEN,"[ AbnormalCloseType");
+                b64_enc(data_enc,data_enc_len,&b64b);
+                i += snprintf(b+i,SKLOG_BUFFER_LEN-i," | %s",b64b);
+                free(b64b);
+                break;
+            case NormalCloseMessage:
+                i += snprintf(b+i,SKLOG_BUFFER_LEN,"[ NormalCloseMessage");
+                b64_enc(data_enc,data_enc_len,&b64b);
+                i += snprintf(b+i,SKLOG_BUFFER_LEN-i," | %s",b64b);
+                free(b64b);
+                break;
+            case Undefined:
+                i += snprintf(b+i,SKLOG_BUFFER_LEN,"[ Undefined");
+                i += snprintf(b+i,SKLOG_BUFFER_LEN-i," | %s",data_enc);
+                break;
+        }
+
+        /**
+        switch (type) {
+            case LogfileInitializationType:
+            case ResponseMessageType:
+            case AbnormalCloseType:
+            case NormalCloseMessage:
+                b64_enc(data_enc,data_enc_len,&b64b);
+                i += snprintf(b+i,SKLOG_BUFFER_LEN-i,"|%s",b64b);
+                free(b64b);
+                break;
+            case Undefined:
+                i += snprintf(b+i,SKLOG_BUFFER_LEN-i,"|%s",data_enc);
+                break;
+        }
+        */
+        
+
+        b64_enc(hash_chain,SKLOG_HASH_CHAIN_LEN,&b64b);
+        i += snprintf(b+i,SKLOG_BUFFER_LEN-i," | %s",b64b);
+        free(b64b);
+        b64_enc(hmac,SKLOG_HMAC_LEN,&b64b);
+        i += snprintf(b+i,SKLOG_BUFFER_LEN-i," | %s ]",b64b);
+        free(b64b);
+
+        *blob = calloc(strlen(b),sizeof(char));
+        memcpy(*blob,b,strlen(b));
+        *blob_len = strlen(b);
+    }
+    
 
     //~ store log entry
     if ( u_ctx->lsdriver->store_logentry
@@ -1753,6 +1823,7 @@ initialize_context(SKLOG_U_Ctx    *u_ctx)
 
     //~ set context_state
     u_ctx->context_state = SKLOG_U_CTX_INITIALIZED;
+    u_ctx->logging_session_mgmt = 0;
 
     ERR_free_strings();
     return SKLOG_SUCCESS;
@@ -1770,7 +1841,12 @@ error:
 }
 
 static SKLOG_RETURN
-initialize_logging_session(SKLOG_U_Ctx    *u_ctx)
+initialize_logging_session(SKLOG_U_Ctx     *u_ctx,
+                           int             req_blob,
+                           char            **le1,
+                           unsigned int    *le1_len,
+                           char            **le2,
+                           unsigned int    *le2_len)
 {
     #ifdef DO_TRACE
     DEBUG
@@ -1906,10 +1982,18 @@ initialize_logging_session(SKLOG_U_Ctx    *u_ctx)
     }
 
     //~ create firts log entry
-    if ( create_logentry(u_ctx,LogfileInitializationType,
-                         d0,d0_len) == SKLOG_FAILURE ) {
-        ERROR("create_logentry() failure")
-        goto error;
+    if ( req_blob ) { 
+        if ( create_logentry(u_ctx,LogfileInitializationType,
+                             d0,d0_len,1,le1,le1_len) == SKLOG_FAILURE ) {
+            ERROR("create_logentry() failure")
+            goto error;
+        }
+    } else {
+        if ( create_logentry(u_ctx,LogfileInitializationType,
+                             d0,d0_len,0,0,0) == SKLOG_FAILURE ) {
+            ERROR("create_logentry() failure")
+            goto error;
+        }
     }
 
 /*--------------------------------------------------------------------*/
@@ -1967,11 +2051,20 @@ initialize_logging_session(SKLOG_U_Ctx    *u_ctx)
     }
 
     //~ create log entry
-    if ( create_logentry(u_ctx,ResponseMessageType,
-                         m1,m1_len) == SKLOG_FAILURE ) {
-        ERROR("create_logentry() failure")
-        goto error;
+    if ( req_blob ) {
+        if ( create_logentry(u_ctx,ResponseMessageType,
+                             m1,m1_len,1,le2,le2_len) == SKLOG_FAILURE ) {
+            ERROR("create_logentry() failure")
+            goto error;
+        }
+    } else {
+        if ( create_logentry(u_ctx,ResponseMessageType,
+                             m1,m1_len,0,0,0) == SKLOG_FAILURE ) {
+            ERROR("create_logentry() failure")
+            goto error;
+        }
     }
+    
 
     ERR_free_strings();
     return SKLOG_SUCCESS;
@@ -1993,12 +2086,22 @@ failure:
 
     data_len = sprintf(&data[j],"%s",reason);
 
-    if ( create_logentry(u_ctx,AbnormalCloseType,
-                         (unsigned char *)data,
-                         strlen(data)) == SKLOG_FAILURE ) {
-        ERROR("create_logentry() failure")
-        goto error;
+    if ( req_blob ) {
+        if ( create_logentry(u_ctx,AbnormalCloseType,
+                             (unsigned char *)data,
+                             strlen(data),1,le2,le2_len) == SKLOG_FAILURE ) {
+            ERROR("create_logentry() failure")
+            goto error;
+        }
+    } else {
+        if ( create_logentry(u_ctx,AbnormalCloseType,
+                             (unsigned char *)data,
+                             strlen(data),0,0,0) == SKLOG_FAILURE ) {
+            ERROR("create_logentry() failure")
+            goto error;
+        }
     }
+        
     SKLOG_free(&ts);
     ERR_free_strings();
     return SKLOG_FAILURE;
@@ -2253,7 +2356,9 @@ SKLOG_RETURN
 SKLOG_U_LogEvent(SKLOG_U_Ctx        *u_ctx,
                  SKLOG_DATA_TYPE    type,
                  char               *data,
-                 unsigned int       data_len)
+                 unsigned int       data_len,
+                 char               **le,
+                 unsigned int       *le_len)
 {
     #ifdef DO_TRACE
     DEBUG
@@ -2261,6 +2366,9 @@ SKLOG_U_LogEvent(SKLOG_U_Ctx        *u_ctx,
 
     unsigned char *data_blob = 0;
     unsigned int data_blob_len = 0;
+
+    //~ unsigned char *blob = 0;
+    //~ unsigned int blob_len = 0;
 
     if ( SKLOG_alloc(&data_blob,unsigned char,data_len) == SKLOG_FAILURE ) {
         ERROR("SKLOG_alloc() failure");
@@ -2274,7 +2382,7 @@ SKLOG_U_LogEvent(SKLOG_U_Ctx        *u_ctx,
             ERROR("context initialization process fails")
             goto error;
         }
-        if ( initialize_logging_session(u_ctx) == SKLOG_FAILURE ) {
+        if ( initialize_logging_session(u_ctx,0,0,0,0,0) == SKLOG_FAILURE ) {
             ERROR("loggin session initialization process fails")
             goto error;
         }
@@ -2282,43 +2390,120 @@ SKLOG_U_LogEvent(SKLOG_U_Ctx        *u_ctx,
     
     //~ write logentry
     if ( create_logentry(u_ctx,type,data_blob,
-                         data_len) == SKLOG_FAILURE ) {
+                         data_len,1,le,le_len) == SKLOG_FAILURE ) {
         ERROR("create_logentry() failure")
         goto error;
     }
 
-    //~ check if the logging session needs to be renewed
-    if ( u_ctx->logfile_counter == u_ctx->logfile_size -1 ) {
-
-        WARNING("The logging session has to be renewed!!!")
-
-        SKLOG_DATA_TYPE type = NormalCloseMessage;
-        struct timeval now;
-
-        gettimeofday(&now,NULL);
+    if ( u_ctx->logging_session_mgmt != SKLOG_MANUAL ) {
+        //~ check if the logging session needs to be renewed
+        if ( u_ctx->logfile_counter == u_ctx->logfile_size -1 ) {
     
-        if ( serialize_timeval(&now,&data_blob,
-                               &data_blob_len) == SKLOG_FAILURE ) {
-            ERROR("serialize_timeval() failure")
-            goto error;
+            WARNING("The logging session has to be renewed!!!")
+    
+            SKLOG_DATA_TYPE type = NormalCloseMessage;
+            struct timeval now;
+    
+            gettimeofday(&now,NULL);
+        
+            if ( serialize_timeval(&now,&data_blob,
+                                   &data_blob_len) == SKLOG_FAILURE ) {
+                ERROR("serialize_timeval() failure")
+                goto error;
+            }
+    
+            if ( create_logentry(u_ctx,type,data_blob,
+                                 data_blob_len,0,0,0) == SKLOG_FAILURE ) {
+                ERROR("create_logentry() failure")
+                goto error;
+            }
+    
+            //~ send all generated log-entries to T
+            if ( flush_logfile_execute(u_ctx,&now) == SKLOG_FAILURE ) {
+                ERROR("flush_logfile_execute() failure")
+                goto error;
+            }
+    
+            //~ flush the current context and mark it as uninitialized
+            memset(u_ctx,0,sizeof(*u_ctx));
+            u_ctx->context_state = SKLOG_U_CTX_NOT_INITIALIZED;
         }
-
-        if ( create_logentry(u_ctx,type,data_blob,
-                             data_blob_len) == SKLOG_FAILURE ) {
-            ERROR("create_logentry() failure")
-            goto error;
-        }
-
-        //~ send all generated log-entries to T
-        if ( flush_logfile_execute(u_ctx,&now) == SKLOG_FAILURE ) {
-            ERROR("flush_logfile_execute() failure")
-            goto error;
-        }
-
-        //~ flush the current context and mark it as uninitialized
-        memset(u_ctx,0,sizeof(*u_ctx));
-        u_ctx->context_state = SKLOG_U_CTX_NOT_INITIALIZED;
     }
+
+    free(data_blob);
+    return SKLOG_SUCCESS;
+
+error:
+    if ( data_blob > 0 ) free(data_blob);
+    return SKLOG_FAILURE;
+}
+
+SKLOG_RETURN
+SKLOG_U_Open(SKLOG_U_Ctx     *u_ctx,
+             char            **le1,
+             unsigned int    *le1_len,
+             char            **le2,
+             unsigned int    *le2_len)
+{
+    #ifdef DO_TRACE
+    DEBUG
+    #endif
+
+    if ( initialize_context(u_ctx) == SKLOG_FAILURE ) {
+        ERROR("context initialization process fails")
+        goto error;
+    }
+
+    u_ctx->logging_session_mgmt = SKLOG_MANUAL;
+    
+    if ( initialize_logging_session(u_ctx,1,le1,le1_len,le2,le2_len) == SKLOG_FAILURE ) {
+        ERROR("loggin session initialization process fails")
+        goto error;
+    }
+
+    return SKLOG_SUCCESS;
+error:
+    return SKLOG_FAILURE;
+}
+
+SKLOG_RETURN
+SKLOG_U_Close(SKLOG_U_Ctx     *u_ctx,
+              char            **le,
+              unsigned int    *le_len)
+{
+    #ifdef DO_TRACE
+    DEBUG
+    #endif
+
+    SKLOG_DATA_TYPE type = NormalCloseMessage;
+    struct timeval now;
+
+    unsigned char *data_blob = 0;
+    unsigned int data_blob_len = 0;
+
+    gettimeofday(&now,NULL);
+
+    if ( serialize_timeval(&now,&data_blob,
+                           &data_blob_len) == SKLOG_FAILURE ) {
+        ERROR("serialize_timeval() failure")
+        goto error;
+    }
+
+    if ( create_logentry(u_ctx,type,data_blob,
+                         data_blob_len,1,le,le_len) == SKLOG_FAILURE ) {
+        ERROR("create_logentry() failure")
+        goto error;
+    }
+
+    //~ send all generated log-entries to T
+    if ( flush_logfile_execute(u_ctx,&now) == SKLOG_FAILURE ) {
+        ERROR("flush_logfile_execute() failure")
+        goto error;
+    }
+
+    //~ flush the current context and mark it as uninitialized
+    memset(u_ctx,0,sizeof(*u_ctx));
+    u_ctx->context_state = SKLOG_U_CTX_NOT_INITIALIZED;
 
     free(data_blob);
     return SKLOG_SUCCESS;

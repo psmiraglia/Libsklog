@@ -55,6 +55,7 @@ typedef struct sklog_u_storage_driver SKLOG_U_STORAGE_DRIVER;
 struct sklog_u_ctx {
 
     int context_state;
+    int logging_session_mgmt;
 
     // u-node informtion ---------------------------------------------//
     
@@ -117,6 +118,20 @@ SKLOG_RETURN
 SKLOG_U_LogEvent(SKLOG_U_Ctx        *u_ctx,
                  SKLOG_DATA_TYPE    type,
                  char               *data,
-                 unsigned int       data_len);
+                 unsigned int       data_len,
+                 char               **le,
+                 unsigned int       *le_len);
+
+SKLOG_RETURN
+SKLOG_U_Open(SKLOG_U_Ctx     *u_ctx,
+             char            **le1,
+             unsigned int    *le1_len,
+             char            **le2,
+             unsigned int    *le2_len);
+
+SKLOG_RETURN
+SKLOG_U_Close(SKLOG_U_Ctx   *u_ctx,
+            char            **le,
+            unsigned int    *le_len);
 
 #endif /* SKLOG_U_H */

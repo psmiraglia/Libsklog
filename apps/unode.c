@@ -4,7 +4,7 @@
 #include <sklog_u.h>
 
 #define MAX 1
-#define LOGFILE_SIZE 300
+#define LOGFILE_SIZE 30
 #define LOGENTRY_LEN 1024
 
 char logfile[LOGFILE_SIZE][LOGENTRY_LEN] = {
@@ -23,7 +23,7 @@ char logfile[LOGFILE_SIZE][LOGENTRY_LEN] = {
     "Nulla orci velit, class nostra quis nisl lacus.",
     "Cum rutrum hymenaeos.",
     "Magnis vehicula, ullamcorper habitant iaculis eleifend dictum tortor erat.",
-    "Nisi, etiam, lacinia pede.",
+    "VM (instance-00000001.img) creation",
     "Natoque quis, mi leo consequat taciti rutrum lacus dis.",
     "Purus primis sem, inceptos elementum quis scelerisque vivamus dui.",
     "Diam volutpat non, tellus mus taciti, arcu condimentum aliquet fusce quis tempus.",
@@ -315,16 +315,30 @@ int main (void) {
     SKLOG_RETURN retval = 0;
     int index = 0;
 
+    char *le1 = 100;
+    unsigned int le1_len = 0;
+    char *le2 = 200;
+    unsigned int le2_len = 0;
+
     SKLOG_U_Ctx *u_ctx = SKLOG_U_NewCtx();
 
+    SKLOG_U_Open(u_ctx,&le1,&le1_len,&le2,&le2_len);
+    fprintf(stderr,"%s\n\n",le1);
+    fprintf(stderr,"%s\n\n",le2);
+
     while ( index < LOGFILE_SIZE ) {
-        retval = SKLOG_U_LogEvent(u_ctx,Undefined,logfile[index],strlen(logfile[index]));
+        retval = SKLOG_U_LogEvent(u_ctx,Undefined,logfile[index],strlen(logfile[index]),&le1,&le1_len);
+        fprintf(stderr,"%s\n\n",le1);
+        
         if ( retval == SKLOG_FAILURE ) {
             ERROR("SKLOG_U_LogEvent() failure");
             return 1;
         }
         index++;
     }
+
+    SKLOG_U_Close(u_ctx,&le1,&le1_len);
+    fprintf(stderr,"%s\n",le1);
     
     SKLOG_U_FreeCtx(&u_ctx);
         

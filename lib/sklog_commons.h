@@ -99,6 +99,7 @@
 #define     SKLOG_SUCCESS             1
 #define     SKLOG_FAILURE             !SKLOG_SUCCESS
 #define     SKLOG_TO_IMPLEMENT        SKLOG_SUCCESS
+#define     SKLOG_MANUAL              1
 
 #define     DO_VERIFY                 1
 #define     DO_NOT_VERIFY             !DO_VERIFY
