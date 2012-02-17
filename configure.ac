@@ -9,6 +9,13 @@ AC_PROG_LIBTOOL
 AC_SUBST([LIB_VERSION],[0:1:0])
 
 #----------------------------------------------------------------------
+# Python binding
+#----------------------------------------------------------------------
+
+CFLAGS="$CFLAGS -I/usr/include/python2.6/"
+LIBS="$LIBS -lpython2.6"
+
+#----------------------------------------------------------------------
 # enable DO_TRACE
 #----------------------------------------------------------------------
 
@@ -210,7 +217,8 @@ AC_CONFIG_FILES([\
     docs/sql/Makefile \
     docs/rsyslog.d/Makefile \
     include/Makefile \
-    lib/Makefile\
+    lib/Makefile \
+    lib/bindings/Makefile \
 ])
 
 AC_OUTPUT

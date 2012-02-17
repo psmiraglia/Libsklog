@@ -1,3 +1,5 @@
+#~ SUBDIRS = bindings
+
 lib_LTLIBRARIES = libsklog.la
 
 libsklog_la_SOURCES = \
@@ -10,7 +12,8 @@ libsklog_la_SOURCES = \
 	sklog_utils.c sklog_utils.h \
 	storage/sklog_sqlite.c storage/sklog_sqlite.h \
 	storage/sklog_file.c storage/sklog_file.h \
-	storage/sklog_syslog.c storage/sklog_syslog.h
+	storage/sklog_syslog.c storage/sklog_syslog.h \
+	bindings/python/pylibsklog.c
 
 libsklog_la_CFLAGS = -Wall -Werror \
 	-DETC_PREFIX=\"@sysconfdir@\" \

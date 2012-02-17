@@ -2367,9 +2367,6 @@ SKLOG_U_LogEvent(SKLOG_U_Ctx        *u_ctx,
     unsigned char *data_blob = 0;
     unsigned int data_blob_len = 0;
 
-    //~ unsigned char *blob = 0;
-    //~ unsigned int blob_len = 0;
-
     if ( SKLOG_alloc(&data_blob,unsigned char,data_len) == SKLOG_FAILURE ) {
         ERROR("SKLOG_alloc() failure");
         goto error;
