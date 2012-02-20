@@ -1605,6 +1605,9 @@ verify_m1(SKLOG_U_Ctx      *ctx,
     //~ decrypt {x1,x1_sign} using k1 key 
     //~ if ( decrypt_aes256(k1,e_k1,len,&plain,
                         //~ &plain_len) == SKLOG_FAILURE ) {
+	
+	if ( len ) ; // to fix
+    
     if ( aes256_decrypt(e_k1,e_k1_len,k1,SKLOG_SESSION_KEY_LEN,&plain,
                         &plain_len) == SKLOG_FAILURE ) {
         ERROR("decrypt_aes256() failure")
@@ -1897,6 +1900,8 @@ initialize_logging_session(SKLOG_U_Ctx     *u_ctx,
 
     OpenSSL_add_all_digests();
     ERR_load_crypto_strings();
+
+	if ( data_len ) ; //to fix
 
     //~ get current time
     gettimeofday(&d,NULL);

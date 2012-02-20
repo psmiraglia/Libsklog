@@ -1326,6 +1326,12 @@ SKLOG_T_ManageLoggingSessionInit(SKLOG_T_Ctx      *t_ctx,
         goto error; //~ m0 verification fails
     }
     k0_len = len;
+    
+    if ( k0_len != SKLOG_SESSION_KEY_LEN ) {
+		fprintf(stderr,"Somethings goes wrong: key len is %d\n",k0_len);
+		goto error;
+	}
+	
     SKLOG_free(&pke_t_k0);
 
     if ( aes256_decrypt(e_k0,e_k0_len,k0,SKLOG_SESSION_KEY_LEN,&plain,
