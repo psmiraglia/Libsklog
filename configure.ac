@@ -8,94 +8,198 @@ AC_PROG_LIBTOOL
 
 AC_SUBST([LIB_VERSION],[0:1:0])
 
-#----------------------------------------------------------------------
-# Python binding
-#----------------------------------------------------------------------
+# utilities
 
-CFLAGS="$CFLAGS -I/usr/include/python2.6/"
-LIBS="$LIBS -lpython2.6"
+showflags() { :
+	echo
+	echo "CFLAGS: "$CFLAGS
+	echo "LDFLAGS: "$LDFLAGS
+	echo "LIBS: "$LIBS
+	echo
+}
+
+## AC_ARG_ENABLE statements
+
+# --enable-trace
+
+AC_ARG_ENABLE(
+	[trace],
+	AS_HELP_STRING(
+		[--enable-trace],
+		[Build Libsklog in high verbosity mode [default=no]]
+	),
+	[enable_trace="yes"],
+	[enable_trace="no"]
+)
+
+AC_MSG_CHECKING([whether to build in high verbosity mode])
+AC_MSG_RESULT($enable_trace)
+
+if test "x${enable_trace}" = "xyes" ; then
+    AC_DEFINE([DO_TRACE],[],[Build Libsklog in high verbosity mode])
+fi
+
+# --enable-debug
+
+AC_ARG_ENABLE(
+	[debug],
+    AC_HELP_STRING(
+        [--enable-debug],
+        [Build Libsklog with debugging features [default=no]]),
+    [enable_debug="yes"],
+    [enable_debug="no"]
+)
+
+AC_MSG_CHECKING([whether to build in debug mode])
+AC_MSG_RESULT(${enable_debug})
+
+if test "x${enable_debug}" = "xyes" ; then
+    AC_SUBST([DBGFLAGS],["-g -O0"])
+else
+	AC_SUBST([DBGFLAGS],["-O3"])
+fi
+
+## AC_ARG_WITH statements
+
+# --with-python
+
+setpythonflags() { :
+	AC_SUBST([PY_CFLAGS],["-I/usr/include/python$1/"])
+	AC_SUBST([PY_LIBS],["-lpython$1"])
+	AM_CONDITIONAL([PY_BINDING],[true])
+}
+
+AC_ARG_WITH(
+	[python],[
+	AS_HELP_STRING(
+		[--with-python],
+		[Enable python binding. [default=yes]]
+	)],[
+	AM_PATH_PYTHON(
+		[2.6],[
+		setpythonflags "$PYTHON_VERSION"
+		AC_CHECK_HEADERS([Python.h])
+		AC_CHECK_LIB(
+			[python$PYTHON_VERSION],
+			[main],
+			[],
+			[AC_MSG_ERROR([libpython$PYTHON_VERSION is required from Libsklog])]
+		)],
+		[AC_MSG_ERROR([Python >= 2.6 is required from Libsklog])]
+	)],
+	[AM_CONDITIONAL([PY_BINDING],[false])]
+)
 
 #----------------------------------------------------------------------
 # enable DO_TRACE
 #----------------------------------------------------------------------
 
-AC_ARG_ENABLE([trace],
-    AS_HELP_STRING(
-        [--enable-trace],
-        [Enable high verbosity mode for libsklog library [default=no]]
-    ),
-    [enable_trace="yes"],
-    [enable_trace="no"]
-)
-
-AC_MSG_CHECKING(
-    [whether to build in high verbosity mode]
-)
-
-AC_MSG_RESULT(${enable_trace})
-
-if test "x${enable_trace}" = "xyes" ; then
-    AC_DEFINE(
-        [DO_TRACE],
-        [],
-        [Enable high verbosity mode for libsklog library]
-    )
-fi
+#~ AC_ARG_ENABLE([trace],
+    #~ AS_HELP_STRING(
+        #~ [--enable-trace],
+        #~ [Enable high verbosity mode for libsklog library [default=no]]
+    #~ ),
+    #~ [enable_trace="yes"],
+    #~ [enable_trace="no"]
+#~ )
+#~ 
+#~ AC_MSG_CHECKING(
+    #~ [whether to build in high verbosity mode]
+#~ )
+#~ 
+#~ AC_MSG_RESULT(${enable_trace})
+#~ 
+#~ if test "x${enable_trace}" = "xyes" ; then
+    #~ AC_DEFINE(
+        #~ [DO_TRACE],
+        #~ [],
+        #~ [Enable high verbosity mode for libsklog library]
+    #~ )
+#~ fi
 
 #----------------------------------------------------------------------
 # enable DO_NOTIFY
 #----------------------------------------------------------------------
 
-AC_ARG_ENABLE([notify],
-    AS_HELP_STRING(
-        [--enable-notify],
-        [Enable notify messages for libsklog library [default=no]]
-    ),
-    [enable_notify="yes"],
-    [enable_notify="no"]
-)
-
-AC_MSG_CHECKING(
-    [whether to build with notify messages]
-)
-
-AC_MSG_RESULT(${enable_notify})
-
-if test "x${enable_notify}" = "xyes" ; then
-    AC_DEFINE(
-        [DO_NOTIFY],
-        [],
-        [Enable notify messages for libsklog library]
-    )
-fi
+#~ AC_ARG_ENABLE([notify],
+    #~ AS_HELP_STRING(
+        #~ [--enable-notify],
+        #~ [Enable notify messages for libsklog library [default=no]]
+    #~ ),
+    #~ [enable_notify="yes"],
+    #~ [enable_notify="no"]
+#~ )
+#~ 
+#~ AC_MSG_CHECKING(
+    #~ [whether to build with notify messages]
+#~ )
+#~ 
+#~ AC_MSG_RESULT(${enable_notify})
+#~ 
+#~ if test "x${enable_notify}" = "xyes" ; then
+    #~ AC_DEFINE(
+        #~ [DO_NOTIFY],
+        #~ [],
+        #~ [Enable notify messages for libsklog library]
+    #~ )
+#~ fi
 
 #----------------------------------------------------------------------
 # enable Debug
 #----------------------------------------------------------------------
 
-AC_ARG_ENABLE([debug],
-    AC_HELP_STRING(
-        [--enable-debug],
-        [enable debug support [default=no]]),
-    [enable_debug="yes"],
-    [enable_debug="no"]
-)
+#~ AC_ARG_ENABLE([debug],
+    #~ AC_HELP_STRING(
+        #~ [--enable-debug],
+        #~ [enable debug support [default=no]]),
+    #~ [enable_debug="yes"],
+    #~ [enable_debug="no"]
+#~ )
+#~ 
+#~ AC_MSG_CHECKING(
+    #~ [whether to build in debug mode]
+#~ )
+#~ 
+#~ AC_MSG_RESULT(${enable_debug})
+#~ 
+#~ if test "x${enable_debug}" = "xyes" ; then
+    #~ AC_DEFINE([CMAID_ENABLE_DEBUG],1,[Enable debug support])
+    #~ AC_SUBST([DBGFLAGS],["-g -O0"])
+#~ else
+	#~ AC_SUBST([DBGFLAGS],["-O3"])
+#~ fi
 
-AC_MSG_CHECKING(
-    [whether to build in debug mode]
-)
+#----------------------------------------------------------------------
+# --with-python
+#----------------------------------------------------------------------
 
-AC_MSG_RESULT(${enable_debug})
-
-if test "x${enable_debug}" = "xyes" ; then
-    AC_DEFINE(
-        CMAID_ENABLE_DEBUG,
-        1,
-        [Enable debug support]
-    )
-    
-    CFLAGS="$CFLAGS -g"
-fi
+#~ setpythonflags() { :
+	#~ AC_SUBST([PY_CFLAGS],["-I/usr/include/python$1/"])
+	#~ AC_SUBST([PY_LIBS],["-lpython$1"])
+#~ }
+#~ 
+#~ AC_ARG_WITH(
+	#~ [python],[
+	#~ AS_HELP_STRING(
+		#~ [--with-python],
+		#~ [Enable python binding. [default=yes]]
+	#~ )],[
+	#~ AM_PATH_PYTHON(
+		#~ [2.6],[
+		#~ showflags
+		#~ setpythonflags "$PYTHON_VERSION"
+		#~ showflags
+		#~ AC_CHECK_HEADERS([Python.h])
+		#~ AC_CHECK_LIB(
+			#~ [python$PYTHON_VERSION],
+			#~ [main],
+			#~ [],
+			#~ [AC_MSG_ERROR([libpython$PYTHON_VERSION is required from Libsklog])]
+		#~ )],
+		#~ [AC_MSG_ERROR([Python >= 2.6 is required from Libsklog])]
+	#~ )],
+	#~ [with_python=no]
+#~ )
 
 #----------------------------------------------------------------------
 # with SSL
@@ -114,16 +218,12 @@ checkssldir() { :
     return 1
 }
 
-AC_MSG_CHECKING(
-    [for OpenSSL directory]
-)
-
-AC_ARG_WITH(
-    ssl,
+AC_MSG_CHECKING([for OpenSSL directory])
+AC_ARG_WITH([ssl],[
     AC_HELP_STRING(
         [--with-ssl=DIR],
         [location of installed OpenSSL libraries/include files]
-    ),
+    )],
     [checkssldir "$withval"],
     [
         for maindir in /usr /usr/local /opt; do
@@ -141,10 +241,7 @@ then AC_MSG_RESULT([Not found])
     exit 1
 fi
 AC_MSG_RESULT([$ssldir])
-
-# add SSL include and libraries
-CFLAGS="$CFLAGS -I$ssldir/include"
-LIBS="$LIBS -L$ssldir/lib -lcrypto -lssl"
+AC_SUBST([SSLDIR],"$ssldir")
 
 #----------------------------------------------------------------------
 # without STORAGE SQLite
@@ -159,10 +256,16 @@ AC_ARG_WITH([storage-sqlite],
 )
 
 if test "x$without_storage_sqlite" == "xno"; then
-    CFLAGS="$CFLAGS -DUSE_SQLITE"
-    LIBS="$LIBS -lsqlite3"
-    AC_CHECK_LIB([sqlite3],[sqlite3_open])
+    AC_CHECK_LIB([sqlite3],[sqlite3_open],[],
+		AC_MSG_ERROR(libsqlite3 is required from Libsklog)
+    )
+    AC_SUBST([SQLITE_CFLAGS],["-DUSE_SQLITE"])
+	AC_SUBST([SQLITE_LIBS],["-lsqlite3"])
+else
+	AC_SUBST([SQLITE_CFLAGS],[""])
+	AC_SUBST([SQLITE_LIBS],[""])
 fi
+
 
 #----------------------------------------------------------------------
 # with STORAGE File
@@ -199,10 +302,33 @@ fi
 #----------------------------------------------------------------------
 # checking for libraries
 #----------------------------------------------------------------------
-#AC_CHECK_LIB([crypto],[EVP_MD_CTX_init])
-#AC_CHECK_LIB([ssl],[SSL_CTX_new])
-AC_CHECK_LIB([confuse],[cfg_init])
-AC_CHECK_LIB([uuid],[uuid_generate_random])
+AC_CHECK_LIB(
+	[ssl],
+	[main],
+	[],
+	AC_MSG_ERROR([libssl is required from Libsklog])
+)
+
+AC_CHECK_LIB(
+	[crypto],
+	[main],
+	[],
+	AC_MSG_ERROR([libcrypto is required from Libsklog])
+)
+
+AC_CHECK_LIB(
+	[uuid],
+	[main],
+	[],
+	AC_MSG_ERROR([libuuid is required from Libsklog])
+)
+
+AC_CHECK_LIB(
+	[confuse],
+	[main],
+	[],
+	AC_MSG_ERROR([libconfuse is required from Libsklog])
+)
 
 #----------------------------------------------------------------------
 #----------------------------------------------------------------------

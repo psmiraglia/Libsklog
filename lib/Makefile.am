@@ -12,13 +12,24 @@ libsklog_la_SOURCES = \
 	sklog_utils.c sklog_utils.h \
 	storage/sklog_sqlite.c storage/sklog_sqlite.h \
 	storage/sklog_file.c storage/sklog_file.h \
-	storage/sklog_syslog.c storage/sklog_syslog.h \
-	bindings/python/pylibsklog.c
+	storage/sklog_syslog.c storage/sklog_syslog.h
+	
+if PY_BINDING
+	libsklog_la_SOURCES += bindings/python/pylibsklog.c
+endif
 
-libsklog_la_CFLAGS = -Wall -Werror \
+libsklog_la_CFLAGS = \
+	@DBGFLAGS@ \
+	-Wall -Werror \
 	-DETC_PREFIX=\"@sysconfdir@\" \
-	-DVAR_PREFIX=\"@localstatedir@\"
+	-DVAR_PREFIX=\"@localstatedir@\" \
+	@SQLITE_CFLAGS@ \
+	@PY_CFLAGS@ \
+	-I@SSLDIR@/include
 
 libsklog_la_LDFLAGS = \
 	--version-info $(LIB_VERSION) \
-	-lconfuse -luuid
+	-lconfuse -luuid \
+	-L@SSLDIR@/lib -lcrypto -lssl \
+	@SQLITE_LIBS@ \
+	@PY_LIBS@
