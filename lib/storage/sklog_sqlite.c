@@ -63,6 +63,9 @@ sklog_sqlite_u_store_logentry(uuid_t             logfile_id,
 
     char query[SKLOG_BUFFER_LEN] = { 0 };
     char f_uuid[UUID_STR_LEN+1] = { 0 };
+    
+    int i = 0;
+    
     /**
     int i = 0;
     int j = 0;
@@ -102,6 +105,21 @@ sklog_sqlite_u_store_logentry(uuid_t             logfile_id,
             }
             memcpy(buf_data,data,data_len);
             buf_data[data_len] = 0;
+            
+            //~ sanitise data
+            //~ NOTE: to check
+		    for ( i = 0 ; i < strlen(buf_data) ; i++ ) {
+				switch ( buf_data[i] ) {
+					case 34:
+					case 37:
+					case 39:
+					case 96:
+						buf_data[i] = 32
+					default:
+						break;
+				}  
+			}
+		     
             break;
     }
 #else
@@ -127,9 +145,11 @@ sklog_sqlite_u_store_logentry(uuid_t             logfile_id,
         ERROR("b64_enc() failure");
         goto error;
     }
+    
+    
 
-    sprintf(
-        query,
+    snprintf(
+        query,SKLOG_BUFFER_LEN-1,
         "insert into LOGENTRY (f_id,e_type,e_data,e_hash,e_hmac) \
  values ((select f_id from LOGFILE where f_uuid = '%s'),%d,'%s','%s','%s')",
         f_uuid,type,buf_data,buf_hash,buf_hmac);
