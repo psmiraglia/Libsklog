@@ -30,26 +30,31 @@ class LibsklogUCtx(object):
 	
 	__Instance = None
 
-
-	
 	class Singleton:
 		
 		def __init__(self):
 			self.uctx = SKLOG_U_NewCtx()
+			self.sessionIsOpen = 0
 		
 		def _open(self):
-			return SKLOG_U_Open(self.uctx)
+			if (self.sessionIsOpen == 0):
+				rv = SKLOG_U_Open(self.uctx)
+				self.sessionIsOpen = 1
+				return rv
+			return ""
 			
 		def _log_event(self,eData):
 			return SKLOG_U_LogEvent(self.uctx,4,eData)
 			
 		def _close(self):
-			return SKLOG_U_Close(self.uctx)
+			if (self.sessionIsOpen == 1):
+				rv = SKLOG_U_Close(self.uctx)
+				self.sessionIsOpen = 0
+				return rv
+			return ""
 			
 		def _free_ctx(self):
 			return SKLOG_U_FreeCtx(self.uctx)
-	
-	
 	
 	def __init__(self):
 		if LibsklogUCtx.__Instance is None:
