@@ -3,20 +3,21 @@
 lib_LTLIBRARIES = libsklog.la
 
 libsklog_la_SOURCES = \
-	sklog_commons.h \
-	sklog_err.c sklog_err.h \
-	sklog_internal.c sklog_internal.h \
-	sklog_t.c sklog_t.h \
-	sklog_u.c sklog_u.h \
-	sklog_v.c sklog_v.h \
-	sklog_utils.c sklog_utils.h \
-	storage/sklog_sqlite.c storage/sklog_sqlite.h \
-	storage/sklog_file.c storage/sklog_file.h \
-	storage/sklog_syslog.c storage/sklog_syslog.h
-	
-if PY_BINDING
-	libsklog_la_SOURCES += bindings/python/pylibsklog.c
-endif
+		sklog_commons.h \
+		sklog_err.c sklog_err.h \
+		sklog_internal.c sklog_internal.h \
+		sklog_t.c sklog_t.h \
+		sklog_u.c sklog_u.h \
+		sklog_v.c sklog_v.h \
+		sklog_utils.c sklog_utils.h \
+		storage/sklog_sqlite.c storage/sklog_sqlite.h \
+		storage/sklog_file.c storage/sklog_file.h \
+		storage/sklog_syslog.c storage/sklog_syslog.h
+		
+if HAVE_PYTHON
+libsklog_la_SOURCES += bindings/python/pylibsklog.c
+endif		
+
 
 libsklog_la_CFLAGS = \
 	@DBGFLAGS@ \
@@ -24,12 +25,18 @@ libsklog_la_CFLAGS = \
 	-DETC_PREFIX=\"@sysconfdir@\" \
 	-DVAR_PREFIX=\"@localstatedir@\" \
 	@SQLITE_CFLAGS@ \
-	@PY_CFLAGS@ \
 	-I@SSLDIR@/include
+	
+if HAVE_PYTHON
+libsklog_la_CFLAGS += @PY_CFLAGS@
+endif
 
 libsklog_la_LDFLAGS = \
 	--version-info $(LIB_VERSION) \
 	-lconfuse -luuid \
 	-L@SSLDIR@/lib -lcrypto -lssl \
-	@SQLITE_LIBS@ \
-	@PY_LIBS@
+	@SQLITE_LIBS@
+	
+if HAVE_PYTHON
+libsklog_la_LDFLAGS += @PY_LDFLAGS@
+endif

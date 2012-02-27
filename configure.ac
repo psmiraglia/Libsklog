@@ -53,17 +53,16 @@ AC_ARG_ENABLE(
 		[2.6],
 		AC_CHECK_LIB(
 			[python$PYTHON_VERSION],
-			[main],[
-				AC_SUBST([PY_CFLAGS],["-I/usr/include/python$PYTHON_VERSION/"])
-				AC_SUBST([PY_LIBS],["-lpython$PYTHON_VERSION"])
-				AM_CONDITIONAL([PY_BINDING],[true])
-			],
+			[main],[],
 			AC_MSG_ERROR([libpython$PYTHON_VERSION is required for Python bindings])
 		)
-	)],[
-	AM_CONDITIONAL([PY_BINDING],[false])
-	AC_MSG_RESULT(no)]
-)
+	)
+	],[
+	AC_MSG_RESULT(no)
+])
+AC_SUBST([PY_CFLAGS],["-I/usr/include/python$PYTHON_VERSION/"])
+AC_SUBST([PY_LDFLAGS],["-lpython$PYTHON_VERSION"])
+AM_CONDITIONAL([HAVE_PYTHON],[test x${enableval} = xyes])
 
 dnl
 dnl --with-ssl=PATH
