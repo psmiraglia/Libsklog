@@ -20,46 +20,76 @@ You should have received a copy of the GNU General Public License
 along with Libsklog.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+import sys
+
+sys.path.append("../../.libs")
+
+from libsklog import *
+
 class LibsklogUCtx(object):
 	
 	__Instance = None
+
+
 	
 	class Singleton:
+		
 		def __init__(self):
-			self.uctx = None
+			self.uctx = SKLOG_U_NewCtx()
+		
+		def _open(self):
+			return SKLOG_U_Open(self.uctx)
+			
+		def _log_event(self,eData):
+			return SKLOG_U_LogEvent(self.uctx,4,eData)
+			
+		def _close(self):
+			return SKLOG_U_Close(self.uctx)
+			
+		def _free_ctx(self):
+			return SKLOG_U_FreeCtx(self.uctx)
+	
+	
 	
 	def __init__(self):
 		if LibsklogUCtx.__Instance is None:
 			LibsklogUCtx.__Instance = LibsklogUCtx.Singleton()
 		self._EventHandler_instance = LibsklogUCtx.__Instance
-	
+		
 	def __getattr__(self,aAttr):
 		return getattr(self.__Instance,aAttr)
 		
 	def __setattr__(self,aAttr,aValue):
 		return setattr(self.__Instance,aAttr,aValue)
+		
+	def sklog_open(self):
+		return self.__Instance._open()
+		
+	def sklog_log_event(self,eData):
+		return self.__Instance._log_event(eData)
+		
+	def sklog_close(self):
+		return self.__Instance._close()
 
 ## Test script to prove that it actually works        
+
 if __name__ == "__main__":
- 
-    # create a first object
-    a = LibsklogUCtx()
- 
-    # get and print class variable foo
-    print a.uctx
- 
-    # create a second object
-    b = LibsklogUCtx()
- 
-    # set a string to the class variable foo
-    b.uctx = 400
- 
-    # create a third object
-    c = LibsklogUCtx()
- 
-    # get and print class variable foo for object a
-    print a.uctx
- 
-    # get and print class variable foo for object c
-    print c.uctx
+	
+	le = []
+	tmp = []
+	
+	ctx = LibsklogUCtx()
+	
+	tmp = ctx.sklog_open()
+	le.append(tmp[0])
+	le.append(tmp[1])
+	le.append(ctx.sklog_log_event("Ciao"))
+	le.append(ctx.sklog_log_event("Bao"))
+	le.append(ctx.sklog_log_event("Miao"))
+	le.append(ctx.sklog_close())
+	
+	for i in le:
+		print i
+	
+	
 
