@@ -54,8 +54,8 @@ AC_ARG_ENABLE(
 		AC_CHECK_LIB(
 			[python$PYTHON_VERSION],
 			[main],[
-				AC_SUBST([PY_CFLAGS],["-I/usr/include/python$1/"])
-				AC_SUBST([PY_LIBS],["-lpython$1"])
+				AC_SUBST([PY_CFLAGS],["-I/usr/include/python$PYTHON_VERSION/"])
+				AC_SUBST([PY_LIBS],["-lpython$PYTHON_VERSION"])
 				AM_CONDITIONAL([PY_BINDING],[true])
 			],
 			AC_MSG_ERROR([libpython$PYTHON_VERSION is required for Python bindings])
