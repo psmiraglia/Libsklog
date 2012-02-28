@@ -7,7 +7,7 @@
 #define LOGFILE_SIZE 30
 #define LOGENTRY_LEN 1024
 
-char logfile[LOGFILE_SIZE][LOGENTRY_LEN] = {
+char logfile[300][LOGENTRY_LEN] = {
     "Etiam ut ornare lacinia arcu ultrices sit.",
     "Neque scelerisque volutpat, orci aptent nisi, ut tellus tincidunt senectus, taciti nostra urna.",
     "Dignissim tempus cum cubilia.",

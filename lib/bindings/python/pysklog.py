@@ -21,7 +21,7 @@ along with Libsklog.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import sys
-sys.path.append("../../.libs") # NOTE: need to be set manually
+sys.path.append("%%%LIBDIR%%%") # NOTE: need to be set manually
 
 from libsklog import *
 

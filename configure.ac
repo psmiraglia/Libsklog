@@ -66,12 +66,20 @@ AC_ARG_ENABLE(
 	AC_HELP_STRING(
 		[--enable-bindings-python],
 		[Build Libsklog with python bindings [default=no]]
-	)
+	),
 	[enable_python="$enableval"],
 	[enable_python="yes"]
 )
 
-if test "x${enable_python}" = "xyes" ; then
+if test "x$enable_python" = "xyes" ; then
+	AM_PATH_PYTHON(
+		[2.6],
+		AC_CHECK_LIB(
+			[python$PYTHON_VERSION],
+			[main],[],
+			AC_MSG_ERROR([libpython$PYTHON_VERSION is required for Python bindings])
+		)
+	)
 	AC_SUBST([PY_CFLAGS],["-I/usr/include/python$PYTHON_VERSION/"])
 	AC_SUBST([PY_LDFLAGS],["-lpython$PYTHON_VERSION"])
 	AM_CONDITIONAL([HAVE_PYTHON],[true])

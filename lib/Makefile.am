@@ -1,4 +1,4 @@
-#~ SUBDIRS = bindings
+SUBDIRS = bindings
 
 lib_LTLIBRARIES = libsklog.la
 
