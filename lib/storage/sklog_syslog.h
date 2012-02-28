@@ -22,7 +22,6 @@
 
 #ifndef SKLOG_SYSLOG
 #define SKLOG_SYSLOG
-#ifdef USE_SYSLOG
 
 #include "../sklog_commons.h"
 #include "../sklog_internal.h"
@@ -85,5 +84,4 @@ sklog_syslog_t_store_logentry(unsigned char    *blob,
 
 
 
-#endif /* USE_SYSLOG */
 #endif /* SKLOG_SYSLOG */

@@ -32,7 +32,7 @@
 #elif USE_SQLITE
     #include "storage/sklog_sqlite.h"
 #else
-    //~ todo: manage default case
+    #include "storage/sklog_dummy.h"
 #endif
 
 #include <confuse.h>
@@ -1146,7 +1146,10 @@ SKLOG_T_NewCtx(void)
     ctx->lsdriver->retrieve_logfiles = &sklog_sqlite_t_retrieve_logfiles;
     ctx->lsdriver->verify_logfile =    &sklog_sqlite_t_verify_logfile;
     #else
-    //~ todo: manage default case
+    ctx->lsdriver->store_authkey =     &sklog_dummy_t_store_authkey;
+    ctx->lsdriver->store_logentry =    &sklog_dummy_t_store_logentry;
+    ctx->lsdriver->retrieve_logfiles = &sklog_dummy_t_retrieve_logfiles;
+    ctx->lsdriver->verify_logfile =    &sklog_dummy_t_verify_logfile;
     #endif
 
     return ctx;

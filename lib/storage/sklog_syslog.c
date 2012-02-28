@@ -20,8 +20,6 @@
 **    along with Libsklog.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifdef USE_SYSLOG
-
 #include "sklog_syslog.h"
 
 /*--------------------------------------------------------------------*/
@@ -265,4 +263,3 @@ sklog_syslog_t_store_logentry(unsigned char    *blob,
     return SKLOG_TO_IMPLEMENT;
 }
 
-#endif /* USE_SYSLOG */

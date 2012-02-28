@@ -20,8 +20,6 @@
 **    along with Libsklog.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifdef USE_SQLITE
-
 #include "sklog_sqlite.h"
 
 #include <netinet/in.h>
@@ -1139,6 +1137,3 @@ error:
     sqlite3_close(db);
     return SKLOG_FAILURE;
 }
-
-#endif /* USE_SQLITE */
-

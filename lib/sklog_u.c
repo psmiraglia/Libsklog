@@ -30,7 +30,7 @@
 #elif USE_SQLITE
     #include "storage/sklog_sqlite.h"
 #else
-    //~ todo: manage default case
+    #include "storage/sklog_dummy.h"
 #endif
 
 
@@ -1821,7 +1821,9 @@ initialize_context(SKLOG_U_Ctx    *u_ctx)
     u_ctx->lsdriver->flush_logfile =     &sklog_sqlite_u_flush_logfile;
     u_ctx->lsdriver->init_logfile =      &sklog_sqlite_u_init_logfile;
     #else
-    //~ todo: manage default case
+    u_ctx->lsdriver->store_logentry =    &sklog_dummy_u_store_logentry;
+    u_ctx->lsdriver->flush_logfile =     &sklog_dummy_u_flush_logfile;
+    u_ctx->lsdriver->init_logfile =      &sklog_dummy_u_init_logfile;
     #endif
 
     //~ set context_state

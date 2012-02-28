@@ -41,28 +41,86 @@ dnl
 dnl --enable-bindings-python
 dnl
 
-AC_MSG_CHECKING([whether to build with Python bindings])
+#~ AC_MSG_CHECKING([whether to build with Python bindings])
+#~ AC_ARG_ENABLE(
+	#~ [bindings-python],
+	#~ AC_HELP_STRING(
+		#~ [--enable-bindings-python],
+		#~ [Build Libsklog with python bindings [default=no]]
+	#~ ),[
+	#~ AC_MSG_RESULT(yes)
+	#~ AM_PATH_PYTHON(
+		#~ [2.6],
+		#~ AC_CHECK_LIB(
+			#~ [python$PYTHON_VERSION],
+			#~ [main],[],
+			#~ AC_MSG_ERROR([libpython$PYTHON_VERSION is required for Python bindings])
+		#~ )
+	#~ )
+	#~ ],[
+	#~ AC_MSG_RESULT(no)
+#~ ])
+
 AC_ARG_ENABLE(
 	[bindings-python],
 	AC_HELP_STRING(
 		[--enable-bindings-python],
 		[Build Libsklog with python bindings [default=no]]
-	),[
-	AC_MSG_RESULT(yes)
-	AM_PATH_PYTHON(
-		[2.6],
-		AC_CHECK_LIB(
-			[python$PYTHON_VERSION],
-			[main],[],
-			AC_MSG_ERROR([libpython$PYTHON_VERSION is required for Python bindings])
-		)
 	)
-	],[
-	AC_MSG_RESULT(no)
-])
-AC_SUBST([PY_CFLAGS],["-I/usr/include/python$PYTHON_VERSION/"])
-AC_SUBST([PY_LDFLAGS],["-lpython$PYTHON_VERSION"])
-AM_CONDITIONAL([HAVE_PYTHON],[test x${enableval} = xyes])
+	[enable_python="$enableval"],
+	[enable_python="yes"]
+)
+
+if test "x${enable_python}" = "xyes" ; then
+	AC_SUBST([PY_CFLAGS],["-I/usr/include/python$PYTHON_VERSION/"])
+	AC_SUBST([PY_LDFLAGS],["-lpython$PYTHON_VERSION"])
+	AM_CONDITIONAL([HAVE_PYTHON],[true])
+else
+	AM_CONDITIONAL([HAVE_PYTHON],[false])
+fi
+
+
+
+dnl
+dnl --with-storage[=type]
+dnl
+
+AC_ARG_WITH([storage],
+	AC_HELP_STRING(
+		[--with-storage[=TYPE]],
+		[Build Libsklog with storage capabilities. Supported TYPE are: sqlite, syslog, file or none. [default=sqlite]]
+	),
+	storage="$withval",
+	storage="sqlite"
+)
+
+AM_CONDITIONAL([HAVE_STORAGE_SQLITE],[false])
+AM_CONDITIONAL([HAVE_STORAGE_SYSLOG],[false])
+AM_CONDITIONAL([HAVE_STORAGE_FILE],[false])
+AM_CONDITIONAL([HAVE_STORAGE_NONE],[false])
+
+case "x$storage" in
+	"xsqlite")
+		AC_CHECK_LIB([sqlite3],[main],[],[AC_MSG_ERROR([libsqlite3 is required from Libsklog],[exit -1])])
+		AM_CONDITIONAL([HAVE_STORAGE_SQLITE],[true])
+		AC_DEFINE([USE_SQLITE],[],[Foo Desc])
+		;;
+	"xsyslog")
+		AM_CONDITIONAL([HAVE_STORAGE_SYSLOG],[true])
+		AC_DEFINE([USE_SYSLOG],[],[Foo Desc])
+		;;
+	"xfile")
+		AM_CONDITIONAL([HAVE_STORAGE_FILE],[true])
+		AC_DEFINE([USE_FILE],[],[Foo Desc])
+		;;
+	"xnone")
+		AM_CONDITIONAL([HAVE_STORAGE_NONE],[true])
+		AC_DEFINE([DISABLE_STORAGE],[],[Foo Desc])
+		;;
+	*)
+		AC_MSG_ERROR([Unsupported storage type],[exit -1])
+		;;
+esac
 
 dnl
 dnl --with-ssl=PATH
@@ -107,63 +165,63 @@ fi
 AC_MSG_RESULT([$ssldir])
 AC_SUBST([SSLDIR],"$ssldir")
 
-dnl
-dnl --without-storage-sqlite
-dnl
+#~ dnl
+#~ dnl --without-storage-sqlite
+#~ dnl
+#~ 
+#~ AC_ARG_WITH([storage-sqlite],
+    #~ AC_HELP_STRING(
+        #~ [--without-storage-sqlite],
+        #~ [disable sqlite as storage driver]
+    #~ ),
+    #~ [],
+    #~ [without_storage_sqlite=no]
+#~ )
+#~ 
+#~ if test "x$without_storage_sqlite" == "xno"; then
+    #~ AC_CHECK_LIB([sqlite3],[sqlite3_open],[],
+		#~ AC_MSG_ERROR(libsqlite3 is required from Libsklog)
+    #~ )
+    #~ AC_SUBST([SQLITE_CFLAGS],["-DUSE_SQLITE"])
+	#~ AC_SUBST([SQLITE_LIBS],["-lsqlite3"])
+#~ else
+	#~ AC_SUBST([SQLITE_CFLAGS],[""])
+	#~ AC_SUBST([SQLITE_LIBS],[""])
+#~ fi
 
-AC_ARG_WITH([storage-sqlite],
-    AC_HELP_STRING(
-        [--without-storage-sqlite],
-        [disable sqlite as storage driver]
-    ),
-    [],
-    [without_storage_sqlite=no]
-)
+#~ dnl
+#~ dnl --with-storage-file
+#~ dnl
+#~ 
+#~ AC_ARG_WITH([storage-file],
+    #~ AC_HELP_STRING(
+        #~ [--with-storage-file],
+        #~ [set file as storage driver]
+    #~ ),
+    #~ [],
+    #~ [with_storage_file=no]
+#~ )
+#~ 
+#~ if test "x$with_storage_file" != "xno"; then
+    #~ CFLAGS="$CFLAGS -DUSE_FILE"
+#~ fi
 
-if test "x$without_storage_sqlite" == "xno"; then
-    AC_CHECK_LIB([sqlite3],[sqlite3_open],[],
-		AC_MSG_ERROR(libsqlite3 is required from Libsklog)
-    )
-    AC_SUBST([SQLITE_CFLAGS],["-DUSE_SQLITE"])
-	AC_SUBST([SQLITE_LIBS],["-lsqlite3"])
-else
-	AC_SUBST([SQLITE_CFLAGS],[""])
-	AC_SUBST([SQLITE_LIBS],[""])
-fi
-
-dnl
-dnl --with-storage-file
-dnl
-
-AC_ARG_WITH([storage-file],
-    AC_HELP_STRING(
-        [--with-storage-file],
-        [set file as storage driver]
-    ),
-    [],
-    [with_storage_file=no]
-)
-
-if test "x$with_storage_file" != "xno"; then
-    CFLAGS="$CFLAGS -DUSE_FILE"
-fi
-
-dnl
-dnl --with-storage-syslog
-dnl
-
-AC_ARG_WITH([storage-syslog],
-    AC_HELP_STRING(
-        [--with-storage-syslog],
-        [send logentry to syslog daemon]
-    ),
-    [],
-    [with_storage_syslog=no]
-)
-
-if test "x$with_storage_syslog" != "xno"; then
-    CFLAGS="$CFLAGS -DUSE_SYSLOG"
-fi
+#~ dnl
+#~ dnl --with-storage-syslog
+#~ dnl
+#~ 
+#~ AC_ARG_WITH([storage-syslog],
+    #~ AC_HELP_STRING(
+        #~ [--with-storage-syslog],
+        #~ [send logentry to syslog daemon]
+    #~ ),
+    #~ [],
+    #~ [with_storage_syslog=no]
+#~ )
+#~ 
+#~ if test "x$with_storage_syslog" != "xno"; then
+    #~ CFLAGS="$CFLAGS -DUSE_SYSLOG"
+#~ fi
 
 dnl
 dnl checking for libraries
