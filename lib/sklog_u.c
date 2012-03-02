@@ -679,32 +679,32 @@ create_logentry(SKLOG_U_Ctx        *u_ctx,
 
         switch (type) {
             case LogfileInitializationType:
-                i += snprintf(b+i,SKLOG_BUFFER_LEN,"[ LogfileInitializationType");
+                i += snprintf(b+i,SKLOG_BUFFER_LEN,"[LogfileInitializationType]");
                 b64_enc(data_enc,data_enc_len,&b64b);
-                i += snprintf(b+i,SKLOG_BUFFER_LEN-i," | %s",b64b);
+                i += snprintf(b+i,SKLOG_BUFFER_LEN-i,"-[%s]",b64b);
                 free(b64b);
                 break;
             case ResponseMessageType:
-                i += snprintf(b+i,SKLOG_BUFFER_LEN,"[ ResponseMessageType");
+                i += snprintf(b+i,SKLOG_BUFFER_LEN,"[ResponseMessageType]");
                 b64_enc(data_enc,data_enc_len,&b64b);
-                i += snprintf(b+i,SKLOG_BUFFER_LEN-i," | %s",b64b);
+                i += snprintf(b+i,SKLOG_BUFFER_LEN-i,"-[%s]",b64b);
                 free(b64b);
                 break;
             case AbnormalCloseType:
-                i += snprintf(b+i,SKLOG_BUFFER_LEN,"[ AbnormalCloseType");
+                i += snprintf(b+i,SKLOG_BUFFER_LEN,"[AbnormalCloseType]");
                 b64_enc(data_enc,data_enc_len,&b64b);
-                i += snprintf(b+i,SKLOG_BUFFER_LEN-i," | %s",b64b);
+                i += snprintf(b+i,SKLOG_BUFFER_LEN-i,"-[%s]",b64b);
                 free(b64b);
                 break;
             case NormalCloseMessage:
-                i += snprintf(b+i,SKLOG_BUFFER_LEN,"[ NormalCloseMessage");
+                i += snprintf(b+i,SKLOG_BUFFER_LEN,"[NormalCloseMessage]");
                 b64_enc(data_enc,data_enc_len,&b64b);
-                i += snprintf(b+i,SKLOG_BUFFER_LEN-i," | %s",b64b);
+                i += snprintf(b+i,SKLOG_BUFFER_LEN-i,"-[%s]",b64b);
                 free(b64b);
                 break;
             case Undefined:
-                i += snprintf(b+i,SKLOG_BUFFER_LEN,"[ Undefined");
-                i += snprintf(b+i,SKLOG_BUFFER_LEN-i," | %s",data_enc);
+                i += snprintf(b+i,SKLOG_BUFFER_LEN,"[Undefined]");
+                i += snprintf(b+i,SKLOG_BUFFER_LEN-i,"-[%s]",data_enc);
                 break;
         }
 
@@ -726,10 +726,10 @@ create_logentry(SKLOG_U_Ctx        *u_ctx,
         
 
         b64_enc(hash_chain,SKLOG_HASH_CHAIN_LEN,&b64b);
-        i += snprintf(b+i,SKLOG_BUFFER_LEN-i," | %s",b64b);
+        i += snprintf(b+i,SKLOG_BUFFER_LEN-i,"-[%s]",b64b);
         free(b64b);
         b64_enc(hmac,SKLOG_HMAC_LEN,&b64b);
-        i += snprintf(b+i,SKLOG_BUFFER_LEN-i," | %s ]",b64b);
+        i += snprintf(b+i,SKLOG_BUFFER_LEN-i,"-[%s]",b64b);
         free(b64b);
 
         *blob = calloc(strlen(b),sizeof(char));

@@ -24,7 +24,9 @@ libsklog_la_SOURCES += storage/sklog_syslog.c storage/sklog_syslog.h
 endif
 
 if HAVE_STORAGE_NONE
-libsklog_la_SOURCES += storage/sklog_dummy.c storage/sklog_dummy.h
+libsklog_la_SOURCES += \
+	storage/sklog_dummy.c storage/sklog_dummy.h \
+	storage/sklog_sqlite.c storage/sklog_sqlite.h
 endif
 
 if HAVE_PYTHON
@@ -48,6 +50,10 @@ libsklog_la_LDFLAGS = \
 	-L@SSLDIR@/lib -lcrypto -lssl
 
 if HAVE_STORAGE_SQLITE
+libsklog_la_LDFLAGS += -lsqlite3
+endif
+
+if HAVE_STORAGE_NONE
 libsklog_la_LDFLAGS += -lsqlite3
 endif
 	

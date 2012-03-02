@@ -112,7 +112,7 @@ sklog_sqlite_u_store_logentry(uuid_t             logfile_id,
 					case 37:
 					case 39:
 					case 96:
-						buf_data[i] = 32
+						buf_data[i] = 32;
 					default:
 						break;
 				}  

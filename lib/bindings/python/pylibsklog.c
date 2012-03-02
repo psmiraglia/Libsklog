@@ -61,7 +61,7 @@ static PyObject *py_SKLOG_U_Open(PyObject* self, PyObject* args)
     
     uuid_unparse_lower(ctx->logfile_id,logid);
     
-    return Py_BuildValue("s#s#s#",logid,strlen(logid),le1,le1_len,le2,le2_len);
+    return Py_BuildValue("s#s#s#",logid,UUID_STR_LEN,le1,le1_len,le2,le2_len);
 }
 
 static PyObject *py_SKLOG_U_LogEvent(PyObject* self, PyObject* args)
@@ -89,7 +89,7 @@ static PyObject *py_SKLOG_U_LogEvent(PyObject* self, PyObject* args)
     
     uuid_unparse_lower(ctx->logfile_id,logid);
 
-    return Py_BuildValue("s#s#",logid,strlen(logid),le1,le1_len);
+    return Py_BuildValue("s#s#",logid,UUID_STR_LEN,le1,le1_len);
 }
 
 static PyObject *py_SKLOG_U_Close(PyObject* self, PyObject* args)
@@ -112,7 +112,7 @@ static PyObject *py_SKLOG_U_Close(PyObject* self, PyObject* args)
     
     uuid_unparse_lower(ctx->logfile_id,logid);
     
-    return Py_BuildValue("s#s#",logid,strlen(logid),le1,le1_len);
+    return Py_BuildValue("s#s#",logid,UUID_STR_LEN,le1,le1_len);
 }
 
 static PyObject *py_SKLOG_U_FreeCtx(PyObject* self, PyObject* args)
