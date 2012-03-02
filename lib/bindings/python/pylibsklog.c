@@ -22,7 +22,9 @@
 
 #include <Python.h>
 
+#include <string.h>
 #include <sklog_u.h>
+#include <uuid/uuid.h>
 
 static PyObject *py_SKLOG_U_NewCtx(PyObject* self, PyObject* args)
 {
@@ -42,6 +44,9 @@ static PyObject *py_SKLOG_U_Open(PyObject* self, PyObject* args)
     char *le2 = 0;
     unsigned int le1_len = 0;
     unsigned int le2_len = 0;
+    
+    char logid[UUID_STR_LEN+1] = {0};
+    
 
     long int ctx_addr = 0;
     SKLOG_U_Ctx *ctx = 0;
@@ -54,7 +59,9 @@ static PyObject *py_SKLOG_U_Open(PyObject* self, PyObject* args)
         return Py_BuildValue("s","SKLOG_U_Open() failure");
     }
     
-    return Py_BuildValue("s#s#",le1,le1_len,le2,le2_len);
+    uuid_unparse_lower(ctx->logfile_id,logid);
+    
+    return Py_BuildValue("s#s#s#",logid,strlen(logid),le1,le1_len,le2,le2_len);
 }
 
 static PyObject *py_SKLOG_U_LogEvent(PyObject* self, PyObject* args)
@@ -68,6 +75,8 @@ static PyObject *py_SKLOG_U_LogEvent(PyObject* self, PyObject* args)
 
     long int ctx_addr = 0;
     SKLOG_U_Ctx *ctx = 0;
+    
+    char logid[UUID_STR_LEN+1] = {0};
 
     PyArg_ParseTuple(args,"lls#",&ctx_addr,&type,&data,&data_len);
 
@@ -77,8 +86,10 @@ static PyObject *py_SKLOG_U_LogEvent(PyObject* self, PyObject* args)
         ERROR("SKLOG_U_LogEvent() failure");
         return Py_BuildValue("s","SKLOG_U_LogEvent() failure");
     }
+    
+    uuid_unparse_lower(ctx->logfile_id,logid);
 
-    return Py_BuildValue("s#",le1,le1_len);
+    return Py_BuildValue("s#s#",logid,strlen(logid),le1,le1_len);
 }
 
 static PyObject *py_SKLOG_U_Close(PyObject* self, PyObject* args)
@@ -88,6 +99,8 @@ static PyObject *py_SKLOG_U_Close(PyObject* self, PyObject* args)
 
     long int ctx_addr = 0;
     SKLOG_U_Ctx *ctx = 0;
+    
+    char logid[UUID_STR_LEN+1] = {0};
 
     PyArg_ParseTuple(args,"l",&ctx_addr);
     ctx = (SKLOG_U_Ctx *)ctx_addr;
@@ -97,7 +110,9 @@ static PyObject *py_SKLOG_U_Close(PyObject* self, PyObject* args)
         return Py_BuildValue("s","SKLOG_U_Close() failure");
     }
     
-    return Py_BuildValue("s#",le1,le1_len);
+    uuid_unparse_lower(ctx->logfile_id,logid);
+    
+    return Py_BuildValue("s#s#",logid,strlen(logid),le1,le1_len);
 }
 
 static PyObject *py_SKLOG_U_FreeCtx(PyObject* self, PyObject* args)
