@@ -86,6 +86,8 @@
 #define     LOGFILE_LIST_SIZE         256
 #define     INBUF_LEN                 64
 
+#define		SKLOG_UUID_STR_LEN		  32
+
 #define     SKLOG_BUFFER_LEN          5120
 #define     SKLOG_SMALL_BUFFER_LEN    1024
 #define     SKLOG_LOG_ID_LEN          UUID_STR_LEN

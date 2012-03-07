@@ -26,6 +26,42 @@
 #include <sklog_u.h>
 #include <uuid/uuid.h>
 
+static int sklog_uuid_unparse(uuid_t u, char *out)
+{
+	/*
+	 * The logfile_id is an UUID which is used to identify a
+	 * logging session. Such as id is placed as SYSLOGTAG into
+	 * the logentries. In the RFC 3164, the dimension on SYSLOGTAG is
+	 * limited to 32 character but the function uuid_unparse_lower()
+	 * convert logfile_id in a 36 character string, hence it can't be
+	 * used.
+	 * 
+	 * The function sklog_uuid_unparse() produce the same result of
+	 * the function uuid_unparse_lower() removing the four characters
+	 * '-' which are part of the standard UUID structure.
+	 * 
+	 * Esamples:
+	 * 
+	 * uuid_unparse_lower() produces:
+	 * 		
+	 * 		b188dc8a-6877-11e1-a215-0025b345ca14 (36 characters)
+	 * 
+	 * sklog_uuid_unparse() produces:
+	 * 
+	 * 		b188dc8a687711e1a2150025b345ca14 (32 characters)
+	 * 
+	 * Ref: http://www.ietf.org/rfc/rfc3164.txt - Section 4.1.3
+	 */
+	  
+	int i = 0;
+	int j = 0;
+	
+	for( i = 0 , j = 0 ; i < UUID_LEN ; i++ , j+=2 )
+		sprintf(&out[j],"%2.2x",u[i]);
+		
+	return 0;
+}
+
 static PyObject *py_SKLOG_U_NewCtx(PyObject* self, PyObject* args)
 {
     SKLOG_U_Ctx *ctx = SKLOG_U_NewCtx();
@@ -45,7 +81,8 @@ static PyObject *py_SKLOG_U_Open(PyObject* self, PyObject* args)
     unsigned int le1_len = 0;
     unsigned int le2_len = 0;
     
-    char logid[UUID_STR_LEN+1] = {0};
+    //~ char logid[UUID_STR_LEN+1] = {0};
+    char logid[SKLOG_UUID_STR_LEN+1] = {0};
     
 
     long int ctx_addr = 0;
@@ -59,9 +96,11 @@ static PyObject *py_SKLOG_U_Open(PyObject* self, PyObject* args)
         return Py_BuildValue("s","SKLOG_U_Open() failure");
     }
     
-    uuid_unparse_lower(ctx->logfile_id,logid);
+    //~ uuid_unparse_lower(ctx->logfile_id,logid);
+    sklog_uuid_unparse(ctx->logfile_id,logid);
     
-    return Py_BuildValue("s#s#s#",logid,UUID_STR_LEN,le1,le1_len,le2,le2_len);
+    //~ return Py_BuildValue("s#s#s#",logid,UUID_STR_LEN,le1,le1_len,le2,le2_len);
+    return Py_BuildValue("s#s#s#",logid,SKLOG_UUID_STR_LEN,le1,le1_len,le2,le2_len);
 }
 
 static PyObject *py_SKLOG_U_LogEvent(PyObject* self, PyObject* args)
@@ -76,7 +115,8 @@ static PyObject *py_SKLOG_U_LogEvent(PyObject* self, PyObject* args)
     long int ctx_addr = 0;
     SKLOG_U_Ctx *ctx = 0;
     
-    char logid[UUID_STR_LEN+1] = {0};
+    //~ char logid[UUID_STR_LEN+1] = {0};
+    char logid[SKLOG_UUID_STR_LEN+1] = {0};
 
     PyArg_ParseTuple(args,"lls#",&ctx_addr,&type,&data,&data_len);
 
@@ -87,9 +127,11 @@ static PyObject *py_SKLOG_U_LogEvent(PyObject* self, PyObject* args)
         return Py_BuildValue("s","SKLOG_U_LogEvent() failure");
     }
     
-    uuid_unparse_lower(ctx->logfile_id,logid);
+    //~ uuid_unparse_lower(ctx->logfile_id,logid);
+    sklog_uuid_unparse(ctx->logfile_id,logid);
 
-    return Py_BuildValue("s#s#",logid,UUID_STR_LEN,le1,le1_len);
+    //~ return Py_BuildValue("s#s#",logid,UUID_STR_LEN,le1,le1_len);
+    return Py_BuildValue("s#s#",logid,SKLOG_UUID_STR_LEN,le1,le1_len);
 }
 
 static PyObject *py_SKLOG_U_Close(PyObject* self, PyObject* args)
@@ -100,7 +142,8 @@ static PyObject *py_SKLOG_U_Close(PyObject* self, PyObject* args)
     long int ctx_addr = 0;
     SKLOG_U_Ctx *ctx = 0;
     
-    char logid[UUID_STR_LEN+1] = {0};
+    //~ char logid[UUID_STR_LEN+1] = {0};
+    char logid[SKLOG_UUID_STR_LEN+1] = {0};
 
     PyArg_ParseTuple(args,"l",&ctx_addr);
     ctx = (SKLOG_U_Ctx *)ctx_addr;
@@ -110,9 +153,11 @@ static PyObject *py_SKLOG_U_Close(PyObject* self, PyObject* args)
         return Py_BuildValue("s","SKLOG_U_Close() failure");
     }
     
-    uuid_unparse_lower(ctx->logfile_id,logid);
+    //~ uuid_unparse_lower(ctx->logfile_id,logid);
+    sklog_uuid_unparse(ctx->logfile_id,logid);
     
-    return Py_BuildValue("s#s#",logid,UUID_STR_LEN,le1,le1_len);
+    //~ return Py_BuildValue("s#s#",logid,UUID_STR_LEN,le1,le1_len);
+    return Py_BuildValue("s#s#",logid,SKLOG_UUID_STR_LEN,le1,le1_len);
 }
 
 static PyObject *py_SKLOG_U_FreeCtx(PyObject* self, PyObject* args)
