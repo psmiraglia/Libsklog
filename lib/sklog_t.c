@@ -1137,17 +1137,21 @@ SKLOG_T_NewCtx(void)
 
     #ifdef USE_FILE
     ctx->lsdriver->store_authkey =     &sklog_file_t_store_authkey;
+    ctx->lsdriver->store_m0_msg =      &sklog_file_t_store_m0_msg;
     ctx->lsdriver->store_logentry =    &sklog_file_t_store_logentry;
     #elif USE_SYSLOG
     ctx->lsdriver->store_authkey =     &sklog_syslog_t_store_authkey;
+    ctx->lsdriver->store_m0_msg =      &sklog_syslog_t_store_m0_msg;
     ctx->lsdriver->store_logentry =    &sklog_syslog_t_store_logentry;
     #elif USE_SQLITE
     ctx->lsdriver->store_authkey =     &sklog_sqlite_t_store_authkey;
+    ctx->lsdriver->store_m0_msg =      &sklog_sqlite_t_store_m0_msg;
     ctx->lsdriver->store_logentry =    &sklog_sqlite_t_store_logentry;
     ctx->lsdriver->retrieve_logfiles = &sklog_sqlite_t_retrieve_logfiles;
     ctx->lsdriver->verify_logfile =    &sklog_sqlite_t_verify_logfile;
     #else
     ctx->lsdriver->store_authkey =     &sklog_sqlite_t_store_authkey;
+    ctx->lsdriver->store_m0_msg =      &sklog_sqlite_t_store_m0_msg;
     ctx->lsdriver->store_logentry =    &sklog_sqlite_t_store_logentry;
     ctx->lsdriver->retrieve_logfiles = &sklog_sqlite_t_retrieve_logfiles;
     ctx->lsdriver->verify_logfile =    &sklog_sqlite_t_verify_logfile;
@@ -1320,6 +1324,13 @@ SKLOG_T_ManageLoggingSessionInit(SKLOG_T_Ctx      *t_ctx,
         ERROR("parse_m0() failure")
         goto error;
     }
+    
+    //~ store m0_msg
+    if ( t_ctx->lsdriver->store_m0_msg(u_address, logfile_id, m0, m0_len) == SKLOG_FAILURE ) {
+        ERROR("store_m0_msg() failure");
+        goto error;
+    }
+    
     SKLOG_free(&m0);
 
     //~ decrypt k0 using T's private key

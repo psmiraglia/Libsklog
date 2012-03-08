@@ -61,6 +61,11 @@ SKLOG_RETURN
 sklog_file_t_store_authkey(char             *u_ip,
                            uuid_t           logfile_id,
                            unsigned char    *authkey);
+SKLOG_RETURN
+sklog_file_t_store_m0_msg(char             *u_ip,
+                            uuid_t           logfile_id,
+                            unsigned char    *m0,
+                            unsigned int     m0_len);                           
 
 SKLOG_RETURN
 sklog_file_t_store_logentry(unsigned char    *blob,

@@ -469,6 +469,68 @@ sklog_sqlite_t_store_authkey(char             *u_ip,
 }                             
 
 SKLOG_RETURN
+sklog_sqlite_t_store_m0_msg(char             *u_ip,
+                            uuid_t           logfile_id,
+                            unsigned char    *m0,
+                            unsigned int     m0_len)
+{
+    #ifdef DO_TRACE
+    DEBUG
+    #endif
+
+    sqlite3 *db = 0;
+    char *err_msg = 0;
+
+    char query[SKLOG_BUFFER_LEN] = { 0 };
+    
+    char *msg = 0;
+
+    char f_uuid[UUID_STR_LEN+1] = { 0 };
+
+    //~ compose query
+
+    uuid_unparse_lower(logfile_id,f_uuid);
+    f_uuid[UUID_STR_LEN] = '\0';
+
+    /**
+    for ( i = 0 , j = 0 ; i < SKLOG_AUTH_KEY_LEN ; i++ , j += 2)
+        sprintf(key+j,"%2.2x",authkey[i]);
+    key[(SKLOG_AUTH_KEY_LEN*2)] = '\0';
+    */
+
+    b64_enc(m0,m0_len,&msg);
+    
+    snprintf(
+        query,
+        SKLOG_BUFFER_LEN-1,
+        "insert into M0MSG (u_ip,f_uuid,m0_msg) values ('%s','%s','%s')",
+        u_ip,f_uuid,msg
+    );
+
+    //~ execute query
+
+    sqlite3_open(SKLOG_T_DB,&db);
+    
+    if ( db == NULL ) {
+        fprintf(stderr,
+            "SQLite3: Can't open database: %s\n",sqlite3_errmsg(db));
+        sqlite3_close(db);
+        return SKLOG_FAILURE;
+    }
+
+    if ( sqlite3_exec(db,query,sql_callback,0,
+                      &err_msg) != SQLITE_OK ) {
+        fprintf(stderr, "SQLite3: SQL error: %s\n",err_msg);
+        sqlite3_free(err_msg);
+        return SKLOG_FAILURE;
+    }
+
+    sqlite3_close(db);
+
+    return SKLOG_SUCCESS;
+}              
+
+SKLOG_RETURN
 sklog_sqlite_t_store_logentry(unsigned char    *blob,
                               unsigned int     blob_len)
 {

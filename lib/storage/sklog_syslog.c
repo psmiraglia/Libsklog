@@ -251,6 +251,21 @@ sklog_syslog_t_store_authkey(char             *u_ip,
 }
 
 SKLOG_RETURN
+sklog_syslog_t_store_m0_msg(char             *u_ip,
+                            uuid_t           logfile_id,
+                            unsigned char    *m0,
+                            unsigned int     m0_len)
+{
+    #ifdef DO_TRACE
+    DEBUG
+    #endif
+
+    TO_IMPLEMENT;
+
+    return SKLOG_TO_IMPLEMENT;
+}              
+
+SKLOG_RETURN
 sklog_syslog_t_store_logentry(unsigned char    *blob,
                               unsigned int     blob_len)
 {

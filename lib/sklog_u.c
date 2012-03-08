@@ -651,11 +651,61 @@ create_logentry(SKLOG_U_Ctx        *u_ctx,
     }
 #endif
 
+	/*
+	 * TEMPORARY
+	 * 
+	 * This piece of code avoids the problem related to the dimension
+	 * of the MSG element of SYSLOG messages.
+	 * 
+	 * All cryptography operations related to the control log entries
+	 * (Initialization and Cloure) are executed on a digest of the message
+	 * in order to reduce dimension. Despite, this hack disable the
+	 * access control.
+	 * 
+	 * A better solution must be planned! 
+	 */
+	
+	unsigned char md[SHA256_LEN] = { 0 };
+	unsigned int md_len = 0;
+	
+	switch (type) {
+		case LogfileInitializationType:
+			sha256(data_enc,data_enc_len,md,&md_len);
+			//~ generate hash-chain element
+			if ( gen_hash_chain(u_ctx,md,md_len,type,hash_chain) == SKLOG_FAILURE ) {
+				ERROR("gen_hash_chain() failure")
+				goto error;
+			}
+			free(data_enc);
+			data_enc = calloc(SHA256_LEN+1,sizeof(char));
+			memcpy(data_enc,md,SHA256_LEN);
+			data_enc_len = SHA256_LEN;
+			break;
+		case ResponseMessageType:
+		case AbnormalCloseType:
+		case NormalCloseMessage:
+		case Undefined:
+			if ( gen_hash_chain(u_ctx,data_enc,data_enc_len,type,hash_chain) == SKLOG_FAILURE ) {
+		        ERROR("gen_hash_chain() failure")
+		        goto error;
+		    }
+			break;
+	}	
+	/*
+	 * *****************************************************************
+	 */	
+
+    
+    /*
+     * remove comments when the issues related to the size of the
+     * message is addressed
+     *
     //~ generate hash-chain element
     if ( gen_hash_chain(u_ctx,data_enc,data_enc_len,type,hash_chain) == SKLOG_FAILURE ) {
         ERROR("gen_hash_chain() failure")
         goto error;
     }
+    */
 
     //~ generate digest of hash-chain using the auth_key A
     if ( gen_hmac(u_ctx,hash_chain,hmac) == SKLOG_FAILURE ) {

@@ -397,6 +397,100 @@ error:
     return SKLOG_FAILURE;
 }
 
+SKLOG_RETURN
+SKLOG_V_VerifyLogFile_uuid(SKLOG_V_Ctx         *v_ctx,
+                           SKLOG_CONNECTION    *c,
+                           char                *logfile_id)
+{
+    #ifdef DO_TRACE
+    DEBUG
+    #endif
+
+    unsigned char wbuf[SKLOG_BUFFER_LEN] = { 0 };
+    unsigned int wlen = 0;
+    
+    unsigned char rbuf[SKLOG_BUFFER_LEN] = { 0 };
+    unsigned int rlen = 0;
+
+    SKLOG_TLV_TYPE type = NOTYPE;
+    unsigned int len = 0;
+    unsigned char value[SKLOG_BUFFER_LEN] = { 0 };
+    unsigned char *tlv = 0;
+
+    //~ char inbuf[INBUF_LEN] = {0};
+    //~ int id = 0;
+
+    int retval = SKLOG_SUCCESS;
+
+    SSL_load_error_strings();
+
+    memcpy(value,logfile_id,UUID_STR_LEN);
+    len = UUID_STR_LEN;
+
+    //~ send: [VERIFY_LOGFILE][UUID_STR_LEN][UUID]
+
+    if ( tlv_create_message(VERIFY_LOGFILE,len,value,&tlv,&wlen) == SKLOG_FAILURE ) {
+        ERROR("tlv_create_message() failure");
+        goto error;
+    }
+    memcpy(wbuf,tlv,wlen);
+
+    #ifdef USE_BIO
+    if ( BIO_write(c->bio,wbuf,wlen) <= 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+    
+    rlen = BIO_read(c->bio,rbuf,SKLOG_BUFFER_LEN);
+
+    if ( rlen <= 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+    #endif
+
+    #ifdef USE_SSL
+    if ( SSL_write(c->ssl,wbuf,wlen) <= 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+    
+    rlen = SSL_read(c->ssl,rbuf,SKLOG_BUFFER_LEN);
+
+    if ( rlen <= 0 ) {
+        ERR_print_errors_fp(stderr);
+        goto error;
+    }
+    #endif
+
+    tlv_get_type(rbuf,&type);
+
+    switch ( type ) {
+        case VERIFY_LOGFILE_SUCCESS:
+            #ifdef DO_TRACE
+            NOTIFY("Logfile verification successful");
+            #endif
+            break;
+        case VERIFY_LOGFILE_FAILURE:
+            #ifdef DO_TRACE
+            NOTIFY("Logfile verification fails");
+            #endif
+            retval = SKLOG_FAILURE;
+            break;
+        default:
+            ERROR("Protocol Error");
+            retval = SKLOG_FAILURE;
+            break;
+    } 
+    
+    ERR_free_strings();
+    return retval;
+
+error:
+    ERR_free_strings();
+    return SKLOG_FAILURE;
+}
+
 
 
 

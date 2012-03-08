@@ -30,7 +30,7 @@
 #define  SKLOG_V_CONFIG_FILE_PATH  ETC_PREFIX"/libsklog/libsklog-v.conf"
 #define  SKLOG_DEF_V_CERT_PATH     ETC_PREFIX"/libsklog/certs/v_cert.pem"
 #define  SKLOG_DEF_V_RSA_KEY_PATH  ETC_PREFIX"/libsklog/certs/private/v_key.pem"
-#define  SKLOG_DEF_T_ADDRESS       "127.0.0.1"
+#define  SKLOG_DEF_T_ADDRESS       "130.192.1.117"
 #define  SKLOG_DEF_T_PORT          5555
 #define  SKLOG_DEF_T_CERT_PATH     ETC_PREFIX"/libsklog/certs/ca/ca_cert.pem"
 
@@ -82,5 +82,10 @@ SKLOG_RETURN
 SKLOG_V_VerifyLogFile(SKLOG_V_Ctx         *v_ctx,
                       SKLOG_CONNECTION    *c,
                       unsigned int        logfile_id);
+
+SKLOG_RETURN
+SKLOG_V_VerifyLogFile_uuid(SKLOG_V_Ctx         *v_ctx,
+                           SKLOG_CONNECTION    *c,
+                           char                *logfile_id);
 
 #endif /* SKLOG_V_H */

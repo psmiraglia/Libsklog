@@ -68,7 +68,11 @@ SKLOG_RETURN
 sklog_sqlite_t_store_authkey(char             *u_ip,
                              uuid_t           logfile_id,
                              unsigned char    *authkey);
-
+SKLOG_RETURN
+sklog_sqlite_t_store_m0_msg(char             *u_ip,
+                            uuid_t           logfile_id,
+                            unsigned char    *m0,
+                            unsigned int     m0_len);
 SKLOG_RETURN
 sklog_sqlite_t_store_logentry(unsigned char    *blob,
                               unsigned int     blob_len);
@@ -76,7 +80,6 @@ sklog_sqlite_t_store_logentry(unsigned char    *blob,
 SKLOG_RETURN
 sklog_sqlite_t_retrieve_logfiles(unsigned char    **uuid_list,
                                  unsigned int     *uuid_list_len);
-
 SKLOG_RETURN
 sklog_sqlite_t_verify_logfile(unsigned char *uuid);
 
