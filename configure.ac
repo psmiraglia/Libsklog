@@ -31,7 +31,7 @@ AC_ARG_ENABLE(
         [--enable-debug],
         [Build Libsklog with debugging features [default=no]]),[
     AC_SUBST([DBGFLAGS],["-g -O0"])
-    AC_DEFINE([DO_TRACE],[],[Build Libsklog in high verbosity mode])
+    AC_DEFINE([DO_TRACE],[1],[Build Libsklog in high verbosity mode])
     AC_MSG_RESULT(yes)],[
 	AC_SUBST([DBGFLAGS],["-O3"])
 	AC_MSG_RESULT(no)]
@@ -111,19 +111,19 @@ case "x$storage" in
 	"xsqlite")
 		AC_CHECK_LIB([sqlite3],[main],[],[AC_MSG_ERROR([libsqlite3 is required from Libsklog],[exit -1])])
 		AM_CONDITIONAL([HAVE_STORAGE_SQLITE],[true])
-		AC_DEFINE([USE_SQLITE],[],[Foo Desc])
+		AC_DEFINE([USE_SQLITE],[1],[Foo Desc])
 		;;
 	"xsyslog")
 		AM_CONDITIONAL([HAVE_STORAGE_SYSLOG],[true])
-		AC_DEFINE([USE_SYSLOG],[],[Foo Desc])
+		AC_DEFINE([USE_SYSLOG],[1],[Foo Desc])
 		;;
 	"xfile")
 		AM_CONDITIONAL([HAVE_STORAGE_FILE],[true])
-		AC_DEFINE([USE_FILE],[],[Foo Desc])
+		AC_DEFINE([USE_FILE],[1],[Foo Desc])
 		;;
 	"xnone")
 		AM_CONDITIONAL([HAVE_STORAGE_NONE],[true])
-		AC_DEFINE([DISABLE_STORAGE],[],[Foo Desc])
+		AC_DEFINE([DISABLE_STORAGE],[1],[Foo Desc])
 		;;
 	*)
 		AC_MSG_ERROR([Unsupported storage type],[exit -1])
