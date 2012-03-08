@@ -21,6 +21,7 @@
 */
 
 #include "sklog_sqlite.h"
+#include "../sklog_internal.h"
 
 #include <netinet/in.h>
 
@@ -60,7 +61,7 @@ sklog_sqlite_u_store_logentry(uuid_t             logfile_id,
     char *err_msg = 0;
 
     char query[SKLOG_BUFFER_LEN] = { 0 };
-    char f_uuid[UUID_STR_LEN+1] = { 0 };
+    char f_uuid[SKLOG_UUID_STR_LEN+1] = { 0 };
     
     int i = 0;
     
@@ -79,8 +80,9 @@ sklog_sqlite_u_store_logentry(uuid_t             logfile_id,
 
     //~ compose query
     
-    uuid_unparse_lower(logfile_id,f_uuid);
-    f_uuid[UUID_STR_LEN] = '\0';
+    sklog_uuid_unparse(logfile_id,f_uuid);
+    //~ uuid_unparse_lower(logfile_id,f_uuid);
+    //~ f_uuid[UUID_STR_LEN] = '\0';
 
 #ifdef DISABLE_ENCRYPTION
     /**
@@ -151,6 +153,10 @@ sklog_sqlite_u_store_logentry(uuid_t             logfile_id,
         "insert into LOGENTRY (f_id,e_type,e_data,e_hash,e_hmac) \
  values ((select f_id from LOGFILE where f_uuid = '%s'),%d,'%s','%s','%s')",
         f_uuid,type,buf_data,buf_hash,buf_hmac);
+        
+#ifdef DO_TRACE
+	SHOWQUERY(query);
+#endif
 
     sqlite3_open(SKLOG_U_DB,&db);
     
@@ -191,7 +197,8 @@ sklog_sqlite_u_flush_logfile(uuid_t    logfile_id,
     char *err_msg = 0;
     int sql_step = 0;
 
-    char f_uuid[UUID_STR_LEN+1] = { 0 };
+    //~ char f_uuid[UUID_STR_LEN+1] = { 0 };
+    char f_uuid[SKLOG_UUID_STR_LEN+1] = { 0 };
 
     const unsigned char *tmp = 0;
 
@@ -219,14 +226,19 @@ sklog_sqlite_u_flush_logfile(uuid_t    logfile_id,
     }
 
     //~ compose query
-    uuid_unparse_lower(logfile_id,f_uuid);
-    f_uuid[UUID_STR_LEN] = '\0';
+    //~ uuid_unparse_lower(logfile_id,f_uuid);
+    //~ f_uuid[UUID_STR_LEN] = '\0';
+    sklog_uuid_unparse(logfile_id,f_uuid);
     
     sprintf(
         query,
         "select * from LOGENTRY where f_id = (select f_id from LOGFILE where f_uuid='%s')",
         f_uuid
     );
+
+#ifdef DO_TRACE
+	SHOWQUERY(query);
+#endif
 
     if ( sqlite3_prepare_v2(db,query,strlen(query)+1,
                             &stmt,NULL) != SQLITE_OK ) {
@@ -357,7 +369,8 @@ sklog_sqlite_u_init_logfile(uuid_t            logfile_id,
 
     struct tm ts;
     char ts_str[SKLOG_SMALL_BUFFER_LEN] = { 0 };
-    char uuid_str[UUID_STR_LEN+1] = { 0 };
+    //~ char uuid_str[UUID_STR_LEN+1] = { 0 };
+    char uuid_str[SKLOG_UUID_STR_LEN+1] = { 0 };
 
     if ( localtime_r(&(t->tv_sec),&ts) == NULL ) {
         ERROR("localtime_r() failure");
@@ -369,8 +382,9 @@ sklog_sqlite_u_init_logfile(uuid_t            logfile_id,
         goto error;
     }
 
-    uuid_unparse_lower(logfile_id,uuid_str);
-    uuid_str[UUID_STR_LEN] = '\0';
+    //~ uuid_unparse_lower(logfile_id,uuid_str);
+    //~ uuid_str[UUID_STR_LEN] = '\0';
+    sklog_uuid_unparse(logfile_id,uuid_str);
 
     sprintf(query,
         "insert into LOGFILE (f_uuid,ts_start,ts_end) values ('%s','%s','0000-00-00 00:00:00')",
@@ -424,12 +438,14 @@ sklog_sqlite_t_store_authkey(char             *u_ip,
     char *key = 0;
     //~ int i = 0, j = 0;
 
-    char f_uuid[UUID_STR_LEN+1] = { 0 };
+    //~ char f_uuid[UUID_STR_LEN+1] = { 0 };
+    char f_uuid[SKLOG_UUID_STR_LEN+1] = { 0 };
 
     //~ compose query
 
-    uuid_unparse_lower(logfile_id,f_uuid);
-    f_uuid[UUID_STR_LEN] = '\0';
+    //~ uuid_unparse_lower(logfile_id,f_uuid);
+    //~ f_uuid[UUID_STR_LEN] = '\0';
+    sklog_uuid_unparse(logfile_id,f_uuid);
 
     /**
     for ( i = 0 , j = 0 ; i < SKLOG_AUTH_KEY_LEN ; i++ , j += 2)
@@ -485,12 +501,14 @@ sklog_sqlite_t_store_m0_msg(char             *u_ip,
     
     char *msg = 0;
 
-    char f_uuid[UUID_STR_LEN+1] = { 0 };
+    //~ char f_uuid[UUID_STR_LEN+1] = { 0 };
+    char f_uuid[SKLOG_UUID_STR_LEN+1] = { 0 };
 
     //~ compose query
 
-    uuid_unparse_lower(logfile_id,f_uuid);
-    f_uuid[UUID_STR_LEN] = '\0';
+    //~ uuid_unparse_lower(logfile_id,f_uuid);
+    //~ f_uuid[UUID_STR_LEN] = '\0';
+    sklog_uuid_unparse(logfile_id,f_uuid);
 
     /**
     for ( i = 0 , j = 0 ; i < SKLOG_AUTH_KEY_LEN ; i++ , j += 2)
@@ -714,6 +732,10 @@ sklog_sqlite_t_retrieve_logfiles(unsigned char    **uuid_list,
     
     query_len = sprintf(query,"select * from AUTHKEY");
 
+#ifdef DO_TRACE
+	SHOWQUERY(query);
+#endif
+
     if ( sqlite3_prepare_v2(db,query,query_len+1,
                             &stmt,NULL) != SQLITE_OK ) {
         fprintf(stderr,
@@ -830,6 +852,10 @@ sklog_sqlite_t_verify_logfile(unsigned char *uuid)
     //~ compose query
     query_len = sprintf(query,
         "SELECT authkey FROM AUTHKEY WHERE f_uuid='%s'",uuid);
+        
+#ifdef DO_TRACE
+	SHOWQUERY(query);
+#endif
 
     //~ open database
     sqlite3_open(SKLOG_T_DB,&db);
@@ -924,7 +950,11 @@ terminate_authkey:
     //~ compose query
     query_len = sprintf(query,
         "SELECT e_type,e_data,e_hash,e_hmac FROM LOGENTRY WHERE f_uuid = '%s'",uuid);
-
+	
+#ifdef DO_TRACE
+	SHOWQUERY(query);
+#endif
+    
     //~ open database
     sqlite3_open(SKLOG_T_DB,&db);
     

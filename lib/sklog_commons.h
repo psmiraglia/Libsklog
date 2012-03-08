@@ -58,6 +58,11 @@
     getpid(),__func__,msg); \
 }
 
+#define SHOWQUERY(q) { \
+	fprintf(stderr,"[QUERY]       (%d) Libsklog (%s:%d): %s(): %s\n", \
+	getpid(),__FILE__,__LINE__,__func__,q); \
+}
+
 #define TO_IMPLEMENT \
     sklog_msg_to_implement(__func__);
 

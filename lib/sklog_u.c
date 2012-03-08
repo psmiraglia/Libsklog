@@ -1836,7 +1836,7 @@ initialize_context(SKLOG_U_Ctx    *u_ctx)
     u_ctx->logfile_counter = 0;
 
     //~ set logfile_id
-    uuid_generate_random(u_ctx->logfile_id);
+    uuid_generate_time(u_ctx->logfile_id);
 
     //~ set session_key
     RAND_bytes(u_ctx->session_key,SKLOG_SESSION_KEY_LEN);

@@ -20,7 +20,8 @@
 **    along with Libsklog.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "sklog_sqlite.h"
+//~ #include "sklog_sqlite.h"
+#include "sklog_dummy.h"
 
 SKLOG_RETURN
 sklog_dummy_u_store_logentry(uuid_t             logfile_id,

@@ -30,6 +30,8 @@
 #include <openssl/evp.h>
 #include <openssl/x509.h>
 
+#include <uuid/uuid.h>
+
 /*--------------------------------------------------------------------*/
 /*                         crypto primitives                          */
 /*--------------------------------------------------------------------*/
@@ -253,5 +255,11 @@ tcp_connect(const char    *address,
 
 void
 sklog_msg_to_implement(const char *f);
+
+/*--------------------------------------------------------------------*/
+/*                              uuid                                  */
+/*--------------------------------------------------------------------*/
+
+int sklog_uuid_unparse(uuid_t u, char *out);
 
 #endif /* SKLOG_INTERNAL_H */

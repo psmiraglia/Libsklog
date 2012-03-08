@@ -1463,7 +1463,7 @@ SKLOG_T_ManageLoggingSessionInit(SKLOG_T_Ctx      *t_ctx,
     return SKLOG_SUCCESS;
 
 error:
-    if ( pke_t_k0 > 0 )    SKLOG_free(&pke_t_k0); 
+    if ( pke_t_k0 > 0 )    SKLOG_free(&pke_t_k0);
     if ( e_k0 > 0 )        SKLOG_free(&e_k0);
     if ( k0 > 0 )          SKLOG_free(&k0);
     if ( plain > 0 )       SKLOG_free(&plain);
@@ -1474,11 +1474,8 @@ error:
     if ( x1_sign > 0 )     SKLOG_free(&x1_sign);
     if ( e_k1 > 0 )        SKLOG_free(&e_k1);
     if ( pke_u_k1 > 0 )    SKLOG_free(&pke_u_k1);
-    if ( m1 > 0 )          SKLOG_free(&m1);
 
     return SKLOG_FAILURE;
-
-    return SKLOG_SUCCESS;
 }
 
 SKLOG_RETURN

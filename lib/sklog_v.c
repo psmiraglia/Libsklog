@@ -424,8 +424,24 @@ SKLOG_V_VerifyLogFile_uuid(SKLOG_V_Ctx         *v_ctx,
 
     SSL_load_error_strings();
 
-    memcpy(value,logfile_id,UUID_STR_LEN);
-    len = UUID_STR_LEN;
+	/**
+	int i = 0;
+	int j = 0;
+
+    memcpy(value+i,logfile_id+j,8); value[8]='-';
+    i = 9; j+=8;
+    memcpy(value+i,logfile_id+j,4); value[13]='-';
+    i = 14; j+=4;
+    memcpy(value+i,logfile_id+j,4); value[18]='-';
+    i = 19; j+=4;
+    memcpy(value+i,logfile_id+j,4); value[23]='-';
+    i = 24; j+=4;
+    memcpy(value+i,logfile_id+j,12);
+    **/
+    
+    //~ memcpy(value,logfile_id,UUID_STR_LEN);
+    memcpy(value,logfile_id,SKLOG_UUID_STR_LEN);
+    len = SKLOG_UUID_STR_LEN;
 
     //~ send: [VERIFY_LOGFILE][UUID_STR_LEN][UUID]
 
