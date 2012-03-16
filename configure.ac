@@ -4,6 +4,7 @@ AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE([foreign -Wall -Werror])
 AC_PROG_CC
 AC_PROG_CC_C_O
+AM_PROG_CC_C_O
 AC_PROG_LIBTOOL
 
 AC_SUBST([LIB_VERSION],[0:1:0])
@@ -38,28 +39,26 @@ AC_ARG_ENABLE(
 )
 
 dnl
-dnl --enable-bindings-python
+dnl --disable-encryption
 dnl
 
-#~ AC_MSG_CHECKING([whether to build with Python bindings])
-#~ AC_ARG_ENABLE(
-	#~ [bindings-python],
-	#~ AC_HELP_STRING(
-		#~ [--enable-bindings-python],
-		#~ [Build Libsklog with python bindings [default=no]]
-	#~ ),[
-	#~ AC_MSG_RESULT(yes)
-	#~ AM_PATH_PYTHON(
-		#~ [2.6],
-		#~ AC_CHECK_LIB(
-			#~ [python$PYTHON_VERSION],
-			#~ [main],[],
-			#~ AC_MSG_ERROR([libpython$PYTHON_VERSION is required for Python bindings])
-		#~ )
-	#~ )
-	#~ ],[
-	#~ AC_MSG_RESULT(no)
-#~ ])
+AC_ARG_ENABLE(
+	[encryption],
+	AC_HELP_STRING(
+		[--disable-encryptio],
+		[Build Libsklog without encryption [default=no]]
+	),
+	[disable_encryption="$enableval"],
+	[disable_encryption="no"]
+)
+
+if test "x$enable_python" = "xyes" ; then
+	AC_DEFINE([DISABLE_ENCRYPTION],[1],[Foo Desc])
+fi
+
+dnl
+dnl --enable-bindings-python
+dnl
 
 AC_ARG_ENABLE(
 	[bindings-python],
@@ -86,8 +85,6 @@ if test "x$enable_python" = "xyes" ; then
 else
 	AM_CONDITIONAL([HAVE_PYTHON],[false])
 fi
-
-
 
 dnl
 dnl --with-storage[=type]
@@ -173,64 +170,6 @@ fi
 AC_MSG_RESULT([$ssldir])
 AC_SUBST([SSLDIR],"$ssldir")
 
-#~ dnl
-#~ dnl --without-storage-sqlite
-#~ dnl
-#~ 
-#~ AC_ARG_WITH([storage-sqlite],
-    #~ AC_HELP_STRING(
-        #~ [--without-storage-sqlite],
-        #~ [disable sqlite as storage driver]
-    #~ ),
-    #~ [],
-    #~ [without_storage_sqlite=no]
-#~ )
-#~ 
-#~ if test "x$without_storage_sqlite" == "xno"; then
-    #~ AC_CHECK_LIB([sqlite3],[sqlite3_open],[],
-		#~ AC_MSG_ERROR(libsqlite3 is required from Libsklog)
-    #~ )
-    #~ AC_SUBST([SQLITE_CFLAGS],["-DUSE_SQLITE"])
-	#~ AC_SUBST([SQLITE_LIBS],["-lsqlite3"])
-#~ else
-	#~ AC_SUBST([SQLITE_CFLAGS],[""])
-	#~ AC_SUBST([SQLITE_LIBS],[""])
-#~ fi
-
-#~ dnl
-#~ dnl --with-storage-file
-#~ dnl
-#~ 
-#~ AC_ARG_WITH([storage-file],
-    #~ AC_HELP_STRING(
-        #~ [--with-storage-file],
-        #~ [set file as storage driver]
-    #~ ),
-    #~ [],
-    #~ [with_storage_file=no]
-#~ )
-#~ 
-#~ if test "x$with_storage_file" != "xno"; then
-    #~ CFLAGS="$CFLAGS -DUSE_FILE"
-#~ fi
-
-#~ dnl
-#~ dnl --with-storage-syslog
-#~ dnl
-#~ 
-#~ AC_ARG_WITH([storage-syslog],
-    #~ AC_HELP_STRING(
-        #~ [--with-storage-syslog],
-        #~ [send logentry to syslog daemon]
-    #~ ),
-    #~ [],
-    #~ [with_storage_syslog=no]
-#~ )
-#~ 
-#~ if test "x$with_storage_syslog" != "xno"; then
-    #~ CFLAGS="$CFLAGS -DUSE_SYSLOG"
-#~ fi
-
 dnl
 dnl checking for libraries
 dnl
@@ -275,6 +214,7 @@ AC_CONFIG_FILES([\
     include/Makefile \
     lib/Makefile \
     lib/bindings/Makefile \
+    tests/Makefile \
 ])
 
 AC_OUTPUT
