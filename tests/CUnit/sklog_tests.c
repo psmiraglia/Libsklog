@@ -111,6 +111,7 @@ int main (void) {
 	//~ results in XML file
 	
 	CU_set_output_filename(fname);
+	CU_list_tests_to_file();
 	CU_automated_run_tests();
 	
 	CU_cleanup_registry();
