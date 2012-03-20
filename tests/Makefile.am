@@ -1,1 +1,2 @@
-SUBDIRS = CUnit cmockery
+SUBDIRS = CUnit \
+         #cmockery
