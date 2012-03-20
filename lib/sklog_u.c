@@ -2502,7 +2502,12 @@ SKLOG_U_Open(SKLOG_U_Ctx     *u_ctx,
     #ifdef DO_TRACE
     DEBUG
     #endif
-
+    
+    if ( u_ctx == NULL ) {
+		ERROR("argument 1 must be not NULL");
+		goto error;
+	}
+	
     if ( initialize_context(u_ctx) == SKLOG_FAILURE ) {
         ERROR("context initialization process fails")
         goto error;

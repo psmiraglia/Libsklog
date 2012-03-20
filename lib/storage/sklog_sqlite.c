@@ -63,8 +63,6 @@ sklog_sqlite_u_store_logentry(uuid_t             logfile_id,
     char query[SKLOG_BUFFER_LEN] = { 0 };
     char f_uuid[SKLOG_UUID_STR_LEN+1] = { 0 };
     
-    int i = 0;
-    
     /**
     int i = 0;
     int j = 0;
@@ -85,6 +83,9 @@ sklog_sqlite_u_store_logentry(uuid_t             logfile_id,
     //~ f_uuid[UUID_STR_LEN] = '\0';
 
 #ifdef DISABLE_ENCRYPTION
+
+	int i = 0;
+	
     /**
     buf_data = calloc(1+(data_len*2),sizeof(char)); 
     for ( i = 0 , j = 0 ; i < data_len ; i++ , j += 2)

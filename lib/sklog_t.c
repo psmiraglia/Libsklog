@@ -1213,7 +1213,9 @@ SKLOG_T_InitCtx(SKLOG_T_Ctx    *t_ctx)
 
     //~ load t_id from config file
     t_ctx->t_id_len = strlen(t_id);
-    snprintf(t_ctx->t_id,strlen(t_id),t_id);
+    
+    //~ Bugfix: Sebastian Banescu <banescusebi@gmail.com>
+    snprintf(t_ctx->t_id,HOST_NAME_MAX,"%s",t_id);
 
     //~ load T's X509 certificate
     t_ctx->t_cert = 0;

@@ -215,6 +215,8 @@ AC_CONFIG_FILES([\
     lib/Makefile \
     lib/bindings/Makefile \
     tests/Makefile \
+    tests/cmockery/Makefile \
+    tests/CUnit/Makefile \
 ])
 
 AC_OUTPUT
