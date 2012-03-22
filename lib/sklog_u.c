@@ -2399,6 +2399,11 @@ SKLOG_U_FreeCtx(SKLOG_U_Ctx **ctx)
     DEBUG
     #endif
     
+    if ( *ctx == NULL ) {
+		ERROR("argument 1 must be not NULL");
+		return SKLOG_FAILURE;
+	}
+    
     X509_free((*ctx)->u_cert);
     X509_free((*ctx)->t_cert);
     EVP_PKEY_free((*ctx)->u_privkey);

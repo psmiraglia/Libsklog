@@ -44,7 +44,7 @@ int main (void) {
 	//~ gen file name
 	
 	now = time(NULL);
-	snprintf(fname,BUFLEN-1,"%ju",now);
+	snprintf(fname,BUFLEN-1,"reports/%ju",now);
 	
 	//~ initialize registry
 	
@@ -54,16 +54,21 @@ int main (void) {
 	
 	//~ add suite to the registry
 	
-	if ( (uSuite = CU_add_suite("U Tests", init_uSuite, clean_uSuite)) == NULL ) {
+	if ( (uSuite = CU_add_suite("U_Tests", init_uSuite, clean_uSuite)) == NULL ) {
 		CU_cleanup_registry();
 		return CU_get_error();
 	}
 	
 	//~ add test functions to the suite
 	
-	if ( (NULL == CU_add_test(uSuite, "SKLOG_U_NewCtx()", test_SKLOG_U_NewCtx)) ||
-		 (NULL == CU_add_test(uSuite, "SKLOG_U_FreeCtx()", test_SKLOG_U_FreeCtx))
-	) {
+	if (
+		(NULL == CU_add_test(uSuite, "SKLOG_U_NewCtx()", test_SKLOG_U_NewCtx)) ||
+		(NULL == CU_add_test(uSuite, "SKLOG_U_Open()", test_SKLOG_U_Open)) ||
+		(NULL == CU_add_test(uSuite, "SKLOG_U_LogEvent()", test_SKLOG_U_LogEvent)) ||
+		(NULL == CU_add_test(uSuite, "SKLOG_U_LogClose()", test_SKLOG_U_Close)) ||
+		(NULL == CU_add_test(uSuite, "SKLOG_U_FreeCtx()", test_SKLOG_U_FreeCtx))
+	)
+	{
 		CU_cleanup_registry();
 		return CU_get_error();
 	}

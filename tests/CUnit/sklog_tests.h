@@ -31,6 +31,9 @@ int init_uSuite(void);
 int clean_uSuite(void);
 
 void test_SKLOG_U_NewCtx(void);
+void test_SKLOG_U_Open(void);
+void test_SKLOG_U_LogEvent(void);
+void test_SKLOG_U_Close(void);
 void test_SKLOG_U_FreeCtx(void);
 
 /*--------------------------------------------------------------------*/

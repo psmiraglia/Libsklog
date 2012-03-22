@@ -46,7 +46,26 @@ void test_SKLOG_U_NewCtx(void) {
 	CU_ASSERT_PTR_NOT_NULL(uctx);
 }
 
-void test_SKLOG_U_FreeCtx(void) {
-	SKLOG_U_FreeCtx(&uctx);
-	CU_ASSERT_PTR_NULL(uctx);
+void test_SKLOG_U_Open(void) {
 }
+
+void test_SKLOG_U_LogEvent(void) {
+}
+
+void test_SKLOG_U_Close(void) {
+}
+
+void test_SKLOG_U_FreeCtx(void) {
+	
+	int rv = SKLOG_SUCCESS;
+	
+	SKLOG_U_Ctx *tmp = 0;
+	
+	rv = SKLOG_U_FreeCtx(&tmp);
+	CU_ASSERT_EQUAL(rv,SKLOG_FAILURE);
+	
+	rv = SKLOG_U_FreeCtx(&uctx);
+	CU_ASSERT_EQUAL_FATAL(rv,SKLOG_SUCCESS);
+	CU_ASSERT_PTR_NULL_FATAL(uctx);
+}
+
