@@ -1166,6 +1166,11 @@ SKLOG_T_FreeCtx(SKLOG_T_Ctx **ctx)
     #ifdef DO_TRACE
     DEBUG
     #endif
+    
+    if ( *ctx == NULL ) {
+		ERROR("argument 1 must be not null");
+		return SKLOG_FAILURE;
+	}
 
     X509_free((*ctx)->t_cert);
     EVP_PKEY_free((*ctx)->t_privkey);
@@ -1314,6 +1319,21 @@ SKLOG_T_ManageLoggingSessionInit(SKLOG_T_Ctx      *t_ctx,
 
     unsigned char *m1_tmp = 0;
     unsigned int m1_tmp_len = 0;
+    
+    if ( t_ctx == NULL ) {
+		ERROR("argument 1 must be not NULL");
+		return SKLOG_FAILURE;
+	}
+	
+	if ( m0 == NULL ) {
+		ERROR("argument 2 must be not NULL");
+		return SKLOG_FAILURE;
+	}
+	
+	if ( u_address == NULL ) {
+		ERROR("argument 4 must be not NULL");
+		return SKLOG_FAILURE;
+	}
 
     //~ parse m0
     //~ if ( parse_m0(t_ctx,&m0[8],m0_len,&p,&logfile_id,&pke_t_k0,
@@ -1333,7 +1353,7 @@ SKLOG_T_ManageLoggingSessionInit(SKLOG_T_Ctx      *t_ctx,
         goto error;
     }
     
-    SKLOG_free(&m0);
+    SKLOG_free(&m0); // PS: to check
 
     //~ decrypt k0 using T's private key
     size_t len = 0;
@@ -1502,6 +1522,11 @@ SKLOG_T_ManageLogfileUpload(SKLOG_T_Ctx         *t_ctx,
     int error = 0;
 
     SKLOG_TLV_TYPE type = 0;
+    
+    if ( t_ctx == NULL ) {
+		ERROR("argument 1 must be not NULL");
+		return SKLOG_FAILURE;
+	}
 
     SSL_load_error_strings();
     
@@ -1619,6 +1644,11 @@ SKLOG_T_ManageLogfileRetrieve(SKLOG_T_Ctx         *t_ctx,
 
     unsigned char wbuf[SKLOG_BUFFER_LEN] = { 0 };
     unsigned int wlen = 0;
+    
+    if ( t_ctx == NULL ) {
+		ERROR("argument 1 must be not NULL");
+		return SKLOG_FAILURE;
+	}
 
     t_ctx->lsdriver->retrieve_logfiles(&value,&len);
 
@@ -1660,6 +1690,16 @@ SKLOG_T_ManageLogfileVerify(SKLOG_T_Ctx         *t_ctx,
     unsigned char uuid[UUID_STR_LEN+1] = { 0 };
 
     unsigned char *tlv = 0;
+    
+    if ( t_ctx == NULL ) {
+		ERROR("argument 1 must be not NULL");
+		return SKLOG_FAILURE;
+	}
+	
+	if ( logfile_id == NULL ) {
+		ERROR("argument 3 must be not NULL");
+		return SKLOG_FAILURE;
+	}
 
     memcpy(uuid,logfile_id,UUID_STR_LEN);
 
@@ -1734,6 +1774,11 @@ SKLOG_T_RunServer(SKLOG_T_Ctx    *t_ctx)
     unsigned int  m1_len = 0;
 
     char u_address[INET_ADDRSTRLEN] = { 0 };
+    
+    if ( t_ctx == NULL ) {
+		ERROR("argument 1 must be not NULL");
+		return SKLOG_FAILURE;
+	}
 
     c = new_connection();
 

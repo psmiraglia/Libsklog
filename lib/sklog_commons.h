@@ -195,6 +195,10 @@ enum sklog_tlv_type {
     NOTYPE           = 0xffffffff,
 };
 
+/*--------------------------------------------------------------------*/
+/*                          SKLOG_CONNECTION                          */
+/*--------------------------------------------------------------------*/
+
 struct sklog_connection {
     SSL        *ssl;
     SSL_CTX    *ssl_ctx;
@@ -204,5 +208,23 @@ struct sklog_connection {
     int        lsock;
     int        csock;
 };
+
+SKLOG_CONNECTION *
+SKLOG_CONNECTION_New(void);
+
+SKLOG_RETURN
+SKLOG_CONNECTION_Init(SKLOG_CONNECTION    *c,
+					  const char          *addr,
+					  short int           port,
+					  X509                *cert,
+					  EVP_PKEY            *privkey,
+					  const char          *CA_cert_path,
+					  int                 do_verify);
+
+SKLOG_RETURN
+SKLOG_CONNECTION_Destroy(SKLOG_CONNECTION *c);
+
+SKLOG_RETURN
+SKLOG_CONNECTION_Free(SKLOG_CONNECTION **c);
 
 #endif /* SKLOG_COMMONS_H */

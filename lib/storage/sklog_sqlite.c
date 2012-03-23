@@ -505,6 +505,16 @@ sklog_sqlite_t_store_m0_msg(char             *u_ip,
     //~ char f_uuid[UUID_STR_LEN+1] = { 0 };
     char f_uuid[SKLOG_UUID_STR_LEN+1] = { 0 };
 
+	if ( u_ip == NULL ) {
+		ERROR("argument 1 must be not null");
+		return SKLOG_FAILURE;
+	}
+	
+	if ( m0 == NULL ) {
+		ERROR("argument 3 must be not null");
+		return SKLOG_FAILURE;
+	}
+
     //~ compose query
 
     //~ uuid_unparse_lower(logfile_id,f_uuid);
@@ -517,7 +527,10 @@ sklog_sqlite_t_store_m0_msg(char             *u_ip,
     key[(SKLOG_AUTH_KEY_LEN*2)] = '\0';
     */
 
-    b64_enc(m0,m0_len,&msg);
+    if ( b64_enc(m0,m0_len,&msg) == SKLOG_FAILURE ) {
+		ERROR("b64_enc() failure");
+		return SKLOG_FAILURE;
+	}
     
     snprintf(
         query,
