@@ -3,7 +3,7 @@ SUBDIRS = bindings
 lib_LTLIBRARIES = libsklog.la
 
 libsklog_la_SOURCES = \
-		sklog_commons.h \
+		sklog_commons.h sklog_commons.c \
 		sklog_err.c sklog_err.h \
 		sklog_internal.c sklog_internal.h \
 		sklog_t.c sklog_t.h \

@@ -39,20 +39,22 @@ AC_ARG_ENABLE(
 )
 
 dnl
-dnl --disable-encryption
+dnl --enable-encryption
 dnl
 
 AC_ARG_ENABLE(
 	[encryption],
 	AC_HELP_STRING(
-		[--disable-encryptio],
-		[Build Libsklog without encryption [default=no]]
+		[--enable-encryption],
+		[Build Libsklog with data encryption [default=yes]]
 	),
-	[disable_encryption="$enableval"],
-	[disable_encryption="no"]
+	[enable_encryption="$enableval"],
+	[enable_encryption="yes"]
 )
 
-if test "x$enable_python" = "xyes" ; then
+echo $enable_encryption
+
+if test "x$enable_encryption" = "xno" ; then
 	AC_DEFINE([DISABLE_ENCRYPTION],[1],[Foo Desc])
 fi
 
@@ -67,7 +69,7 @@ AC_ARG_ENABLE(
 		[Build Libsklog with python bindings [default=no]]
 	),
 	[enable_python="$enableval"],
-	[enable_python="yes"]
+	[enable_python="no"]
 )
 
 if test "x$enable_python" = "xyes" ; then
