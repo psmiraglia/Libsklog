@@ -47,12 +47,15 @@ void test_SKLOG_U_NewCtx(void) {
 }
 
 void test_SKLOG_U_Open(void) {
+	CU_PASS(TEST_TO_IMPLEMENT)
 }
 
 void test_SKLOG_U_LogEvent(void) {
+	CU_PASS(TEST_TO_IMPLEMENT)
 }
 
 void test_SKLOG_U_Close(void) {
+	CU_PASS(TEST_TO_IMPLEMENT)
 }
 
 void test_SKLOG_U_FreeCtx(void) {

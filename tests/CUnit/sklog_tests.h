@@ -23,6 +23,8 @@
 #ifndef CUNIT_SKLOG_TESTS
 #define CUNIT_SKLOG_TESTS
 
+#define TEST_TO_IMPLEMENT "to implement"
+
 /*--------------------------------------------------------------------*/
 /*                              U tests                               */
 /*--------------------------------------------------------------------*/
@@ -40,10 +42,17 @@ void test_SKLOG_U_FreeCtx(void);
 /*                              T tests                               */
 /*--------------------------------------------------------------------*/
 
-/**
 int init_tSuite(void);
 int clean_tSuite(void);
-*/
+
+void test_SKLOG_T_NewCtx(void);
+void test_SKLOG_T_InitCtx(void);
+void test_SKLOG_T_ManageLoggingSessionInit(void);
+void test_SKLOG_T_ManageLogfileRetrieve(void);
+void test_SKLOG_T_ManageLogfileUpload(void);
+void test_SKLOG_T_ManageLogfileVerify(void);
+void test_SKLOG_T_RunServer(void);
+void test_SKLOG_T_FreeCtx(void);
 
 /*--------------------------------------------------------------------*/
 /*                              V tests                               */
