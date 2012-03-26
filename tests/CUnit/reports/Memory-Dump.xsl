@@ -1,1 +1,1 @@
-/usr/share/CUnit/Memory-Dump.xsl
+../CUnit/share/CUnit/Memory-Dump.xsl

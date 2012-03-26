@@ -1332,6 +1332,10 @@ send_m0(SKLOG_CONNECTION    *c,
     wlen = tlv_len;
     free(tlv);
 
+	#ifdef DO_TRACE
+	SHOWBUF("UOUT - M0_MSG", wbuf, wlen);
+	#endif
+
     #ifdef USE_BIO
     if ( BIO_write(c->bio,wbuf,wlen) <= 0 ) {
         if ( !BIO_should_retry(c->bio) ) {
@@ -1443,6 +1447,10 @@ receive_m1(SKLOG_CONNECTION    *c,
         ERR_print_errors_fp(stderr);
         goto error;
     }
+    #endif
+    
+    #ifdef DO_TRACE
+    SHOWBUF("UIN - M1_MSG", rbuf, rlen);
     #endif
 
     tlv_get_type(rbuf,&type);
@@ -2202,7 +2210,11 @@ flush_logfile_init(SKLOG_CONNECTION *c)
         goto error;
     }
     memcpy(wbuf,tlv,wlen); free(tlv);
-
+    
+    #ifdef DO_TRACE
+    SHOWBUF("UOUT - LOGFILE_UPLOAD_REQ", wbuf, wlen);
+    #endif
+    
     #ifdef USE_BIO
     if ( BIO_write(c->bio,wbuf,wlen) <= 0 ) {
         ERR_print_errors_fp(stderr);
@@ -2229,13 +2241,16 @@ flush_logfile_init(SKLOG_CONNECTION *c)
         ERR_print_errors_fp(stderr);
         goto error;
     }
-    #endif 
-
+    #endif
+    
     SKLOG_TLV_TYPE type = 0;
     tlv_get_type(rbuf,&type);
 
     switch ( type ) {
         case LOGFILE_UPLOAD_READY:
+			#ifdef DO_TRACE
+			SHOWBUF("UIN - LOGFILE_UPLOAD_READY", rbuf, rlen);
+			#endif
             NOTIFY("received LOGFILE_UPLOAD_READY");
             break;
         default:
@@ -2281,6 +2296,10 @@ flush_logfile_terminate(SKLOG_CONNECTION *c)
         goto error;
     }
     #endif 
+    
+    #ifdef DO_TRACE
+    SHOWBUF("UOUT - LOGFILE_UPLOAD_END", wbuf, wlen);
+    #endif
 
     ERR_free_strings();
     return SKLOG_SUCCESS;

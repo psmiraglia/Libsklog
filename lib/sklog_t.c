@@ -797,6 +797,10 @@ send_m1(SKLOG_T_Ctx         *t_ctx,
 
     tlv_create_message(M1_MSG,m1_len,m1,&tlv,&wlen);
     memcpy(wbuf,tlv,wlen);
+    
+    #ifdef DO_TRACE
+    SHOWBUF("TOUT - M1_MSG", wbuf, wlen);
+    #endif
 
     #ifdef USE_BIO
     if ( BIO_write(conn->bio,wbuf,wlen) <= 0 ) {
@@ -1523,6 +1527,17 @@ SKLOG_T_ManageLogfileUpload(SKLOG_T_Ctx         *t_ctx,
 
     SKLOG_TLV_TYPE type = 0;
     
+    #ifdef DO_TESTS
+    FILE *fp_in = 0;
+    FILE *fp_out = 0;
+    
+    char in[SKLOG_BUFFER_LEN] = { 0 };
+    int inl = 0;
+    
+    char *b64 = 0;
+    unsigned char *b64dec = 0;
+    #endif
+    
     if ( t_ctx == NULL ) {
 		ERROR("argument 1 must be not NULL");
 		return SKLOG_FAILURE;
@@ -1537,7 +1552,21 @@ SKLOG_T_ManageLogfileUpload(SKLOG_T_Ctx         *t_ctx,
 
     memcpy(wbuf,tlv,len);
     wlen = len;
+    
+    #ifdef DO_TRACE
+    SHOWBUF("TOUT - LOGFILE_UPLOAD_READY", wbuf, wlen);
+    #endif
 
+#ifdef DO_TESTS
+	
+	if ( (fp_out = fopen("SKLOG_T_ManageLogfileUpload.out","a+")) != NULL ) {
+		b64_enc(wbuf, wlen, &b64);
+		fprintf(fp_out, "%s\n", b64);
+		fclose(fp_out);
+	}
+	
+#else
+	
     #ifdef USE_BIO
     if ( BIO_write(c->bio,wbuf,wlen) <= 0 ) {
             ERR_print_errors_fp(stderr);
@@ -1551,11 +1580,29 @@ SKLOG_T_ManageLogfileUpload(SKLOG_T_Ctx         *t_ctx,
             return SKLOG_FAILURE;
     }
     #endif
+    
+#endif /* DO_TESTS */
 
     memset(wbuf,0,SKLOG_BUFFER_LEN); wlen=0;
 
+#ifdef DO_TESTS
+	fp_in = fopen("SKLOG_T_ManageLogfileUpload.in","r");
+#endif
+
     while ( more ) {
 
+#ifdef DO_TESTS
+		
+		if ( fp_in != NULL ) {
+			fscanf(fp_in, "%s", in);
+			inl = strlen(in);
+			b64_dec(in, inl, &b64dec, &rlen);
+			memcpy(rbuf, b64dec, rlen);
+			memset(in, 0, SKLOG_BUFFER_LEN);
+		}
+		
+#else
+        
         #ifdef USE_BIO
         if ( (rlen = BIO_read(c->bio,rbuf,SKLOG_BUFFER_LEN)) <= 0 ) {
                 ERR_print_errors_fp(stderr);
@@ -1568,6 +1615,8 @@ SKLOG_T_ManageLogfileUpload(SKLOG_T_Ctx         *t_ctx,
                 return SKLOG_FAILURE;
         }
         #endif
+        
+#endif /* DO_TESTS */
 
         if ( tlv_get_type(rbuf,&type) == SKLOG_FAILURE ) {
             ERROR("tlv_get_type() failure");
@@ -1576,7 +1625,12 @@ SKLOG_T_ManageLogfileUpload(SKLOG_T_Ctx         *t_ctx,
 
         switch ( type ) {
             case UPLOAD_LOGENTRY:
-                NOTIFY("Received log entry");
+				
+				#ifdef DO_TRACE
+		        SHOWBUF("TIN - UPLOAD_LOGENTRY",rbuf,rlen);
+		        #endif
+		        
+                //~ NOTIFY("Received log entry");
 
                 if ( tlv_parse_message(rbuf,NOTYPE,NULL,&len,&value) == SKLOG_FAILURE ) {
                     ERROR("tlv_parse_message() failure")
@@ -1593,7 +1647,18 @@ SKLOG_T_ManageLogfileUpload(SKLOG_T_Ctx         *t_ctx,
                     goto error;
                 }
                 memcpy(wbuf,tlv,len); wlen = len;
+                
+                #ifdef DO_TRACE
+		        SHOWBUF("TOUT - UPLOAD_LOGENTRY_ACK", wbuf, wlen);
+		        #endif
 
+			#ifdef DO_TESTS
+				b64_enc(wbuf, wlen, &b64);
+				fp_out = fopen("SKLOG_T_ManageLogfileUpload.out","a+");
+				fprintf(fp_out, "%s\n", b64);
+				fclose(fp_out);
+				free(b64);
+			#else
                 #ifdef USE_BIO
                 if ( BIO_write(c->bio,wbuf,wlen) <= 0 ) {
                         ERR_print_errors_fp(stderr);
@@ -1606,10 +1671,16 @@ SKLOG_T_ManageLogfileUpload(SKLOG_T_Ctx         *t_ctx,
                         return SKLOG_FAILURE;
                 }
                 #endif
+            #endif /* DO_TESTS */
                 
                 break;
             case LOGFILE_UPLOAD_END:
+				#ifdef DO_TRACE
+		        SHOWBUF("TIN - LOGFILE_UPLOAD_END", rbuf, rlen);
+		        #endif
+		        #ifdef DO_TRACE
                 NOTIFY("Logfile Upload Terminated");
+                #endif
                 more = 0;
                 break;
             default:
@@ -1621,6 +1692,10 @@ SKLOG_T_ManageLogfileUpload(SKLOG_T_Ctx         *t_ctx,
         if ( error ) 
             goto error;
     } //~ while
+    
+#ifdef DO_TESTS
+	fclose(fp_in);
+#endif
     
     ERR_free_strings();
     return SKLOG_SUCCESS;
@@ -1645,6 +1720,11 @@ SKLOG_T_ManageLogfileRetrieve(SKLOG_T_Ctx         *t_ctx,
     unsigned char wbuf[SKLOG_BUFFER_LEN] = { 0 };
     unsigned int wlen = 0;
     
+    #ifdef DO_TESTS
+    FILE *fp_out = 0;
+	char *b64 = 0;
+    #endif
+    
     if ( t_ctx == NULL ) {
 		ERROR("argument 1 must be not NULL");
 		return SKLOG_FAILURE;
@@ -1657,7 +1737,19 @@ SKLOG_T_ManageLogfileRetrieve(SKLOG_T_Ctx         *t_ctx,
         return SKLOG_FAILURE;
     }
     memcpy(wbuf,tlv,wlen); free(tlv);
+    
+    #ifdef DO_TRACE
+    SHOWBUF("TOUT - LOG_FILES",wbuf,wlen);
+    #endif
 
+#ifdef DO_TESTS
+	b64_enc(wbuf,wlen,&b64);
+	
+	if ( (fp_out = fopen("SKLOG_T_ManageLogfileRetrieve.out", "w+")) != NULL ) {
+		fprintf(fp_out, "%s", b64);
+		fclose(fp_out);
+	}
+#else
     #ifdef USE_BIO
     if ( BIO_write(c->bio,wbuf,wlen) <= 0 ) {
             ERR_print_errors_fp(stderr);
@@ -1671,6 +1763,7 @@ SKLOG_T_ManageLogfileRetrieve(SKLOG_T_Ctx         *t_ctx,
             return SKLOG_FAILURE;
     }
     #endif
+#endif
 
     return SKLOG_SUCCESS;
 }
@@ -1710,6 +1803,10 @@ SKLOG_T_ManageLogfileVerify(SKLOG_T_Ctx         *t_ctx,
         tlv_create_message(VERIFY_LOGFILE_SUCCESS,0,NULL,&tlv,&wlen);
         memcpy(wbuf,tlv,wlen); free(tlv);
     }
+
+	#ifdef DO_TRACE
+	SHOWBUF("TOUT - VERIFY_LOGFILE_(SUCCESS|FAILURE)", wbuf, wlen);
+	#endif
 
     #ifdef USE_BIO
     if ( BIO_write(c->bio,wbuf,wlen) <= 0 ) {
@@ -1891,7 +1988,7 @@ SKLOG_T_RunServer(SKLOG_T_Ctx    *t_ctx)
                 ERR_print_errors_fp(stderr);
                 exit(1);
             }
-
+            
             //~ parse received data
             if ( tlv_get_type(rbuf,&msg_type) == SKLOG_FAILURE ) {
                 ERROR("tlv_get_type() failure")
@@ -1906,6 +2003,7 @@ SKLOG_T_RunServer(SKLOG_T_Ctx    *t_ctx)
                 //----------------------------------------------------//
                     #ifdef DO_TRACE
                     NOTIFY("received M0_MSG message");
+                    SHOWBUF("TIN - M0_MSG", rbuf, rlen);
                     #endif
 
                     tlv_get_len(rbuf,&m0_len);
@@ -1937,6 +2035,7 @@ SKLOG_T_RunServer(SKLOG_T_Ctx    *t_ctx)
                 //----------------------------------------------------//
                     #ifdef DO_TRACE
                     NOTIFY("received LOGFILE_UPLOAD_REQ message");
+                    SHOWBUF("TIN - LOGFILE_UPLOAD_REQ", rbuf, rlen);
                     #endif
                     
                     ret = SKLOG_T_ManageLogfileUpload(t_ctx,c);
@@ -1953,6 +2052,7 @@ SKLOG_T_RunServer(SKLOG_T_Ctx    *t_ctx)
                 //----------------------------------------------------//
                     #ifdef DO_TRACE
                     NOTIFY("received RETR_LOG_FILES message");
+                    SHOWBUF("TIN - RETR_LOG_FILES", rbuf, rlen);
                     #endif
 
                     ret = SKLOG_T_ManageLogfileRetrieve(t_ctx,c);
@@ -1970,6 +2070,7 @@ SKLOG_T_RunServer(SKLOG_T_Ctx    *t_ctx)
                 //----------------------------------------------------//
                     #ifdef DO_TRACE
                     NOTIFY("received VERIFY_LOGFILE message");
+                    SHOWBUF("TIN - VERIFY_LOGFILE", rbuf, rlen);
                     #endif
                     
                     tlv_get_len(rbuf,&len);

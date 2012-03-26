@@ -26,6 +26,7 @@
 #include <CUnit/CUnit.h>
 
 #include <sklog_t.h>
+#include <sklog_internal.h>
 
 SKLOG_T_Ctx *tctx = 0;
 int rv = SKLOG_SUCCESS;
@@ -43,6 +44,15 @@ int init_tSuite(void)
 
 int clean_tSuite(void)
 {
+	FILE *fp = 0;
+
+	/* blank all .out files */
+	
+	fp = fopen("SKLOG_T_ManageLogfileRetrieve.out","w");
+	fclose(fp);
+	fp = fopen("SKLOG_T_ManageLogfileUpload.out","w");
+	fclose(fp);
+	
 	return 0;
 }
 
@@ -246,8 +256,6 @@ void test_SKLOG_T_ManageLoggingSessionInit(void)
 	0xd6, 0x41, 0x56, 0xd6, 0xe1, 0x4d, 0xbe, 0xf8, 0x45, 0x77, 0x9d
 	, 0xd6, 0x4e, 0x23, 0x38, 0x89, 0x85, 0x7d, 0x30, 0xf9 };
 
-	
-
 	m0 = calloc(1828,sizeof(char));
 	memcpy(m0,m0_src,1828);
 	m0_len = 1828;
@@ -274,22 +282,60 @@ void test_SKLOG_T_ManageLoggingSessionInit(void)
 
 void test_SKLOG_T_ManageLogfileRetrieve(void)
 {
-	CU_PASS(TEST_TO_IMPLEMENTT)
+	FILE *fp = 0;
+	char line[SKTEST_BUFLEN] = { 0 };
+	unsigned char *buf = 0;
+	unsigned int bufl = 0;
+	SKLOG_TLV_TYPE type = 0;
+	
+	/* checking for malformed input */
+	
+	rv = SKLOG_T_ManageLogfileRetrieve(NULL,NULL);
+	CU_ASSERT_EQUAL(rv,SKLOG_FAILURE);
+	
+	/* checking for function behaviour */
+	
+	rv = SKLOG_T_ManageLogfileRetrieve(tctx,NULL);
+	CU_ASSERT_EQUAL(rv,SKLOG_SUCCESS);
+	
+	if ( (fp = fopen("SKLOG_T_ManageLogfileRetrieve.out","r")) == NULL )
+		CU_FAIL_FATAL("Unable to open file");
+	fgets(line, SKTEST_BUFLEN-1, fp);
+	fclose(fp);
+	
+	b64_dec(line, strlen(line), &buf, &bufl);
+    tlv_get_type(buf,&type);
+
+    CU_ASSERT_EQUAL(type,LOG_FILES);
 }
 
 void test_SKLOG_T_ManageLogfileUpload(void)
 {
-	CU_PASS(TEST_TO_IMPLEMENTT)
+	/* checking for malformed input */
+	
+	rv = SKLOG_T_ManageLogfileUpload(NULL,NULL);
+	CU_ASSERT_EQUAL(rv,SKLOG_FAILURE);
+	
+	/* checking for function behaviour */
+	
+	rv = SKLOG_T_ManageLogfileUpload(tctx,NULL);
+	CU_ASSERT_EQUAL(rv,SKLOG_SUCCESS);
 }
 
 void test_SKLOG_T_ManageLogfileVerify(void)
 {
-	CU_PASS(TEST_TO_IMPLEMENTT)
+	/* checking for malformed input */
+	
+	rv = SKLOG_T_ManageLogfileVerify(NULL,NULL,NULL);
+	CU_ASSERT_EQUAL(rv,SKLOG_FAILURE);
+	
+	rv = SKLOG_T_ManageLogfileVerify(tctx,NULL,NULL);
+	CU_ASSERT_EQUAL(rv,SKLOG_FAILURE);
 }
 
 void test_SKLOG_T_RunServer(void)
 {
-	CU_PASS(TEST_TO_IMPLEMENTT)
+	CU_PASS("Test to implement");
 }
 
 void test_SKLOG_T_FreeCtx(void)

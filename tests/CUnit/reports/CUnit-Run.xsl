@@ -1,1 +1,1 @@
-/usr/share/CUnit/CUnit-Run.xsl
+../CUnit/share/CUnit/CUnit-Run.xsl

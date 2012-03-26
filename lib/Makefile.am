@@ -10,7 +10,7 @@ libsklog_la_SOURCES = \
 		sklog_u.c sklog_u.h \
 		sklog_v.c sklog_v.h \
 		sklog_utils.c sklog_utils.h
-
+		
 if HAVE_STORAGE_SQLITE
 libsklog_la_SOURCES += storage/sklog_sqlite.c storage/sklog_sqlite.h
 endif

@@ -52,10 +52,26 @@ AC_ARG_ENABLE(
 	[enable_encryption="yes"]
 )
 
-echo $enable_encryption
-
 if test "x$enable_encryption" = "xno" ; then
 	AC_DEFINE([DISABLE_ENCRYPTION],[1],[Foo Desc])
+fi
+
+dnl
+dnl --enable-tests
+dnl
+
+AC_ARG_ENABLE(
+	[tests],
+	AC_HELP_STRING(
+		[--enable-tests],
+		[Build Libsklog in CUnit teting mode [default=no]]
+	),
+	[enable_tests="$enableval"],
+	[enable_tests="no"]
+)
+
+if test "x$enable_tests" = "xyes" ; then
+	AC_DEFINE([DO_TESTS],[1],[Disable some features in order to perform unit tests])
 fi
 
 dnl

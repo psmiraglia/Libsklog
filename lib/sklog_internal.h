@@ -256,6 +256,15 @@ tcp_connect(const char    *address,
 void
 sklog_msg_to_implement(const char *f);
 
+void
+sklog_show_buffer(int pid,
+				  const char *file,
+				  int line,
+				  const char *func,
+				  const char *bufname,
+				  unsigned char *buf,
+				  unsigned int bufl);
+
 /*--------------------------------------------------------------------*/
 /*                              uuid                                  */
 /*--------------------------------------------------------------------*/

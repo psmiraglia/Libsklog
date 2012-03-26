@@ -1194,6 +1194,10 @@ flush_logfile_send_logentry(BIO              *bio,
 
     memcpy(wbuf,tlv,len);
     wlen = len;
+    
+	#ifdef DO_TRACE
+	SHOWBUF("UOUT - UPLOAD_LOGENTRY", wbuf, wlen);
+	#endif
 
     #ifdef USE_BIO
     if ( BIO_write(bio,wbuf,wlen) <= 0 ) {
@@ -1226,10 +1230,10 @@ flush_logfile_send_logentry(BIO              *bio,
 
     switch ( t ) {
         case UPLOAD_LOGENTRY_ACK:
-            NOTIFY("received UPLOAD_LOGENTRY_ACK");
+            SHOWBUF("UIN - UPLOAD_LOGENTRY_ACK", rbuf, rlen);
             break;
         case UPLOAD_LOGENTRY_NACK:
-            NOTIFY("received UPLOAD_LOGENTRY_NACK");
+            SHOWBUF("UIN - UPLOAD_LOGENTRY_NACK", rbuf, rlen);
             break;
         default:
             ERROR("protocol error");
@@ -1413,16 +1417,35 @@ destroy_ssl_connection(SKLOG_CONNECTION *c)
     #ifdef DO_TRACE
     DEBUG
     #endif
+    
+    int rv = SKLOG_SUCCESS;
+    
+    if ( c == NULL ) {
+		ERROR("argument 1 must be not NULL");
+		return SKLOG_FAILURE;
+	}
+	
+	SSL_load_error_strings();
 
     BIO_free_all(c->bio);
     
-    SSL_shutdown(c->ssl);
+    if ( SSL_shutdown(c->ssl) < 0 ) {
+		ERR_print_errors_fp(stderr);
+		rv = SKLOG_FAILURE;
+		goto error;
+	}
+    
     SSL_free(c->ssl);
     SSL_CTX_free(c->ssl_ctx);
 
-    close(c->csock);
+    if ( close(c->csock) < 0 ) {
+		ERROR(strerror(errno));
+		rv = SKLOG_FAILURE;
+	}
 
-    return SKLOG_SUCCESS;
+error:
+	ERR_free_strings();
+	return rv;
 }
 
 /** do not delete
@@ -1742,6 +1765,7 @@ conn_close(SKLOG_CONNECTION    *conn)
 
 void sklog_msg_to_implement(const char *f) {
 
+	#ifdef DO_TRACE
     fprintf(stderr,"\n+----------------------------------------------------------------------+");
     fprintf(stderr,"\n| %-68s |",f);
     fprintf(stderr,"\n+----------------------------------------------------------------------+");
@@ -1750,9 +1774,32 @@ void sklog_msg_to_implement(const char *f) {
     fprintf(stderr,"\n|                                                                      |");
     fprintf(stderr,"\n+----------------------------------------------------------------------+");
     fprintf(stderr,"\n\n");
+    #endif
 
     return;
 }
+
+void
+sklog_show_buffer(int              pid,
+				  const char       *file,
+				  int              line,
+				  const char       *func,
+				  const char       *bufname,
+				  unsigned char    *buf,
+				  unsigned int     bufl)
+{
+	char *b64 = 0;
+	//~ FILE *fp = 0;
+	b64_enc(buf,bufl,&b64) ;
+	
+	//~ fp = fopen("buffer.dat","a+");
+	fprintf(stderr,
+		"[BUFFER] (%d) Libsklog (%s:%d) %s(): { %s | %d | %s }\n",
+		pid, file, line, func, bufname, bufl, b64);
+	free(b64);
+	//~ fclose(fp);
+	return;
+}				  
 
 /*--------------------------------------------------------------------*/
 /*                              uuid                                  */

@@ -26,6 +26,7 @@
 
 #include <CUnit/Basic.h>
 #include <CUnit/Automated.h>
+#include <CUnit/CUnit.h>
 
 #include "sklog_tests.h"
 
@@ -52,7 +53,7 @@ int main (void) {
 	
 	//~ add suite to the registry
 	
-	if ( (uSuite = CU_add_suite("U_Tests", init_uSuite, clean_uSuite)) == NULL ) {
+	if ( (uSuite = CU_add_suite("U_TestsSuite", init_uSuite, clean_uSuite)) == NULL ) {
 		CU_cleanup_registry();
 		return CU_get_error();
 	}
@@ -73,7 +74,7 @@ int main (void) {
 	
 	//~ add suite to the registry
 	
-	if ( (tSuite = CU_add_suite("T Tests", init_tSuite, clean_tSuite)) == NULL ) {
+	if ( (tSuite = CU_add_suite("T_TestsSuite", init_tSuite, clean_tSuite)) == NULL ) {
 		CU_cleanup_registry();
 		return CU_get_error();
 	}
@@ -87,6 +88,7 @@ int main (void) {
 		(NULL == CU_add_test(tSuite, "SKLOG_T_ManageLogfileRetrieve()", test_SKLOG_T_ManageLogfileRetrieve)) ||
 		(NULL == CU_add_test(tSuite, "SKLOG_T_ManageLogfileUpload()", test_SKLOG_T_ManageLogfileUpload)) ||
 		(NULL == CU_add_test(tSuite, "SKLOG_T_ManageLogfileVerify()", test_SKLOG_T_ManageLogfileVerify)) ||
+		(NULL == CU_add_test(tSuite, "SKLOG_T_RunServer()", test_SKLOG_T_RunServer)) ||
 		(NULL == CU_add_test(tSuite, "SKLOG_T_FreeCtx()", test_SKLOG_T_FreeCtx))
 	)
 	{
@@ -113,17 +115,15 @@ int main (void) {
 	
 	//~ run tests
 	
-	
-	
 	//~ results on stdout
 	CU_basic_set_mode(CU_BRM_VERBOSE);
 	CU_basic_run_tests();
 	
 	//~ results in XML file
 	
-	//~ CU_set_output_filename(fname);
-	//~ CU_list_tests_to_file();
-	//~ CU_automated_run_tests();
+	CU_set_output_filename(fname);
+	CU_list_tests_to_file();
+	CU_automated_run_tests();
 	
 	CU_cleanup_registry();
 	return CU_get_error();

@@ -65,6 +65,9 @@
 
 #define TO_IMPLEMENT \
     sklog_msg_to_implement(__func__);
+    
+#define SHOWBUF(bufname,buf,bufl) \
+	sklog_show_buffer(getpid(), __FILE__, __LINE__, __func__, bufname, buf, bufl);
 
 /*--------------------------------------------------------------------*/
 /*                    memory management macros                        */
@@ -111,6 +114,8 @@
 #define     DO_VERIFY                 1
 #define     DO_NOT_VERIFY             !DO_VERIFY
 
+#define		SKLOG_TESTS_PATH		  TESTS_PREFIX
+
 /*--------------------------------------------------------------------*/
 /*                        temporary defines                           */
 /*--------------------------------------------------------------------*/
@@ -120,6 +125,7 @@
 
 #define     USE_BIO
 //~ #define     DISABLE_ENCRYPTION
+//~ #define		DO_TESTS	1
 
 /*--------------------------------------------------------------------*/
 /*                              types                                 */

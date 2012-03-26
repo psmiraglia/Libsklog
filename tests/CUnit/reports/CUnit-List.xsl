@@ -1,1 +1,1 @@
-/usr/share/CUnit/CUnit-List.xsl
+../CUnit/share/CUnit/CUnit-List.xsl
