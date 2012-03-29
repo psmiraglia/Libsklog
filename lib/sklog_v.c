@@ -326,8 +326,9 @@ SKLOG_V_VerifyLogFile(SKLOG_V_Ctx         *v_ctx,
     while ( strlen((v_ctx)->verifiable_logfiles[id]) <= 0 ) {
         ERROR("Invalid logfile_id");
         fprintf(stdout,"Select logfile id: ");
-        memset(inbuf,0,INBUF_LEN); gets(inbuf);
-        sscanf(inbuf,"%d",&id);
+        memset(inbuf,0,INBUF_LEN);
+        if ( gets(inbuf) != NULL )
+	        sscanf(inbuf,"%d",&id);
     }
     
     memcpy(value,(v_ctx)->verifiable_logfiles[logfile_id],UUID_STR_LEN);

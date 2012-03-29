@@ -300,7 +300,8 @@ void test_SKLOG_T_ManageLogfileRetrieve(void)
 	
 	if ( (fp = fopen("SKLOG_T_ManageLogfileRetrieve.out","r")) == NULL )
 		CU_FAIL_FATAL("Unable to open file");
-	fgets(line, SKTEST_BUFLEN-1, fp);
+	if ( fgets(line, SKTEST_BUFLEN-1, fp) ==  NULL )
+		CU_FAIL_FATAL("Something goes wrong!!!");
 	fclose(fp);
 	
 	b64_dec(line, strlen(line), &buf, &bufl);

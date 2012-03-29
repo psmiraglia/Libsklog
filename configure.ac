@@ -72,6 +72,9 @@ AC_ARG_ENABLE(
 
 if test "x$enable_tests" = "xyes" ; then
 	AC_DEFINE([DO_TESTS],[1],[Disable some features in order to perform unit tests])
+	AM_CONDITIONAL([HAVE_TESTS],[true])
+else
+	AM_CONDITIONAL([HAVE_TESTS],[false])
 fi
 
 dnl

@@ -35,14 +35,17 @@ class LibsklogUCtx(object):
 			self.uctx = SKLOG_U_NewCtx()
 			self.sessionIsOpen = 0
 		
+		def _sessionIsOpen(self):
+			return self.sessionIsOpen
+		
 		def _open(self):
 			if (self.sessionIsOpen == 0):
 				rv = SKLOG_U_Open(self.uctx)
 				self.sessionIsOpen = 1
 				return rv
-			return ""
+			return None
 			
-		def _log_event(self,eData):
+		def _logEvent(self,eData):
 			return SKLOG_U_LogEvent(self.uctx,4,eData)
 			
 		def _close(self):
@@ -50,9 +53,9 @@ class LibsklogUCtx(object):
 				rv = SKLOG_U_Close(self.uctx)
 				self.sessionIsOpen = 0
 				return rv
-			return ""
+			return None
 			
-		def _free_ctx(self):
+		def _freeCtx(self):
 			return SKLOG_U_FreeCtx(self.uctx)
 	
 	def __init__(self):
@@ -69,8 +72,11 @@ class LibsklogUCtx(object):
 	def sklog_open(self):
 		return self.__Instance._open()
 		
-	def sklog_log_event(self,eData):
-		return self.__Instance._log_event(eData)
+	def sklog_sessionIsOpen(self):
+		return self.__Instance._sessionIsOpen()
+		
+	def sklog_logEvent(self,eData):
+		return self.__Instance._logEvent(eData)
 		
 	def sklog_close(self):
 		return self.__Instance._close()
