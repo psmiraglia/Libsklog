@@ -271,4 +271,5 @@ sklog_show_buffer(int pid,
 
 int sklog_uuid_unparse(uuid_t u, char *out);
 
+void write2file(const char *file, const char *mode, unsigned char *buf, unsigned int bufl);
 #endif /* SKLOG_INTERNAL_H */

@@ -676,6 +676,8 @@ sklog_sqlite_t_store_logentry(unsigned char    *blob,
         "insert into LOGENTRY (f_uuid,e_type,e_data,e_hash,e_hmac) values ('%s',%d,'%s','%s','%s')",
         f_uuid,w,d,y,z
     );
+    
+    SHOWQUERY(query);
 
     SKLOG_free(&d);
     SKLOG_free(&y);

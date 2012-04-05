@@ -53,70 +53,6 @@
 /* connection                                                         */
 /*--------------------------------------------------------------------*/
 
-//~ static SSL*
-//~ init_ssl_structure(SSL_CTX *ctx,int socket)
-//~ {
-    //~ #ifdef DO_TRACE
-    //~ DEBUG
-    //~ #endif
-    //~ 
-    //~ SSL *ssl = 0;
-//~ 
-    //~ if ( (ssl = SSL_new(ctx)) == NULL ) {
-        //~ ERROR("SSL_new() failure")
-        //~ goto error;
-    //~ }
-    //~ 
-    //~ /*
-     //~ * Assign the socket into the SSL structure
-     //~ * (SSL and socket without BIO)
-     //~ */
-    //~ SSL_set_fd(ssl,socket);
-    //~ 
-    //~ /* Perform SSL Handshake on the SSL client */
-    //~ if ( SSL_connect(ssl) < 0 ) {
-        //~ ERROR("SSL_connect() failure")
-        //~ goto error;
-    //~ }
-//~ 
-    //~ #ifdef DO_NOTIFY
-//~ 
-    //~ char *str = 0;
-    //~ X509 *server_cert = 0;
-//~ 
-    //~ /* Get the server's certificate (optional) */
-    //~ server_cert = SSL_get_peer_certificate (ssl);    
-    //~ 
-    //~ if ( server_cert != NULL ) {
-//~ 
-        //~ fprintf(stderr,"Server certificate:\n");
-        //~ 
-        //~ str = X509_NAME_oneline(X509_get_subject_name(server_cert),0,0);
-        //~ if ( str != NULL ) { 
-            //~ fprintf (stderr,"\t subject: %s\n", str);
-            //~ free (str);
-        //~ }
-//~ 
-        //~ str = X509_NAME_oneline(X509_get_issuer_name(server_cert),0,0);
-        //~ if ( str != NULL ) {
-            //~ fprintf (stderr,"\t issuer: %s\n", str);
-            //~ free(str);
-        //~ }
-        //~ 
-        //~ X509_free (server_cert);
-    //~ } else {
-        //~ fprintf(stderr,"The SSL server does not have certificate.\n");
-    //~ }
-//~ 
-    //~ #endif
-//~ 
-    //~ return ssl;
-    //~ 
-//~ error:
-    //~ if ( ssl ) SSL_free(ssl);
-    //~ return NULL;
-//~ }
-
 /**
 static SKLOG_RETURN
 conn_open(SKLOG_U_Ctx         *u_ctx,
@@ -214,64 +150,6 @@ gen_enc_key(SKLOG_U_Ctx        *ctx,
     #ifdef DO_TRACE
     DEBUG
     #endif
-/**
-    int retval = 0;
-
-    unsigned char *buffer = 0;
-    unsigned int buflen = 0;
-    unsigned int pos = 0;
-
-    OpenSSL_add_all_digests();
-    ERR_load_crypto_strings();
-
-    buflen = sizeof(type) + SKLOG_AUTH_KEY_LEN;
-
-    if ( SKLOG_alloc(&buffer,unsigned char,buflen) == SKLOG_FAILURE ) {
-        ERROR("SKLOG_alloc() failure");
-        goto error;
-    }
-
-    memcpy(&buffer[pos],&type,sizeof(type));
-    pos+=sizeof(type);
-    memcpy(&buffer[pos],ctx->auth_key,SKLOG_AUTH_KEY_LEN);
-
-    //~ calculate SHA256 message digest
-
-    EVP_MD_CTX mdctx;
-    EVP_MD_CTX_init(&mdctx);
-
-    retval = EVP_DigestInit_ex(&mdctx, EVP_sha256(),NULL);
-
-    if ( retval == 0 ) {
-        ERR_print_errors_fp(stderr);
-        goto error;
-    }
-
-    retval = EVP_DigestUpdate(&mdctx,buffer,buflen);
-
-    if ( retval == 0 ) {
-        ERR_print_errors_fp(stderr);
-        goto error;
-    }
-
-    retval = EVP_DigestFinal_ex(&mdctx,enc_key,&buflen);
-
-    if ( retval == 0 ) {
-        ERR_print_errors_fp(stderr);
-        goto error;
-    }
-
-    EVP_MD_CTX_cleanup(&mdctx);
-
-    SKLOG_free(&buffer);
-    ERR_free_strings();
-    return SKLOG_SUCCESS;
-
-error:
-    if ( buffer > 0 ) free(buffer);
-    ERR_free_strings();
-    return SKLOG_FAILURE;
-*/
 
     unsigned char buf[SKLOG_BUFFER_LEN] = { 0 };
     unsigned int blen = 0;
@@ -342,80 +220,6 @@ gen_hash_chain(SKLOG_U_Ctx        *ctx,
     #ifdef DO_TRACE
     DEBUG
     #endif
-
-/**
-    int retval = 0;
-
-    unsigned char *buffer = 0;
-    unsigned int buflen = 0;
-    unsigned int pos = 0;
-
-    FILE *fp = 0;
-    int f = 0;
-
-    OpenSSL_add_all_digests();
-    ERR_load_crypto_strings();
-
-    buflen = sizeof(type) + data_enc_size + SKLOG_HASH_CHAIN_LEN;
-    //~ SKLOG_CALLOC(buffer,buflen,char)
-
-    if ( SKLOG_alloc(&buffer,unsigned char,buflen) == SKLOG_FAILURE ) {
-        ERROR("SKLOG_alloc() failure");
-        goto error;
-    }
-
-    memcpy(&buffer[pos],ctx->last_hash_chain,SKLOG_HASH_CHAIN_LEN);
-    pos+=SKLOG_HASH_CHAIN_LEN;
-    memcpy(&buffer[pos],data_enc,data_enc_size);
-    pos+=data_enc_size;
-    memcpy(&buffer[pos],&type,sizeof(type));
-
-    fp = fopen(DEBUG_FILE,"a+");
-    for (f = 0 ; f < buflen ; f++)
-        fprintf(fp,"[%2.2x]",buffer[f]);
-    fprintf(fp,"\n");
-    fclose(fp);
-
-
-    //~ calculate SHA256 message digest
-    EVP_MD_CTX mdctx;
-    EVP_MD_CTX_init(&mdctx);
-
-    retval = EVP_DigestInit_ex(&mdctx, EVP_sha256(),NULL);
-
-    if ( retval == 0 ) {
-        ERR_print_errors_fp(stderr);
-        goto error;
-    }
-    
-    retval = EVP_DigestUpdate(&mdctx,buffer,buflen);
-
-    if ( retval == 0 ) {
-        ERR_print_errors_fp(stderr);
-        goto error;
-    }
-
-    retval = EVP_DigestFinal_ex(&mdctx,hash_chain,&buflen);
-
-    if ( retval == 0 ) {
-        ERR_print_errors_fp(stderr);
-        goto error;
-    }
-
-    EVP_MD_CTX_cleanup(&mdctx);
-
-    //~ save hash chain for the next generation
-    memcpy(ctx->last_hash_chain,hash_chain,SKLOG_HASH_CHAIN_LEN);
-
-    SKLOG_free(&buffer);
-    ERR_free_strings();
-    return SKLOG_SUCCESS;
-
-error:
-    if ( buffer > 0 ) free(buffer);
-    ERR_free_strings();
-    return SKLOG_FAILURE;
-*/
 
     unsigned char md[EVP_MAX_MD_SIZE] = { 0 };
     unsigned int md_len = 0;
@@ -1271,42 +1075,6 @@ error:
     return SKLOG_FAILURE;
 }
 
-/** do not delete
-static SKLOG_RETURN
-send_m0_ssl(SSL *ssl,
-            unsigned char *m0,
-            unsigned int m0_len)
-{
-    #ifdef DO_TRACE
-    DEBUG
-    #endif
-
-    SSL_load_error_strings();
-
-    unsigned char wbuf[SKLOG_BUFFER_LEN] = { 0 };
-    int wlen = 0;
-
-    if ( tlv_create(M0_MSG,m0_len,m0,wbuf) == SKLOG_FAILURE ) {
-        ERROR("tlv_create() failure")
-        goto error;
-    }
-
-    wlen = SSL_write(ssl,wbuf,m0_len+8);
-
-    if ( wlen < 0 ) {
-        ERR_print_errors_fp(stderr);
-        goto error;
-    } 
-
-    ERR_free_strings();
-    return SKLOG_SUCCESS;
-
-error:
-    ERR_free_strings();
-    return SKLOG_FAILURE;
-}
-*/
-
 static SKLOG_RETURN
 send_m0(SKLOG_CONNECTION    *c,
         unsigned char       *m0,
@@ -1331,12 +1099,10 @@ send_m0(SKLOG_CONNECTION    *c,
     memcpy(wbuf,tlv,tlv_len);
     wlen = tlv_len;
     free(tlv);
+    
+    write2file("out_m0_msg.dat", "w+", wbuf, wlen);
 
-	#ifdef DO_TRACE
-	SHOWBUF("UOUT - M0_MSG", wbuf, wlen);
-	#endif
-
-    #ifdef USE_BIO
+	#ifdef USE_BIO
     if ( BIO_write(c->bio,wbuf,wlen) <= 0 ) {
         if ( !BIO_should_retry(c->bio) ) {
             ERROR("unable to send message");
@@ -1356,7 +1122,6 @@ send_m0(SKLOG_CONNECTION    *c,
     }
     #endif
     
-    
     ERR_free_strings();
     return SKLOG_SUCCESS;
 
@@ -1364,53 +1129,6 @@ error:
     ERR_free_strings();
     return SKLOG_FAILURE;
 }
-
-/** do not delete
-static SKLOG_RETURN
-receive_m1_ssl(SSL              *ssl,
-               unsigned char    **m1,
-               unsigned int     *m1_len)
-{
-    #ifdef DO_TRACE
-    DEBUG
-    #endif
-
-    SSL_load_error_strings();
-    
-    unsigned char rbuf[SKLOG_BUFFER_LEN] = { 0 };
-    int rlen = 0;
-    
-    unsigned char wbuf[SKLOG_BUFFER_LEN] = { 0 };
-
-    rlen = SSL_read(ssl,rbuf,SKLOG_BUFFER_LEN-1);
-
-    if ( rlen < 0 ) {
-        ERR_print_errors_fp(stderr);
-        goto error;
-    }
-
-    //~ get m1 from tlv message
-    if ( tlv_parse(rbuf,M1_MSG,wbuf,m1_len) == SKLOG_FAILURE ) {
-        ERROR("Message is bad structured: expected M1_MSG");
-        goto error;
-    }
-
-    //~ SKLOG_CALLOC(*m1,*m1_len,char)
-    if ( SKLOG_alloc(m1,unsigned char,*m1_len) == SKLOG_FAILURE ) {
-        ERROR("SKLOG_alloc() failure");
-        goto error;
-    }
-
-    memcpy(*m1,wbuf,*m1_len);
-    ERR_free_strings();
-    return SKLOG_SUCCESS;
-
-error:
-    if ( *m1 > 0 ) free(*m1);
-    ERR_free_strings();
-    return SKLOG_FAILURE;
-}
-*/
 
 static SKLOG_RETURN
 receive_m1(SKLOG_CONNECTION    *c,
@@ -1449,9 +1167,8 @@ receive_m1(SKLOG_CONNECTION    *c,
     }
     #endif
     
-    #ifdef DO_TRACE
-    SHOWBUF("UIN - M1_MSG", rbuf, rlen);
-    #endif
+    write2file("in_m1_msg.dat", "w+", rbuf, rlen);
+    
 
     tlv_get_type(rbuf,&type);
     tlv_get_len(rbuf,&len);
@@ -2211,9 +1928,7 @@ flush_logfile_init(SKLOG_CONNECTION *c)
     }
     memcpy(wbuf,tlv,wlen); free(tlv);
     
-    #ifdef DO_TRACE
-    SHOWBUF("UOUT - LOGFILE_UPLOAD_REQ", wbuf, wlen);
-    #endif
+    write2file("u_out_upload.dat", "w+", wbuf, wlen);
     
     #ifdef USE_BIO
     if ( BIO_write(c->bio,wbuf,wlen) <= 0 ) {
@@ -2243,14 +1958,14 @@ flush_logfile_init(SKLOG_CONNECTION *c)
     }
     #endif
     
+    write2file("u_in_upload.dat", "w+", rbuf, rlen);
+    
     SKLOG_TLV_TYPE type = 0;
     tlv_get_type(rbuf,&type);
 
     switch ( type ) {
         case LOGFILE_UPLOAD_READY:
-			#ifdef DO_TRACE
-			SHOWBUF("UIN - LOGFILE_UPLOAD_READY", rbuf, rlen);
-			#endif
+			
             NOTIFY("received LOGFILE_UPLOAD_READY");
             break;
         default:
@@ -2283,6 +1998,8 @@ flush_logfile_terminate(SKLOG_CONNECTION *c)
     }
     memcpy(wbuf,tlv,wlen); free(tlv);
 
+	write2file("u_out_upload.dat", "a+", wbuf, wlen);
+	
     #ifdef USE_BIO
     if ( BIO_write(c->bio,wbuf,wlen) <= 0 ) {
         ERR_print_errors_fp(stderr);
@@ -2297,9 +2014,7 @@ flush_logfile_terminate(SKLOG_CONNECTION *c)
     }
     #endif 
     
-    #ifdef DO_TRACE
-    SHOWBUF("UOUT - LOGFILE_UPLOAD_END", wbuf, wlen);
-    #endif
+    
 
     ERR_free_strings();
     return SKLOG_SUCCESS;

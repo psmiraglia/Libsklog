@@ -219,6 +219,8 @@ SKLOG_V_RetrieveLogFiles(SKLOG_V_Ctx         *v_ctx,
     }
     memcpy(wbuf,tlv,wlen); free(tlv);
 
+	write2file("v_out_retrieve.dat", "a+", wbuf, wlen);
+	
     #ifdef USE_BIO
     if ( BIO_write(c->bio,wbuf,wlen) <= 0 ) {
         ERR_print_errors_fp(stderr);
@@ -246,6 +248,8 @@ SKLOG_V_RetrieveLogFiles(SKLOG_V_Ctx         *v_ctx,
         goto error;
     }
     #endif
+    
+    write2file("v_in_retrieve.dat", "a+", rbuf, rlen);
 
     //~ close connection
     //~ destroy_ssl_connection(c);
@@ -342,6 +346,8 @@ SKLOG_V_VerifyLogFile(SKLOG_V_Ctx         *v_ctx,
     }
     memcpy(wbuf,tlv,wlen);
 
+	write2file("v_out_verify.dat", "w+", wbuf, wlen);
+	
     #ifdef USE_BIO
     if ( BIO_write(c->bio,wbuf,wlen) <= 0 ) {
         ERR_print_errors_fp(stderr);
@@ -369,6 +375,8 @@ SKLOG_V_VerifyLogFile(SKLOG_V_Ctx         *v_ctx,
         goto error;
     }
     #endif
+    
+    write2file("v_in_verify.dat", "w+", rbuf, rlen);
 
     tlv_get_type(rbuf,&type);
 

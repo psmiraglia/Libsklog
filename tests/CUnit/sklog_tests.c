@@ -32,14 +32,15 @@
 
 #define BUFLEN 512
 
+void test_dummy(void) {
+	CU_PASS("Dummy Test");
+}
+
 int main (void) {
 	
 	time_t now;
 	char fname[BUFLEN] = { 0 };
-	CU_pSuite uSuite = 0;
-	CU_pSuite tSuite = 0;
-	//~ CU_pSuite vSuite = 0;
-
+	
 	//~ gen file name
 	
 	now = time(NULL);
@@ -50,6 +51,42 @@ int main (void) {
 	if ( CU_initialize_registry() != CUE_SUCCESS ) {
 		return CU_get_error();
 	}
+	
+	/*----------------------------------------------------------------*/
+	/*                           Test T API                           */
+	/*----------------------------------------------------------------*/
+	
+	CU_pSuite tSuite = 0;
+	
+	/* add suite to the registry */
+	
+	if ( (tSuite = CU_add_suite("T_TestsSuite", init_tSuite, clean_tSuite)) == NULL ) {
+		CU_cleanup_registry();
+		return CU_get_error();
+	}
+	
+	/* add test functions to the suite */
+	
+	if (
+		(NULL == CU_add_test(tSuite, "SKLOG_T_NewCtx()", test_SKLOG_T_NewCtx)) ||
+		(NULL == CU_add_test(tSuite, "SKLOG_T_InitCtx()", test_SKLOG_T_InitCtx)) ||
+		(NULL == CU_add_test(tSuite, "SKLOG_T_ManageLoggingSessionInit()", test_SKLOG_T_ManageLoggingSessionInit)) ||
+		(NULL == CU_add_test(tSuite, "SKLOG_T_ManageLogfileRetrieve()", test_SKLOG_T_ManageLogfileRetrieve)) ||
+		(NULL == CU_add_test(tSuite, "SKLOG_T_ManageLogfileUpload()", test_SKLOG_T_ManageLogfileUpload)) ||
+		(NULL == CU_add_test(tSuite, "SKLOG_T_ManageLogfileVerify()", test_SKLOG_T_ManageLogfileVerify)) ||
+		(NULL == CU_add_test(tSuite, "SKLOG_T_FreeCtx()", test_SKLOG_T_FreeCtx)) ||
+		(NULL == CU_add_test(tSuite, "Dummy Test", test_dummy))
+	)
+	{
+		CU_cleanup_registry();
+		return CU_get_error();
+	}
+	
+	/*----------------------------------------------------------------*/
+	/*                           Test U API                           */
+	/*----------------------------------------------------------------*/
+	
+	CU_pSuite uSuite = 0;
 	
 	//~ add suite to the registry
 	
@@ -65,16 +102,24 @@ int main (void) {
 		(NULL == CU_add_test(uSuite, "SKLOG_U_Open()", test_SKLOG_U_Open)) ||
 		(NULL == CU_add_test(uSuite, "SKLOG_U_LogEvent()", test_SKLOG_U_LogEvent)) ||
 		(NULL == CU_add_test(uSuite, "SKLOG_U_LogClose()", test_SKLOG_U_Close)) ||
-		(NULL == CU_add_test(uSuite, "SKLOG_U_FreeCtx()", test_SKLOG_U_FreeCtx))
+		(NULL == CU_add_test(uSuite, "SKLOG_U_FreeCtx()", test_SKLOG_U_FreeCtx)) ||
+		(NULL == CU_add_test(uSuite, "Dummy Test", test_dummy))
 	)
 	{
 		CU_cleanup_registry();
 		return CU_get_error();
 	}
 	
+	/*----------------------------------------------------------------*/
+	/*                           Test V API                           */
+	/*----------------------------------------------------------------*/
+	
+	/*
+	CU_pSuite vSuite = 0;
+	
 	//~ add suite to the registry
 	
-	if ( (tSuite = CU_add_suite("T_TestsSuite", init_tSuite, clean_tSuite)) == NULL ) {
+	if ( (vSuite = CU_add_suite("V_TestsSuite", init_vSuite, clean_vSuite)) == NULL ) {
 		CU_cleanup_registry();
 		return CU_get_error();
 	}
@@ -82,32 +127,9 @@ int main (void) {
 	//~ add test functions to the suite
 	
 	if (
-		(NULL == CU_add_test(tSuite, "SKLOG_T_NewCtx()", test_SKLOG_T_NewCtx)) ||
-		(NULL == CU_add_test(tSuite, "SKLOG_T_InitCtx()", test_SKLOG_T_InitCtx)) ||
-		(NULL == CU_add_test(tSuite, "SKLOG_T_ManageLoggingSessionInit()", test_SKLOG_T_ManageLoggingSessionInit)) ||
-		(NULL == CU_add_test(tSuite, "SKLOG_T_ManageLogfileRetrieve()", test_SKLOG_T_ManageLogfileRetrieve)) ||
-		(NULL == CU_add_test(tSuite, "SKLOG_T_ManageLogfileUpload()", test_SKLOG_T_ManageLogfileUpload)) ||
-		(NULL == CU_add_test(tSuite, "SKLOG_T_ManageLogfileVerify()", test_SKLOG_T_ManageLogfileVerify)) ||
-		(NULL == CU_add_test(tSuite, "SKLOG_T_RunServer()", test_SKLOG_T_RunServer)) ||
-		(NULL == CU_add_test(tSuite, "SKLOG_T_FreeCtx()", test_SKLOG_T_FreeCtx))
+		(NULL == CU_add_test(vSuite, "Dummy Test", test_dummy))
 	)
 	{
-		CU_cleanup_registry();
-		return CU_get_error();
-	}
-	
-	/**
-	//~ add suite to the registry
-	
-	if ( (uSuite = CU_add_suite("V Tests", init_vSuite, clean_vSuite)) == NULL ) {
-		CU_cleanup_registry();
-		return CU_get_error();
-	}
-	
-	//~ add test functions to the suite
-	
-	if ( (NULL == CU_add_test(vSuite, "foo desc 1", fooTest1)) ||
-		 (NULL == CU_add_test(vSuite, "foo desc 2", fooTest2)) ) {
 		CU_cleanup_registry();
 		return CU_get_error();
 	}
@@ -121,9 +143,11 @@ int main (void) {
 	
 	//~ results in XML file
 	
+	/**
 	CU_set_output_filename(fname);
 	CU_list_tests_to_file();
 	CU_automated_run_tests();
+	*/
 	
 	CU_cleanup_registry();
 	return CU_get_error();

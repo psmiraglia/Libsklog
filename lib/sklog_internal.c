@@ -1118,12 +1118,7 @@ mem_free(void      **mem)
 /*--------------------------------------------------------------------*/
 
 SKLOG_RETURN
-#ifdef USE_SSL
-flush_logfile_send_logentry(SSL              *ssl,
-#endif
-#ifdef USE_BIO
 flush_logfile_send_logentry(BIO              *bio,
-#endif
                             char             *f_uuid,
                             unsigned char    *type,
                             unsigned int     type_len,
@@ -1152,9 +1147,8 @@ flush_logfile_send_logentry(BIO              *bio,
     unsigned int rlen = 0;
 
     SKLOG_TLV_TYPE t = 0;
-
+    
     SSL_load_error_strings();
-
 
     memcpy(value,f_uuid,strlen(f_uuid));
     if ( tlv_create_message(ID_LOG,strlen(f_uuid),value,&tlv,&len) == SKLOG_FAILURE ) {
@@ -1194,11 +1188,9 @@ flush_logfile_send_logentry(BIO              *bio,
 
     memcpy(wbuf,tlv,len);
     wlen = len;
-    
-	#ifdef DO_TRACE
-	SHOWBUF("UOUT - UPLOAD_LOGENTRY", wbuf, wlen);
-	#endif
-
+	
+	write2file("notest/u_out_upload.dat", "a+", wbuf, wlen);
+	
     #ifdef USE_BIO
     if ( BIO_write(bio,wbuf,wlen) <= 0 ) {
         ERR_print_errors_fp(stderr);
@@ -1222,7 +1214,9 @@ flush_logfile_send_logentry(BIO              *bio,
         goto error;
     }
     #endif
-
+    
+    write2file("notest/u_in_upload.dat", "a+", rbuf, rlen);
+    
     if ( tlv_get_type(rbuf,&t) == SKLOG_FAILURE ) {
         ERROR("tlv_get_type() error");
         goto error;
@@ -1230,10 +1224,8 @@ flush_logfile_send_logentry(BIO              *bio,
 
     switch ( t ) {
         case UPLOAD_LOGENTRY_ACK:
-            SHOWBUF("UIN - UPLOAD_LOGENTRY_ACK", rbuf, rlen);
             break;
         case UPLOAD_LOGENTRY_NACK:
-            SHOWBUF("UIN - UPLOAD_LOGENTRY_NACK", rbuf, rlen);
             break;
         default:
             ERROR("protocol error");
@@ -1841,6 +1833,20 @@ int sklog_uuid_unparse(uuid_t u, char *out)
 	return 0;
 }
 
+void write2file(const char *file, const char *mode, unsigned char *buf, unsigned int bufl)
+{
+	FILE *fp = 0;
+	char *b64 = 0;
+	
+	if ( (fp = fopen(file, mode)) != NULL ) {
+		b64_enc(buf, bufl, &b64);
+		fprintf(fp, "%s\n", b64);
+		free(b64);
+		fclose(fp);
+	}
+
+	return;
+}
 
 
 

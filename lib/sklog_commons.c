@@ -250,7 +250,7 @@ SKLOG_CONNECTION_Free(SKLOG_CONNECTION **c)
 		return SKLOG_FAILURE;
 	}
 
-    free(c);
+    free(*c);
 
     return SKLOG_SUCCESS;
 }

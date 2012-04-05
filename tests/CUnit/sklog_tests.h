@@ -24,7 +24,7 @@
 #define CUNIT_SKLOG_TESTS
 
 #define TEST_TO_IMPLEMENT "to implement"
-#define SKTEST_BUFLEN 4096
+#define BUFSIZE 4096
 
 /*--------------------------------------------------------------------*/
 /*                              U tests                               */
