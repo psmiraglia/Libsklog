@@ -1566,17 +1566,49 @@ SKLOG_T_RunServer(SKLOG_T_Ctx    *t_ctx)
         //------------------------------------------------------------//
         //                       children process                     //
         //------------------------------------------------------------//
-
+			
+			//~ getchar();
+			
             //~ close lsock
             close(c->lsock);
             
             //~ setup BIO structure
+
             c->bio = BIO_new(BIO_s_socket());
             BIO_set_fd(c->bio,c->csock,BIO_NOCLOSE);
             SSL_set_bio(c->ssl,c->bio,c->bio);
+            
+            
+            /*
+            c->sock_bio = BIO_new(BIO_s_socket());
+            BIO_set_fd(c->sock_bio, c->csock, BIO_NOCLOSE);
+            SSL_set_bio(c->ssl, c->sock_bio, c->sock_bio);
+            */
         
             //~ SSL handshake (server side)
             ret = SSL_accept(c->ssl);
+            
+            if ( ret <= 0 ) {
+				ERR_print_errors_fp(stderr);
+				//~ goto child_error;
+			}
+
+			/*
+            //~ setup I/O bio
+            
+            if ( ( c->bio = BIO_new(BIO_f_buffer()) ) == NULL ) {
+				ERR_print_errors_fp(stderr);
+				//~ goto child_error;
+			} 
+			
+			if ( ( c->ssl_bio = BIO_new(BIO_f_ssl())) == NULL ) {
+				ERR_print_errors_fp(stderr);
+				//~ goto child_error;
+			}
+			
+			BIO_set_ssl(c->ssl_bio, c->ssl, BIO_CLOSE);
+			BIO_push(c->bio, c->ssl_bio);
+			*/
     
             //~ read from bio
             if ( (rlen = BIO_read(c->bio,rbuf,SKLOG_BUFFER_LEN-1)) <= 0 ) {
@@ -1687,6 +1719,7 @@ failure:
         //------------------------------------------------------------//
 
             NOTIFY("Server says: goodbye...");
+            fprintf(stderr, ">>> %d <<<\n", pid);
             close(c->csock);
 
         }

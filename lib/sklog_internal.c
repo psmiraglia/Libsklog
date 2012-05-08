@@ -1299,8 +1299,9 @@ setup_ssl_connection(SKLOG_CONNECTION    *c,
     int sock = 0;
     struct sockaddr_in server_addr;
 
-    BIO *sbio = 0;
-    
+    BIO *sock_bio = 0;
+    //~ BIO *ssl_bio = 0;
+    //~ BIO *bio = 0;
     
     SSL_library_init();
     SSL_load_error_strings();
@@ -1376,9 +1377,9 @@ setup_ssl_connection(SKLOG_CONNECTION    *c,
 
     //---------------------setup bio structure------------------------//
 
-    sbio = BIO_new(BIO_s_socket());
-    BIO_set_fd(sbio,sock,BIO_NOCLOSE);
-    SSL_set_bio(ssl,sbio,sbio);
+    sock_bio = BIO_new(BIO_s_socket());
+    BIO_set_fd(sock_bio, sock, BIO_NOCLOSE);
+    SSL_set_bio(ssl, sock_bio, sock_bio);
 
     if ( SSL_connect(ssl) < 0 ) {
         ERR_print_errors_fp(stderr);
@@ -1388,14 +1389,32 @@ setup_ssl_connection(SKLOG_CONNECTION    *c,
     c->ssl_ctx = ctx;
     c->ssl = ssl;
     c->csock = sock;
-    c->bio = sbio;
+    c->bio = sock_bio;
+    
+    /*
+    if ( ( bio = BIO_new(BIO_f_buffer()) ) == NULL ) {
+		ERR_print_errors_fp(stderr);
+		//~ goto child_error;
+	} 
+	
+	if ( (ssl_bio = BIO_new(BIO_f_ssl())) == NULL ) {
+		ERR_print_errors_fp(stderr);
+		//~ goto child_error;
+	}
+	
+	BIO_set_ssl(ssl_bio, ssl, BIO_CLOSE);
+	BIO_push(bio, ssl_bio);
+	
+    c->bio = bio;
+    c->ssl_bio = ssl_bio;
+    */
 
     ERR_free_strings();
     return SKLOG_SUCCESS;
 
 error:
 
-    if ( sbio > 0 ) BIO_free_all(sbio);
+    if ( sock_bio > 0 ) BIO_free_all(sock_bio);
     if ( ssl > 0 ) SSL_free(ssl);
     if ( ctx > 0 ) SSL_CTX_free(ctx);
     
@@ -1419,7 +1438,7 @@ destroy_ssl_connection(SKLOG_CONNECTION *c)
 	
 	SSL_load_error_strings();
 
-    BIO_free_all(c->bio);
+    //~ BIO_free_all(c->bio);
     
     if ( SSL_shutdown(c->ssl) < 0 ) {
 		ERR_print_errors_fp(stderr);

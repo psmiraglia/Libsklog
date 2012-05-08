@@ -212,6 +212,8 @@ struct sklog_connection {
     SSL_CTX    *ssl_ctx;
 
     BIO        *bio;
+    BIO		   *ssl_bio;
+    BIO		   *sock_bio;
 
     int        lsock;
     int        csock;
