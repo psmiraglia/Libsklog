@@ -7,7 +7,9 @@ libsklog_la_SOURCES = \
 		sklog_err.c sklog_err.h \
 		sklog_internal.c sklog_internal.h \
 		sklog_t.c sklog_t.h \
+		sklog_t_internal.c sklog_t_internal.h \
 		sklog_u.c sklog_u.h \
+		sklog_u_internal.c sklog_u_internal.h \
 		sklog_v.c sklog_v.h \
 		sklog_utils.c sklog_utils.h
 		

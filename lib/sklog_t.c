@@ -20,10 +20,8 @@
 **    along with Libsklog.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "sklog_commons.h"
 #include "sklog_internal.h"
 #include "sklog_t.h"
-
 
 #ifdef USE_FILE
     #include "storage/sklog_file.h"
@@ -36,29 +34,19 @@
     #include "storage/sklog_sqlite.h"
 #endif
 
-#include <confuse.h>
 #include <signal.h>
-#include <sqlite3.h>
-#include <string.h>
-#include <unistd.h>
 
 #include <sys/wait.h>
 
-#include <netinet/in.h>
-
-#include <openssl/err.h>
-#include <openssl/pem.h>
 #include <openssl/rand.h>
-#include <openssl/ssl.h>
 
 #include <arpa/inet.h>
-
-#include <uuid/uuid.h>
 
 /*--------------------------------------------------------------------*/
 /* logging session initialization                                     */
 /*--------------------------------------------------------------------*/
 
+/**
 static SKLOG_RETURN
 parse_config_file(char    **t_cert,
                   char    **t_privkey,
@@ -447,17 +435,17 @@ gen_x1(SKLOG_PROTOCOL_STEP    *p,
     uint32_t p_net = htonl(*p+1);
     *p += 1;
 
-    /**
+    //~
     //~ compose x1
 
-    *x1_len = (sizeof(p_net) + 8) +
-              SHA256_LEN + 8;
-
-    if ( SKLOG_alloc(x1,unsigned char,*x1_len) == SKLOG_FAILURE ) {
-        ERROR("SKLOG_alloc() failure");
-        return SKLOG_FAILURE;
-    }
-    */
+    //~ *x1_len = (sizeof(p_net) + 8) +
+              //~ SHA256_LEN + 8;
+//~ 
+    //~ if ( SKLOG_alloc(x1,unsigned char,*x1_len) == SKLOG_FAILURE ) {
+        //~ ERROR("SKLOG_alloc() failure");
+        //~ return SKLOG_FAILURE;
+    //~ }
+    //~
 
     //~ TLV-ize protocol step
 
@@ -502,17 +490,15 @@ gen_e_k1(SKLOG_T_Ctx      *t_ctx,
     unsigned char *tlv = 0;
     unsigned int len = 0;
 
-    /**
-    unsigned char *buffer2 = 0;
-    unsigned int buffer2_len = x1_len + 8 +
-                               x1_sign_len + 8;
-
-    
-    if ( SKLOG_alloc(&buffer2,unsigned char,buffer2_len) == SKLOG_FAILURE ) {
-        ERROR("SKLOG_alloc() failure");
-        return SKLOG_FAILURE;
-    }
-    */
+    //~ unsigned char *buffer2 = 0;
+    //~ unsigned int buffer2_len = x1_len + 8 +
+                               //~ x1_sign_len + 8;
+//~ 
+    //~ 
+    //~ if ( SKLOG_alloc(&buffer2,unsigned char,buffer2_len) == SKLOG_FAILURE ) {
+        //~ ERROR("SKLOG_alloc() failure");
+        //~ return SKLOG_FAILURE;
+    //~ }
 
 
     //~ TLV-ize x1
@@ -558,18 +544,16 @@ gen_m1(SKLOG_T_Ctx            *t_ctx,
     //~ convert p in network order
     uint32_t p_net = htonl(p);
 
-    /**
     //~ compose m1 in tlv format
-    *m1_len = (sizeof(p_net) + 8) +
-              (t_ctx->t_id_len + 8) +
-              (pke_u_k1_len + 8) +
-              (e_k1_len + 8);
-
-    if ( SKLOG_alloc(m1,unsigned char,*m1_len) == SKLOG_FAILURE ) {
-        ERROR("SKLOG_alloc() failure");
-        return SKLOG_FAILURE;
-    }
-    */
+    //~ *m1_len = (sizeof(p_net) + 8) +
+              //~ (t_ctx->t_id_len + 8) +
+              //~ (pke_u_k1_len + 8) +
+              //~ (e_k1_len + 8);
+//~ 
+    //~ if ( SKLOG_alloc(m1,unsigned char,*m1_len) == SKLOG_FAILURE ) {
+        //~ ERROR("SKLOG_alloc() failure");
+        //~ return SKLOG_FAILURE;
+    //~ }
 
     //~ TLV-ize p
 
@@ -642,6 +626,7 @@ send_m1(SKLOG_T_Ctx         *t_ctx,
 
     return SKLOG_SUCCESS;
 }
+*/
 
 /*--------------------------------------------------------------------*/
 /* interactions with U nodes                                          */
@@ -727,11 +712,10 @@ error:
 }
 */
 
-/*--------------------------------------------------------------------*/
-/*--------------------------------------------------------------------*/
-/*                             LOCAL                                  */
-/*--------------------------------------------------------------------*/
-/*--------------------------------------------------------------------*/
+/*
+ * create new (not initialized) T context
+ * 
+ */
 
 SKLOG_T_Ctx*
 SKLOG_T_NewCtx(void)
@@ -781,6 +765,11 @@ SKLOG_T_NewCtx(void)
     return ctx;
 }
 
+/*
+ * free T context
+ * 
+ */
+ 
 SKLOG_RETURN
 SKLOG_T_FreeCtx(SKLOG_T_Ctx **ctx)
 {
@@ -802,6 +791,11 @@ SKLOG_T_FreeCtx(SKLOG_T_Ctx **ctx)
     return SKLOG_SUCCESS;
 }
 
+/*
+ * initialze T context
+ * 
+ */
+ 
 SKLOG_RETURN
 SKLOG_T_InitCtx(SKLOG_T_Ctx    *t_ctx)
 {
@@ -884,12 +878,11 @@ error:
     return SKLOG_FAILURE;
 }
 
-/*--------------------------------------------------------------------*/
-/*--------------------------------------------------------------------*/
-/*                            SERVER                                  */
-/*--------------------------------------------------------------------*/
-/*--------------------------------------------------------------------*/
-
+/*
+ * manage new logging session requests
+ * 
+ */
+ 
 SKLOG_RETURN
 SKLOG_T_ManageLoggingSessionInit(SKLOG_T_Ctx      *t_ctx,
                                  unsigned char    *m0,
@@ -1126,6 +1119,11 @@ error:
     return SKLOG_FAILURE;
 }
 
+/*
+ * manage logfile upload requests
+ * 
+ */
+ 
 SKLOG_RETURN
 SKLOG_T_ManageLogfileUpload(SKLOG_T_Ctx         *t_ctx,
                             SKLOG_CONNECTION    *c)
@@ -1306,6 +1304,11 @@ error:
     return SKLOG_FAILURE;
 }
 
+/*
+ * manage logfiles retrieve requests
+ * 
+ */
+ 
 SKLOG_RETURN
 SKLOG_T_ManageLogfileRetrieve(SKLOG_T_Ctx         *t_ctx,
                               SKLOG_CONNECTION    *c)
@@ -1361,6 +1364,11 @@ SKLOG_T_ManageLogfileRetrieve(SKLOG_T_Ctx         *t_ctx,
     return SKLOG_SUCCESS;
 }
 
+/*
+ * manage logfile verification requests
+ * 
+ */
+ 
 SKLOG_RETURN
 SKLOG_T_ManageLogfileVerify(SKLOG_T_Ctx         *t_ctx,
                             SKLOG_CONNECTION    *c,
@@ -1420,6 +1428,11 @@ SKLOG_T_ManageLogfileVerify(SKLOG_T_Ctx         *t_ctx,
     return SKLOG_SUCCESS;
 }
 
+/*
+ * run T server application
+ * 
+ */
+ 
 void sigchld_h (int signum)
 {
     pid_t pid;
@@ -1729,9 +1742,3 @@ failure:
     free_conenction(c);
     return SKLOG_SUCCESS;
 }
-
-/*--------------------------------------------------------------------*/
-/*--------------------------------------------------------------------*/
-/*                            CLIENT                                  */
-/*--------------------------------------------------------------------*/
-/*--------------------------------------------------------------------*/

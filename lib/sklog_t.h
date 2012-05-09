@@ -24,64 +24,7 @@
 #define SKLOG_T_H
 
 #include "sklog_commons.h"
-
-#include <openssl/evp.h>
-#include <openssl/ssl.h>
-#include <openssl/x509.h>
-
-#include <sys/time.h>
-
-#include <uuid/uuid.h>
-
-/*--------------------------------------------------------------------*/
-/*--------------------------------------------------------------------*/
-
-#define  SKLOG_T_MAX_THREADS     1
-
-#define  SKLOG_T_CONFIG_FILE_PATH  ETC_PREFIX"/libsklog/libsklog-t.conf"
-#define  SKLOG_DEF_T_CERT_PATH  ETC_PREFIX"/libsklog/certs/ca/ca_cert.pem"
-#define  SKLOG_DEF_T_RSA_KEY_PASSPHRASE  "123456"
-#define  SKLOG_DEF_T_RSA_KEY_PATH  ETC_PREFIX"/libsklog/certs/private/ca_key.pem"
-#define  SKLOG_DEF_T_ADDRESS  "127.0.0.1"
-#define  SKLOG_DEF_T_ID  "t.example.com"
-#define  SKLOG_DEF_T_PORT  5555
-
-/*--------------------------------------------------------------------*/
-/*--------------------------------------------------------------------*/
-
-typedef struct sklog_t_ctx SKLOG_T_Ctx;
-typedef struct sklog_t_storage_driver SKLOG_T_STORAGE_DRIVER;
-
-/*--------------------------------------------------------------------*/
-/*--------------------------------------------------------------------*/
-
-struct sklog_t_ctx {
-
-    char            t_id[HOST_NAME_MAX];
-    unsigned int    t_id_len;
-
-    const char      *t_address;  // server listen address
-    short int       t_port;      // server port address
-
-    X509            *t_cert;
-    const char      *t_cert_file_path;
-    
-    EVP_PKEY        *t_privkey;
-    const char      *t_privkey_file_path;
-
-    SKLOG_T_STORAGE_DRIVER *lsdriver;
-};
-
-struct sklog_t_storage_driver {
-    SKLOG_RETURN (*store_authkey) (char*,uuid_t,unsigned char*);
-    SKLOG_RETURN (*store_m0_msg) (char*,uuid_t,unsigned char*,unsigned int);
-    SKLOG_RETURN (*store_logentry) (unsigned char*,unsigned int);
-    SKLOG_RETURN (*retrieve_logfiles) (unsigned char **,unsigned int *);
-    SKLOG_RETURN (*verify_logfile) (unsigned char *);
-};
-
-/*--------------------------------------------------------------------*/
-/*--------------------------------------------------------------------*/
+#include "sklog_t_internal.h"
 
 SKLOG_T_Ctx*
 SKLOG_T_NewCtx(void);
