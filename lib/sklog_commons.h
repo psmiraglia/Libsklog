@@ -38,36 +38,50 @@
 /*                       message macros                               */
 /*--------------------------------------------------------------------*/
 
-#define DEBUG { \
-    fprintf(stderr,"[DEBUG]       (%d) Libsklog (%s:%d): %s()\n", \
-    getpid(),__FILE__,__LINE__,__func__); \
-}
+void msg_debug(const char *source, const int lineno, const char *func);
 
-#define ERROR(msg) { \
-    fprintf(stderr,"[ERROR]       (%d) Libsklog (%s:%d): %s(): %s\n", \
-    getpid(),__FILE__,__LINE__,__func__,msg); \
-}
+void msg_error(const char *source, const int lineno, const char *func,
+	const char *fmt, ...);
 
-#define NOTIFY(msg) { \
-    fprintf(stderr,"[NOTIFY]      (%d) Libsklog (%s:%d): %s(): %s\n", \
-    getpid(),__FILE__,__LINE__,__func__,msg); \
-}
+void msg_notify(const char *source, const int lineno, const char *func,
+	const char *fmt, ...);
 
-#define WARNING(msg) { \
-    fprintf(stderr,"[WARNING]     (%d) Libsklog (%s): %s\n", \
-    getpid(),__func__,msg); \
-}
+void msg_warning(const char *source, const int lineno, const char *func,
+	const char *fmt, ...);
+
+void msg_to_implement(const char *func);
+
+/*
+void msg_show_query(const char *source, const int lineno,
+	const char *func, const char *fmt, ...);
+	
+void msg_show_buffer(const char *source, const int lineno,
+	const char *func, const char *fmt, ...);
+*/
+
+#define DEBUG \
+	msg_debug(__FILE__, __LINE__, __func__);
+	
+#define ERROR(fmt, args...) \
+	msg_error(__FILE__, __LINE__, __func__, fmt, ##args);
+
+#define NOTIFY(fmt, args...) \
+	msg_notify(__FILE__, __LINE__, __func__, fmt, ##args);
+
+#define WARNING(fmt, args...) \
+	msg_warning(__FILE__, __LINE__, __func__, fmt, ##args);
+
+#define TO_IMPLEMENT \
+	msg_to_implement(__func__);
 
 #define SHOWQUERY(q) { \
-	fprintf(stderr,"[QUERY]       (%d) Libsklog (%s:%d): %s(): %s\n", \
+	fprintf(stderr,"[QUERY]     (%d) Libsklog (%s:%d): %s(): %s\n", \
 	getpid(),__FILE__,__LINE__,__func__,q); \
 }
 
-#define TO_IMPLEMENT \
-    sklog_msg_to_implement(__func__);
-    
 #define SHOWBUF(bufname,buf,bufl) \
-	sklog_show_buffer(getpid(), __FILE__, __LINE__, __func__, bufname, buf, bufl);
+	sklog_show_buffer(getpid(), __FILE__, __LINE__, __func__, bufname, \
+		buf, bufl);
 
 /*--------------------------------------------------------------------*/
 /*                    memory management macros                        */

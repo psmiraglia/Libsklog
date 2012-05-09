@@ -1774,22 +1774,6 @@ conn_close(SKLOG_CONNECTION    *conn)
 /*                      user messages management                      */
 /*--------------------------------------------------------------------*/
 
-void sklog_msg_to_implement(const char *f) {
-
-	#ifdef DO_TRACE
-    fprintf(stderr,"\n+----------------------------------------------------------------------+");
-    fprintf(stderr,"\n| %-68s |",f);
-    fprintf(stderr,"\n+----------------------------------------------------------------------+");
-    fprintf(stderr,"\n|                                                                      |");
-    fprintf(stderr,"\n|    This function will be implemented as soon as possible             |");
-    fprintf(stderr,"\n|                                                                      |");
-    fprintf(stderr,"\n+----------------------------------------------------------------------+");
-    fprintf(stderr,"\n\n");
-    #endif
-
-    return;
-}
-
 void
 sklog_show_buffer(int              pid,
 				  const char       *file,

@@ -35,6 +35,140 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 
+#define MSG_BUFLEN 2048
+
+/*--------------------------------------------------------------------*/
+/*                           messaging system                         */
+/*--------------------------------------------------------------------*/
+
+typedef enum message_type {
+	debug,
+	error,
+	notify,
+	warning,
+	
+	undefined
+} MSG_TYPE;
+
+static void msg(MSG_TYPE type, const char *source, const int lineno,
+	const char *func, const char *fmt, va_list ap)
+{
+	int curr_errno = errno;
+	
+	char buf[MSG_BUFLEN+1] = { 0 };
+	size_t bufl = 0;
+
+	/* append prefix */
+	
+	switch ( type ) {
+		case debug:
+			snprintf(buf, MSG_BUFLEN, "[DEBUG]    ");
+			bufl = strlen(buf);
+			break;
+		case error:
+			snprintf(buf, MSG_BUFLEN, "[ERROR]    ");
+			bufl = strlen(buf);
+			break;
+		case notify:
+			snprintf(buf, MSG_BUFLEN, "[NOTIFY]   ");
+			bufl = strlen(buf);
+			break;
+		case warning:
+			snprintf(buf, MSG_BUFLEN, "[WARNING]  ");
+			bufl = strlen(buf);
+			break;
+		default:
+			break;
+	}
+	
+	/* append pid */
+	
+	snprintf(buf+bufl, MSG_BUFLEN-bufl, " (%d) Libsklog ", getpid());
+	bufl = strlen(buf);
+	
+	/* append source, lineno and function */
+	
+	snprintf(buf+bufl, MSG_BUFLEN-bufl, "(%s:%d): %s()", source, lineno,
+		func);
+	bufl = strlen(buf);
+	
+	/* append errno string */
+	
+	if ( type != notify && type != debug && errno > 0 ) {
+		snprintf(buf+bufl, MSG_BUFLEN-bufl, ": %s",
+			strerror(curr_errno));
+		bufl = strlen(buf);
+	}
+	
+	/* append user defined data */
+	
+	if ( fmt != NULL ) {
+		strcat(buf, ": ");
+		bufl = strlen(buf);
+		vsnprintf(buf+bufl, MSG_BUFLEN-bufl, fmt, ap);
+		bufl = strlen(buf);
+	}
+	
+	strcat(buf, "\n");
+	
+	fflush(stdout);
+	fputs(buf, stderr);
+	fflush(stderr);
+
+	return;
+}
+
+void msg_debug(const char *source, const int lineno, const char *func)
+{
+	msg(debug, source, lineno, func, NULL, 0);
+	return;
+}
+
+void msg_error(const char *source, const int lineno, const char *func,
+	const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	msg(error, source, lineno, func, fmt, ap);
+	va_end(ap);
+	return;
+}
+
+void msg_notify(const char *source, const int lineno, const char *func,
+	const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	msg(notify, source, lineno, func, fmt, ap);
+	va_end(ap);
+	return;
+}
+
+void msg_warning(const char *source, const int lineno, const char *func,
+	const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	msg(warning, source, lineno, func, fmt, ap);
+	va_end(ap);
+	return;
+}
+
+void msg_to_implement(const char *func)
+{
+	fprintf(stderr,"\n+----------------------------------------------------------------------+");
+	fprintf(stderr,"\n| %-68s |",func);
+	fprintf(stderr,"\n+----------------------------------------------------------------------+");
+	fprintf(stderr,"\n|                                                                      |");
+	fprintf(stderr,"\n|    This function will be implemented as soon as possible             |");
+	fprintf(stderr,"\n|                                                                      |");
+	fprintf(stderr,"\n+----------------------------------------------------------------------+");
+	fprintf(stderr,"\n\n");
+	
+	return;
+}
+
+
 /*--------------------------------------------------------------------*/
 /*                          SKLOG_CONNECTION                          */
 /*--------------------------------------------------------------------*/

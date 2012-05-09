@@ -254,9 +254,6 @@ tcp_connect(const char    *address,
 #define TERM_LINE 72
 
 void
-sklog_msg_to_implement(const char *f);
-
-void
 sklog_show_buffer(int pid,
 				  const char *file,
 				  int line,
