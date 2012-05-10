@@ -807,11 +807,11 @@ SKLOG_T_InitCtx(SKLOG_T_Ctx    *t_ctx)
 
     FILE *fp = NULL;
 
-    char *t_cert = 0;
-    char *t_privkey = 0;
-    char *t_privkey_passphrase = 0;
-    char *t_id = 0;
-    char *t_address = 0;
+    char t_cert[SKLOG_SETTING_VALUE_LEN] = { 0 };
+    char t_privkey[SKLOG_SETTING_VALUE_LEN] = { 0 };
+    char t_privkey_passphrase[SKLOG_SETTING_VALUE_LEN] = { 0 };
+    char t_id[SKLOG_SETTING_VALUE_LEN] = { 0 };
+    char t_address[SKLOG_SETTING_VALUE_LEN] = { 0 };
     int t_port = 0;
 
     OpenSSL_add_all_algorithms();
@@ -822,52 +822,58 @@ SKLOG_T_InitCtx(SKLOG_T_Ctx    *t_ctx)
         goto error;
     }    
 
-    //~ parse configuration file (to implement)
-    retval = parse_config_file(&t_cert,&t_privkey,&t_privkey_passphrase,
-                               &t_id,&t_address,&t_port);
+    /* parse configuration file */
+
+    retval = parse_t_config_file(t_cert, t_privkey, t_privkey_passphrase,
+		t_id, t_address, &t_port);
 
     if ( retval == SKLOG_FAILURE ) {
         ERROR("parse_config_file() failure");
         goto error;
     }
 
-    //~ load t_id from config file
-    t_ctx->t_id_len = strlen(t_id);
+    /* load t_id */
     
-    //~ Bugfix: Sebastian Banescu <banescusebi@gmail.com>
-    snprintf(t_ctx->t_id,HOST_NAME_MAX,"%s",t_id);
+    t_ctx->t_id_len = strlen(t_id);
+    snprintf(t_ctx->t_id,HOST_NAME_MAX,"%s",t_id); //~ Bugfix: Sebastian Banescu <banescusebi@gmail.com>
 
-    //~ load T's X509 certificate
+    /* load T's X509 certificate */
+    
+    memcpy(t_ctx->t_cert_file_path, t_cert, strlen(t_cert));
     t_ctx->t_cert = 0;
-    if ( (fp = fopen(t_cert,"r")) != NULL ) {
-        if ( !PEM_read_X509(fp,&t_ctx->t_cert,NULL,NULL) ) {
+    
+    if ( (fp = fopen(t_cert, "r")) != NULL ) {
+        if ( !PEM_read_X509(fp, &t_ctx->t_cert, NULL, NULL) ) {
             ERR_print_errors_fp(stderr);
             goto error;
         }
         fclose(fp); fp = 0;
     } else {
-        ERROR("unable to read T's certificate file")
+        ERROR("Unable to read file %s", t_cert)
         goto error;
     }
-
-    t_ctx->t_cert_file_path = t_cert;
-    t_ctx->t_privkey_file_path = t_privkey;
-    t_ctx->t_address = t_address;
-    t_ctx->t_port = t_port;
     
-    //~ load T's rsa privkey
+    /* load T's rsa privkey */
+    
+    memcpy(t_ctx->t_privkey_file_path, t_privkey, strlen(t_privkey));
     t_ctx->t_privkey = EVP_PKEY_new();
-    if ( (fp = fopen(t_privkey,"r")) != NULL ) {
-        if ( !PEM_read_PrivateKey(fp,&t_ctx->t_privkey,
-                                  NULL,RSA_DEFAULT_PASSPHRASE) ) {
+    
+    if ( (fp = fopen(t_privkey, "r")) != NULL ) {
+        if ( !PEM_read_PrivateKey(fp, &t_ctx->t_privkey, NULL, 
+			RSA_DEFAULT_PASSPHRASE) ) {
             ERROR("PEM_read_PrivateKey() failure")
             goto error;
         }
         fclose(fp); fp = 0;
     } else {
-        ERROR("unable to read T's private key file")
+        ERROR("unable to read file %s", t_privkey)
         goto error;
     }
+
+    /* load binding information */
+    
+    memcpy(t_ctx->t_address, t_address, strlen(t_address));
+    t_ctx->t_port = t_port;
 
     ERR_free_strings();
     return SKLOG_SUCCESS;

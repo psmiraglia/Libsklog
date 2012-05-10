@@ -53,6 +53,7 @@
 #define SKLOG_DEF_U_CERT_PATH ETC_PREFIX"/libsklog/certs/u1_cert.pem"
 #define SKLOG_DEF_U_RSA_KEY_PATH ETC_PREFIX"/libsklog/certs/private/u1_key.pem"
 #define SKLOG_DEF_U_TIMEOUT 60
+#define SKLOG_DEF_U_ID "u1.example.com"
 
 /*
  * U context definition
@@ -132,10 +133,15 @@ SKLOG_RETURN renew_auth_key(SKLOG_U_Ctx *ctx);
 SKLOG_RETURN create_logentry(SKLOG_U_Ctx *u_ctx, SKLOG_DATA_TYPE type,
 	unsigned char *data, unsigned int data_len, int req_blob, 
 	char **blob, unsigned int *blob_len);
-
+/*
 SKLOG_RETURN parse_u_config_file(char **t_cert, char **t_address, 
 	int *t_port, char **u_cert, char **u_id, char **u_privkey,
 	unsigned int *u_timeout, unsigned int *logfile_size);
+*/
+
+SKLOG_RETURN parse_u_config_file(char *t_cert_path, char *t_address, 
+	int *t_port, char *u_cert_path, char *u_id, char *u_privkey_path,
+	unsigned int *u_timeout, unsigned int *logfile_max_size);
 
 SKLOG_RETURN gen_x0(SKLOG_U_Ctx *u_ctx, SKLOG_PROTOCOL_STEP p,
 	struct timeval *d, unsigned char **x0, unsigned int *x0_len);

@@ -34,7 +34,8 @@
     #include "storage/sklog_dummy.h"
 #endif
 
-#include <confuse.h>
+//~ #include <confuse.h>
+#include <libconfig.h>
 #include <string.h>
 #include <unistd.h>
 
@@ -541,14 +542,15 @@ error:
  * 
  */
 
-SKLOG_RETURN parse_u_config_file(char **t_cert, char **t_address, 
-	int *t_port, char **u_cert, char **u_id, char **u_privkey,
-	unsigned int *u_timeout, unsigned int *logfile_size)
+SKLOG_RETURN parse_u_config_file(char *t_cert_path, char *t_address, 
+	int *t_port, char *u_cert_path, char *u_id, char *u_privkey_path,
+	unsigned int *u_timeout, unsigned int *logfile_max_size)
 {
 	#ifdef DO_TRACE
 	DEBUG
 	#endif
 
+	/*
 	char buffer[SKLOG_SMALL_BUFFER_LEN] = { 0 };
 	int len = 0;
 
@@ -624,6 +626,93 @@ SKLOG_RETURN parse_u_config_file(char **t_cert, char **t_address,
 error:
 	if ( cfg ) cfg_free(cfg);
 	return SKLOG_FAILURE;
+	*/
+
+	config_t cfg;
+	
+	const char *str_value = 0;
+	int int_value = 0;
+	
+	/* initialize cfg structure */
+	
+	config_init(&cfg);
+	
+	/* read configuration file */
+	
+	if ( !config_read_file(&cfg, SKLOG_U_CONFIG_FILE_PATH) ) {
+		ERROR("%s:%d - %s", config_error_file(&cfg),
+			config_error_line(&cfg), config_error_text(&cfg));
+		config_destroy(&cfg);
+		return SKLOG_FAILURE;
+	}
+	
+	/* looking for t_cert */
+	
+	if ( config_lookup_string(&cfg, "t_cert", &str_value) ) {
+		memcpy(t_cert_path, str_value, strlen(str_value));
+	} else {
+		memcpy(t_cert_path, SKLOG_DEF_T_CERT_PATH,
+			strlen(SKLOG_DEF_T_CERT_PATH));
+	}
+	
+	/* looking for t_address */
+	
+	if ( config_lookup_string(&cfg, "t_address", &str_value) ) {
+		memcpy(t_address, str_value, strlen(str_value));
+	} else {
+		memcpy(t_address, SKLOG_DEF_T_ADDRESS, strlen(SKLOG_DEF_T_ADDRESS));
+	}
+	
+	/* looking for t_port */
+	
+	if ( config_lookup_int(&cfg, "t_port", &int_value) ) {
+		*t_port = int_value;
+	} else {
+		*t_port = SKLOG_DEF_T_PORT;
+	}
+	
+	/* looking for u_cert */
+	
+	if ( config_lookup_string(&cfg, "u_cert", &str_value) ) {
+		memcpy(u_cert_path, str_value, strlen(str_value));
+	} else {
+		memcpy(u_cert_path, SKLOG_DEF_U_CERT_PATH, strlen(SKLOG_DEF_U_CERT_PATH));
+	}
+	
+	/* looking for u_id */
+	
+	if ( config_lookup_string(&cfg, "u_id", &str_value) ) {
+		memcpy(u_id, str_value, strlen(str_value));
+	} else {
+		memcpy(u_id, SKLOG_DEF_U_ID, strlen(SKLOG_DEF_U_ID));
+	}
+	
+	/* looking for u_privkey */
+	
+	if ( config_lookup_string(&cfg, "u_privkey", &str_value) ) {
+		memcpy(u_privkey_path, str_value, strlen(str_value));
+	} else {
+		memcpy(u_privkey_path, SKLOG_DEF_U_RSA_KEY_PATH, strlen(SKLOG_DEF_U_RSA_KEY_PATH));
+	}
+	
+	/* looking for u_timeout */
+	
+	if ( config_lookup_int(&cfg, "u_timeout", &int_value) ) {
+		*u_timeout = int_value;
+	} else {
+		*u_timeout = SKLOG_DEF_U_TIMEOUT;
+	}
+	
+	/* looking for logfile_max_size */
+	
+	if ( config_lookup_int(&cfg, "logfile_max_size", &int_value) ) {
+		*logfile_max_size = int_value;
+	} else {
+		*logfile_max_size = SKLOG_DEF_LOGFILE_SIZE;
+	}
+	
+	config_destroy(&cfg);
+	return SKLOG_SUCCESS;
 }
 
 /*
@@ -1393,15 +1482,22 @@ SKLOG_RETURN initialize_context(SKLOG_U_Ctx *u_ctx)
 	DEBUG
 	#endif
 
-	char			*t_cert = 0;
-	char			*t_address = 0;
-	int			 t_port = 0;
-	char			*u_cert = 0;
-	char			*u_id = 0;
-	char			*u_privkey = 0;
+	//~ char			*t_cert = 0;
+	//~ char			*t_address = 0;
+	//~ int			 t_port = 0;
+	//~ char			*u_cert = 0;
+	//~ char			*u_id = 0;
+	//~ char			*u_privkey = 0;
+	
+	char t_cert[SKLOG_SETTING_VALUE_LEN] = { 0 };
+	char t_address[SKLOG_SETTING_VALUE_LEN] = { 0 };
+	int t_port = 0;
+	char u_cert[SKLOG_SETTING_VALUE_LEN] = { 0 };
+	char u_id[SKLOG_SETTING_VALUE_LEN] = { 0 };
+	char u_privkey[SKLOG_SETTING_VALUE_LEN] = { 0 };
 
-	unsigned int	u_timeout = 0;
-	unsigned int	logfile_size = 0;
+	unsigned int u_timeout = 0;
+	unsigned int logfile_size = 0;
 
 	FILE *fp = 0;
 
@@ -1413,8 +1509,11 @@ SKLOG_RETURN initialize_context(SKLOG_U_Ctx *u_ctx)
 		goto error;
 	}
 
-	parse_u_config_file(&t_cert,&t_address,&t_port,&u_cert,&u_id,
-					    &u_privkey,&u_timeout,&logfile_size);
+	//~ parse_u_config_file(&t_cert,&t_address,&t_port,&u_cert,&u_id,
+					    //~ &u_privkey,&u_timeout,&logfile_size);
+	
+	parse_u_config_file(t_cert, t_address, &t_port, u_cert, u_id,
+		u_privkey, &u_timeout, &logfile_size);
 
 	//~ set u_id
 	memset(u_ctx->u_id,0,HOST_NAME_MAX+1);

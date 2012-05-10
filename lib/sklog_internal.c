@@ -1682,6 +1682,9 @@ tcp_bind(const char    *address,
         return -1;
     }
 
+	NOTIFY("bind to %s:%d", inet_ntoa(sa_serv.sin_addr),
+		ntohs(sa_serv.sin_port));
+
     return skt;
 }
 

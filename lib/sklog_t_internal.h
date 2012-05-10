@@ -59,19 +59,19 @@ typedef struct sklog_t_storage_driver SKLOG_T_STORAGE_DRIVER;
 
 struct sklog_t_ctx {
 
-    char            t_id[HOST_NAME_MAX];
-    unsigned int    t_id_len;
-
-    const char      *t_address;  // server listen address
-    short int       t_port;      // server port address
-
-    X509            *t_cert;
-    const char      *t_cert_file_path;
-    
-    EVP_PKEY        *t_privkey;
-    const char      *t_privkey_file_path;
-
-    SKLOG_T_STORAGE_DRIVER *lsdriver;
+	char		t_id[HOST_NAME_MAX+1];
+	int			t_id_len;
+	
+	char		t_address[HOST_NAME_MAX+1];
+	short int	t_port;
+	
+	X509		*t_cert;
+	char		t_cert_file_path[MAX_FILE_PATH_LEN];
+	
+	EVP_PKEY	*t_privkey;
+	char		t_privkey_file_path[MAX_FILE_PATH_LEN];
+	
+	SKLOG_T_STORAGE_DRIVER	*lsdriver;
 };
 
 struct sklog_t_storage_driver {
@@ -87,8 +87,8 @@ struct sklog_t_storage_driver {
  * 
  */
 
-SKLOG_RETURN parse_config_file(char **t_cert, char **t_privkey,
-	char **t_privkey_passphrase, char **t_id, char **t_address,
+SKLOG_RETURN parse_t_config_file(char *t_cert_path, char *t_privkey_path,
+	char *t_privkey_passphrase, char *t_id, char *t_address,
 	int *t_port);
 
 SKLOG_RETURN parse_m0(SKLOG_T_Ctx *t_ctx, unsigned char *m0,

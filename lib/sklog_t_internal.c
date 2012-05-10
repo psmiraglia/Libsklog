@@ -23,7 +23,8 @@
 #include "sklog_t_internal.h"
 #include "sklog_internal.h"
 
-#include <confuse.h>
+//~ #include <confuse.h>
+#include <libconfig.h>
 
 #include <netinet/in.h>
 
@@ -36,77 +37,86 @@
  * parse T configuration file
  * 
  */
-
-SKLOG_RETURN parse_config_file(char **t_cert, char **t_privkey,
-	char **t_privkey_passphrase, char **t_id, char **t_address,
+ 
+SKLOG_RETURN parse_t_config_file(char *t_cert_path, char *t_privkey_path,
+	char *t_privkey_passphrase, char *t_id, char *t_address,
 	int *t_port)
 {
 	#ifdef DO_TRACE
 	DEBUG
 	#endif
 
-	char buffer[SKLOG_SMALL_BUFFER_LEN] = { 0 };
-	int len = 0;
+	SKLOG_RETURN rv = SKLOG_SUCCESS;
 
-	cfg_opt_t opts[] = {
-		CFG_STR("t_cert",SKLOG_DEF_T_CERT_PATH,CFGF_NONE),
-		CFG_STR("t_privkey",SKLOG_DEF_T_RSA_KEY_PATH,CFGF_NONE),
-		CFG_STR("t_privkey_passphrase",SKLOG_DEF_T_RSA_KEY_PASSPHRASE,CFGF_NONE),
-		CFG_STR("t_id",SKLOG_DEF_T_ID,CFGF_NONE),
-		CFG_STR("t_address",SKLOG_DEF_T_ADDRESS,CFGF_NONE),
-		CFG_INT("t_port",SKLOG_DEF_T_PORT,CFGF_NONE),
-		CFG_END()
-	};
-
-	cfg_t *cfg = NULL;
-	cfg = cfg_init(opts, CFGF_NONE);
+	config_t cfg;
 	
-	if( cfg_parse(cfg,SKLOG_T_CONFIG_FILE_PATH) == CFG_PARSE_ERROR ) {
-		ERROR("cfg_parse() failure")
+	int int_value = 0;
+	const char *str_value = 0;
+	
+	/* initialize cfg structure */
+	
+	config_init(&cfg);
+	
+	/* read configuration file */
+	
+	if ( !config_read_file(&cfg, SKLOG_T_CONFIG_FILE_PATH) ) {
+		ERROR("%s:%d - %s", config_error_file(&cfg),
+			config_error_line(&cfg), config_error_text(&cfg));
+		rv = SKLOG_FAILURE;
 		goto error;
 	}
-
-	//~ load t_cert ($ETC_PREFIX/libsklog/certs/ca/ca_cert.pem)
-	len = sprintf(buffer,"%s",cfg_getstr(cfg,"t_cert"));
-	*t_cert = calloc(len+1,sizeof(char));
-	memcpy(*t_cert,buffer,len);
-	(*t_cert)[len] = '\0';
-	memset(buffer,0,SKLOG_SMALL_BUFFER_LEN);
 	
-	//~ load t_privkey ($ETC_PREFIX/libsklog/certs/private/ca_key.pem)
-	len = sprintf(buffer,"%s",cfg_getstr(cfg,"t_privkey"));
-	*t_privkey = calloc(len+1,sizeof(char));
-	memcpy(*t_privkey,buffer,len);
-	(*t_privkey)[len] = '\0';
-	memset(buffer,0,SKLOG_SMALL_BUFFER_LEN);
-
-	//~ load t_privkey_passphrase (123456)
-	*t_privkey_passphrase = SKLOG_DEF_T_RSA_KEY_PASSPHRASE;
+	/* looking for t_cert_path */
 	
-	//~ load t_id (t.example.com)
-	len = sprintf(buffer,"%s",cfg_getstr(cfg,"t_id"));
-	*t_id = calloc(len+1,sizeof(char));
-	memcpy(*t_id,buffer,len);
-	(*t_id)[len] = '\0';
-	memset(buffer,0,SKLOG_SMALL_BUFFER_LEN);
-
-	//~ load t_address (127.0.0.1)
-	len = sprintf(buffer,"%s",cfg_getstr(cfg,"t_address"));
-	*t_address = calloc(len+1,sizeof(char));
-	memcpy(*t_address,buffer,len);
-	(*t_address)[len] = '\0';
-	memset(buffer,0,SKLOG_SMALL_BUFFER_LEN);
-
-	//~ load t_port (5555)
-	*t_port = cfg_getint(cfg,"t_port");
-
-	cfg_free(cfg);
-
-	return SKLOG_SUCCESS;
+	if ( !config_lookup_string(&cfg, "t_cert", &str_value ) ) {
+		str_value = SKLOG_DEF_T_CERT_PATH;
+	}
 	
+	memcpy(t_cert_path, str_value, strlen(str_value));
+	
+	/* looking for t_privkey_path */
+	
+	if ( !config_lookup_string(&cfg, "t_privkey", &str_value) ) {
+		str_value = SKLOG_DEF_T_RSA_KEY_PATH;
+	}
+	
+	memcpy(t_privkey_path, str_value, strlen(str_value));
+	
+	/* looking for t_privkey_passphrase */
+	
+	if ( !config_lookup_string(&cfg, "t_privkey_passphrase", &str_value) ) {
+		str_value = SKLOG_DEF_T_RSA_KEY_PASSPHRASE;
+	}
+	
+	memcpy(t_privkey_passphrase, str_value, strlen(str_value));
+	
+	/* looking for t_id */
+	
+	if ( !config_lookup_string(&cfg, "t_id", &str_value) ) {
+		str_value = SKLOG_DEF_T_ID;
+	}
+	
+	memcpy(t_id, str_value, strlen(str_value));
+	
+	/* looking for t_address */
+	
+	if ( !config_lookup_string(&cfg, "t_address", &str_value) ) {
+		str_value = SKLOG_DEF_T_ADDRESS;
+	}
+	
+	memcpy(t_address, str_value, strlen(str_value));
+	
+	/* looking for t_port */
+	
+	if ( !config_lookup_int(&cfg, "t_port", &int_value) ) {
+		int_value = SKLOG_DEF_T_PORT;
+	}
+	
+	*t_port = int_value;
+
 error:
-	if ( cfg ) cfg_free(cfg);
-	return SKLOG_FAILURE;
+	config_destroy(&cfg);
+	return rv;
 }
 
 /*

@@ -130,6 +130,8 @@ void msg_show_buffer(const char *source, const int lineno,
 
 #define		SKLOG_TESTS_PATH		  TESTS_PREFIX
 
+#define		SKLOG_SETTING_VALUE_LEN		512
+
 /*--------------------------------------------------------------------*/
 /*                        temporary defines                           */
 /*--------------------------------------------------------------------*/

@@ -217,10 +217,10 @@ AC_CHECK_LIB(
 )
 
 AC_CHECK_LIB(
-	[confuse],
+	[config],
 	[main],
 	[],
-	AC_MSG_ERROR([libconfuse is required from Libsklog])
+	AC_MSG_ERROR([libconfig is required from Libsklog])
 )
 
 AC_CONFIG_HEADERS([config.h])
