@@ -24,6 +24,7 @@
 
 #include <string.h>
 #include <sklog_u.h>
+#include <sklog_t.h>
 #include <sklog_internal.h>
 #include <uuid/uuid.h>
 
@@ -141,6 +142,13 @@ static PyObject *py_SKLOG_U_FreeCtx(PyObject* self, PyObject* args)
     return Py_BuildValue("");
 }
 
+static PyObject *py_SKLOG_T_ManageLoggingSessionInit(PyObject* self, PyObject* args)
+{
+	const char *m1_msg = "AAAADgAAAAQAAAABAAAACAAAAA10LmV4YW1wbGUuY29tAAAAEAAAAICEAQn6EmzsFn+8EUUxCAsCaPEOfJr1rC+6OWT==";
+	
+	return Py_BuildValue("s#", m1_msg, strlen(m1_msg));
+}
+
 /*
  * Bind Python function names to our C functions
  */
@@ -151,6 +159,7 @@ static PyMethodDef pylibsklog_methods[] = {
     {"SKLOG_U_LogEvent", py_SKLOG_U_LogEvent, METH_VARARGS},
     {"SKLOG_U_Close", py_SKLOG_U_Close, METH_VARARGS},
     {"SKLOG_U_FreeCtx", py_SKLOG_U_FreeCtx, METH_VARARGS},
+    {"SKLOG_T_ManageLoggingSessionInit", py_SKLOG_T_ManageLoggingSessionInit, METH_VARARGS},
     {NULL, NULL}
 };
 
