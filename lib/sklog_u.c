@@ -171,36 +171,143 @@ error:
 }
 
 SKLOG_RETURN
-SKLOG_U_Open(SKLOG_U_Ctx     *u_ctx,
-             char            **le1,
-             unsigned int    *le1_len,
-             char            **le2,
-             unsigned int    *le2_len)
+SKLOG_U_Open(SKLOG_U_Ctx *u_ctx, char **le1, unsigned int *le1_len,
+	char **le2, unsigned int *le2_len)
 {
     #ifdef DO_TRACE
     DEBUG
     #endif
     
-    if ( u_ctx == NULL ) {
-		ERROR("argument 1 must be not NULL");
+    /**
+     * NOTES
+     * 
+     * http://docs.python.org/library/httplib.html
+     * 
+     */
+     
+    int rv = SKLOG_SUCCESS;
+    
+	unsigned char *m0 = 0;
+	unsigned int m0_len = 0;
+	
+	unsigned char *m1 = 0;
+	unsigned int m1_len = 0;
+	
+	char *b64 = 0;
+	
+	struct timeval timeout;
+	
+	SKLOG_CONNECTION *c = 0;
+
+	/* checking input parameters */
+	
+	if ( u_ctx == NULL ) {
+		ERROR("Argument 1 must be not null");
+		goto check_input_error;
+	}
+	
+	/* initialize context */
+	
+	rv = initialize_context(u_ctx);
+	
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("context initialization process fails")
+        goto error;
+	}
+	
+	u_ctx->logging_session_mgmt = SKLOG_MANUAL;
+	
+	/* generate m0 */
+	
+	rv = generate_m0_message(u_ctx, &m0, &m0_len, &timeout, le1,
+		le1_len);
+		
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("generate_m0_message() failure");
 		goto error;
 	}
 	
-    if ( initialize_context(u_ctx) == SKLOG_FAILURE ) {
-        ERROR("context initialization process fails")
-        goto error;
-    }
-
-    u_ctx->logging_session_mgmt = SKLOG_MANUAL;
-    
-    if ( initialize_logging_session(u_ctx,1,le1,le1_len,le2,le2_len) == SKLOG_FAILURE ) {
-        ERROR("loggin session initialization process fails")
-        goto error;
-    }
-
-    return SKLOG_SUCCESS;
+	/* setup connection */
+	
+	c = SKLOG_CONNECTION_New();
+	
+	if ( c == NULL ) {
+		ERROR("SKLOG_CONNECTION_New() failure");
+		rv = SKLOG_FAILURE;
+		goto error;
+	}
+	
+	rv = SKLOG_CONNECTION_Init(c, u_ctx->t_address, u_ctx->t_port,
+		u_ctx->u_cert, u_ctx->u_privkey, 0, 0);
+		
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("SKLOG_CONNECTION_Init() failure");
+		goto error;
+	}
+	
+	/* send m0 message */
+	
+	rv = send_m0(c, m0, m0_len);
+	
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("send_m0() failure");
+		goto error;
+	}
+	
+	/* waiting for m1 message */
+	
+	/**
+	 * notes
+	 * 
+	 * timeout verification may be executed by setting
+	 * a timeout on SSL_read();
+	 * 
+	 */
+	
+	rv = receive_m1(c, &m1, &m1_len);
+	
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("receive_m1() failure");
+		goto error;
+	}
+	
+	/* free connection */
+	
+	rv = SKLOG_CONNECTION_Free(&c);
+	
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("SKLOG_CONNECTION_Free() failure");
+		goto error;
+	}
+	
+	/* check m1 message */
+	
+	rv = verify_m1_message(u_ctx, m1, m1_len, &timeout, le2, le2_len);
+	
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("verify_m1_message() failure");
+		goto error;
+	}
+	
 error:
-    return SKLOG_FAILURE;
+	
+	if ( m0 )
+		free(m0);
+		
+	if ( m1 )
+		free(m1);
+		
+	if ( b64 )
+		free(b64);
+		
+	if ( c )
+		SKLOG_CONNECTION_Free(&c);
+		
+	return rv;
+	
+check_input_error:
+	
+	return SKLOG_FAILURE;
 }
 
 SKLOG_RETURN

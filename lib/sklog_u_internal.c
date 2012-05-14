@@ -72,7 +72,9 @@ SKLOG_RETURN gen_enc_key(SKLOG_U_Ctx *ctx, SKLOG_DATA_TYPE type,
 
 	//----------------------------------------------------------------//
 
-	w = type; blen = sizeof(w); memcpy(buf,&w,blen); 
+	w = type;
+	blen = sizeof(w);
+	memcpy(buf,&w,blen); 
 	
 	EVP_MD_CTX_init(&mdctx);
 	
@@ -2118,3 +2120,310 @@ SKLOG_RETURN flush_logfile_execute(SKLOG_U_Ctx *u_ctx,
 error:
 	return SKLOG_FAILURE;
 }
+
+/*
+ * generate m0 message and put it (encoded in base64) in *m0_b64
+ * geneate the first logentry and put it *le
+ * 
+ */
+
+SKLOG_RETURN generate_m0_message(SKLOG_U_Ctx *u_ctx, unsigned char **msg,
+	unsigned int *msg_len, struct timeval *timeout, char **le,
+	unsigned int *le_len)
+{
+	#ifdef DO_TRACE
+	DEBUG;
+	#endif
+	
+	int rv = SKLOG_SUCCESS;
+	
+	struct timeval d;
+	struct timeval d_timeout;
+	
+	SKLOG_PROTOCOL_STEP p = 0;
+	
+	unsigned char *x0 = 0;
+	unsigned int x0_len = 0;
+	
+	unsigned char *x0_sign = 0;
+	unsigned int x0_sign_len = 0;
+	
+	unsigned char x0_md[SHA256_LEN] = { 0 };
+	unsigned int x0_md_len = 0;
+	
+	unsigned char *e_k0 = 0;
+	unsigned int e_k0_len = 0;
+	
+	unsigned char *pke_t_k0 = 0;
+	size_t pke_t_k0_len = 0;
+	
+	unsigned char *m0 = 0;
+	unsigned int m0_len = 0;
+	
+	unsigned char *d0 = 0;
+	unsigned int d0_len = 0;
+	
+	/* checking input parameters */
+	
+	if ( u_ctx == NULL ) {
+		ERROR("Argument 1 must be not null");
+		goto check_input_error;
+	}
+	
+	/* get current time and set timeout */
+	
+	if ( gettimeofday(&d, NULL) < 0 ) {
+		ERROR("gettimeofday() failure");
+		rv = SKLOG_FAILURE;
+		goto error;
+	}
+	
+	d_timeout = d;
+	d_timeout.tv_sec += u_ctx->u_timeout;
+	
+	*timeout = d_timeout;
+	
+	/* generate x0 blob */
+	
+	rv = gen_x0(u_ctx, p, &d, &x0, &x0_len);
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("gen_x0() failure");
+		goto error;
+	}
+	
+	/* store x0 blob digest  */
+	
+	rv = sha256(x0, x0_len, x0_md, &x0_md_len);
+	
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("sha256() failure");
+		goto error;
+	}
+	
+	memcpy(u_ctx->x0_hash, x0_md, SHA256_LEN);
+	
+	/* sign x0 blob using U privkey */
+	
+	rv = sign_message(x0, x0_len, u_ctx->u_privkey, &x0_sign,
+		&x0_sign_len);
+	
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("sign_message() failure");
+		goto error;
+	}
+	
+	/* encrypt [x0|x0_sign] blob using k0 key */
+	
+	rv = gen_e_k0(u_ctx, x0, x0_len, x0_sign, x0_sign_len, &e_k0,
+		&e_k0_len);
+		
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("gen_e_k0() failure");
+		goto error;
+	}
+	
+	/* encrypt k0 using T pubkey */
+	
+	rv = pke_encrypt(u_ctx->t_cert, u_ctx->session_key,
+		SKLOG_SESSION_KEY_LEN, &pke_t_k0, &pke_t_k0_len);
+		
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("pke_encrypt() failure");
+		goto error;
+	}
+	
+	/* compose m0 message */
+	
+	rv = gen_m0(u_ctx, p, pke_t_k0, pke_t_k0_len, e_k0, e_k0_len, &m0,
+		&m0_len);
+		
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("gen_m0() failure");
+		goto error;
+	}
+	
+	/* generate d0 blob */
+	
+	rv = gen_d0(u_ctx, &d, &d_timeout, m0, m0_len, &d0, &d0_len);
+	
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("gen_d0() failure");
+		goto error;
+	}
+	
+	/* initialize logfile */
+	
+	rv = u_ctx->lsdriver->init_logfile(u_ctx->logfile_id, &d);
+	
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("u_ctx->lsdriver->init_logfile() failure");
+		goto error;
+	}
+	
+	/* store the first logentry */
+	
+	rv = create_logentry(u_ctx, LogfileInitializationType, d0, d0_len,
+		1, le,le_len);
+		
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("create_logentry() failure");
+		goto error;
+	}
+	
+	/* encode m0 in base64 */
+
+	*msg = m0;
+	*msg_len = m0_len;
+	
+	/* free memory */
+	
+error:	
+	
+	if ( x0 )
+		free(x0);
+		
+	if ( x0_sign )
+		free(x0_sign);
+		
+	if ( e_k0 )
+		free(e_k0);
+		
+	if ( pke_t_k0 )
+		free(pke_t_k0);
+		
+	if ( d0 )
+		free(d0);
+		
+	return rv;
+	
+check_input_error:
+	return SKLOG_FAILURE;
+}
+
+/*
+ * perform some protocol verification on m1 message
+ * 
+ */
+
+SKLOG_RETURN verify_m1_message(SKLOG_U_Ctx *u_ctx, unsigned char *m1,
+	unsigned int m1_len, struct timeval *d_timeout, char **le,
+	unsigned int *le_len)
+{
+	#ifdef DO_TARCE
+	DEBUG;
+	#endif
+	
+	int rv = SKLOG_SUCCESS;
+	
+	//~ long int t1 = 0;
+	//~ long int t2 = 0;
+	struct timeval d_now;
+	
+	unsigned char *buf = 0;
+	unsigned int bufl = 0;
+	
+	/* check input parameters */
+	
+	if ( u_ctx == NULL || m1 == NULL || d_timeout == NULL ) {
+		ERROR("Bad input parameter(s). Please, double-check!");
+		goto check_input_error;
+	}
+	
+	/* verify timeout expiration */
+	
+	//~ if ( gettimeofday(&d_now, NULL) < 0 ) {
+		//~ ERROR("gettimeofday() failure");
+		//~ goto error;
+	//~ }
+
+	//~ t1 = ( d_now.tv_sec*1000000 ) + ( d_now.tv_usec );
+	//~ t2 = ( d_timeout->tv_sec*1000000 )+( d_timeout->tv_usec );
+
+	//~ if ( t2 < t1 ) {
+		//~ NOTIFY("Timeout expiration");
+		//~ goto failure;
+	//~ }
+	
+	/* verify m1 message */
+	
+	rv = verify_m1(u_ctx, m1, m1_len);
+	
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("verify_m1() failure");
+		goto failure;
+	}
+	
+	/* create logentry */
+	
+	rv = create_logentry(u_ctx, ResponseMessageType, m1, m1_len,
+		1, le, le_len);
+		
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("create_logentry() failure");
+		goto error;
+	}
+	
+error:
+
+	if ( buf ) 
+		free(buf);
+	
+	return rv;
+	
+failure:
+	
+	/* get current time */
+	
+	if ( gettimeofday(&d_now, NULL) < 0 ) {
+		ERROR("gettimeofday() failure");
+		goto error;
+	}
+	
+	bufl = sizeof(d_now);
+	buf = calloc(bufl, sizeof(char));
+	memset(buf, 0, bufl);
+	memcpy(buf, &d_now, bufl);
+	
+	/* create logentry */
+	
+	rv = create_logentry(u_ctx, AbnormalCloseType, buf, bufl,
+		1, le, le_len);
+		
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("create_logentry() failure");
+		goto error;
+	}
+	
+	goto error;
+	
+check_input_error:
+	return SKLOG_FAILURE;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

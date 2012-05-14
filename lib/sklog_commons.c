@@ -385,6 +385,7 @@ SKLOG_CONNECTION_Free(SKLOG_CONNECTION **c)
 	}
 
     free(*c);
+    *c = 0;
 
     return SKLOG_SUCCESS;
 }

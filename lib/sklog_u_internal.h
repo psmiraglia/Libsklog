@@ -192,5 +192,13 @@ SKLOG_RETURN flush_logfile_terminate(SKLOG_CONNECTION *c);
 
 SKLOG_RETURN flush_logfile_execute(SKLOG_U_Ctx *u_ctx,
 	struct timeval *now);
+	
+SKLOG_RETURN generate_m0_message(SKLOG_U_Ctx *u_ctx, unsigned char **msg,
+	unsigned int *msg_len, struct timeval *timeout, char **le,
+	unsigned int *le_len);
+	
+SKLOG_RETURN verify_m1_message(SKLOG_U_Ctx *u_ctx, unsigned char *m1,
+	unsigned int m1_len, struct timeval *d_timeout, char **le,
+	unsigned int *le_len);
 
 #endif /* SKLOG_U_INTERNAL */
