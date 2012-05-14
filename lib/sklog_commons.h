@@ -132,6 +132,9 @@ void msg_show_buffer(const char *source, const int lineno,
 
 #define		SKLOG_SETTING_VALUE_LEN		512
 
+#define 	ASCII_TIME_STR_LEN			64
+#define		STR_FORMAT_TIME				"%c %z"
+
 /*--------------------------------------------------------------------*/
 /*                        temporary defines                           */
 /*--------------------------------------------------------------------*/

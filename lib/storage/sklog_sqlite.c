@@ -184,7 +184,7 @@ error:
 
 SKLOG_RETURN
 sklog_sqlite_u_flush_logfile(uuid_t    logfile_id,
-                             struct timeval *now,
+                             unsigned long now,
                              SKLOG_CONNECTION       *c)
                              //~ SSL       *ssl)
 {
@@ -215,8 +215,10 @@ sklog_sqlite_u_flush_logfile(uuid_t    logfile_id,
 
     int go_next = 1;
 
-    struct tm ts;
-    char ts_str[SKLOG_SMALL_BUFFER_LEN] = { 0 };
+    //~ struct tm ts;
+    //~ char ts_str[SKLOG_SMALL_BUFFER_LEN] = { 0 };
+    
+    char *timestamp = 0;
 
     sqlite3_open(SKLOG_U_DB,&db);
     
@@ -324,20 +326,22 @@ sklog_sqlite_u_flush_logfile(uuid_t    logfile_id,
 
     memset(query,0,SKLOG_BUFFER_LEN);
 
-    if ( localtime_r(&(now->tv_sec),&ts) == NULL ) {
-        ERROR("localtime_r() failure");
-        goto error;
-    }
-
-    if ( strftime(ts_str,SKLOG_SMALL_BUFFER_LEN,"%Y-%m-%d %H:%M:%S",&ts) == 0 ) {
-        ERROR("strftime() failure");
-        goto error;
-    }
+    //~ if ( localtime_r(&(now->tv_sec),&ts) == NULL ) {
+        //~ ERROR("localtime_r() failure");
+        //~ goto error;
+    //~ }
+//~ 
+    //~ if ( strftime(ts_str,SKLOG_SMALL_BUFFER_LEN,"%Y-%m-%d %H:%M:%S",&ts) == 0 ) {
+        //~ ERROR("strftime() failure");
+        //~ goto error;
+    //~ }
+    
+    time_usec2ascii(&timestamp, now);
 
     sprintf(
         query,
         "update LOGFILE set ts_end='%s' where f_uuid='%s'",
-        ts_str,f_uuid
+        timestamp,f_uuid
     );
 
     if ( sqlite3_exec(db,query,sql_callback,0,&err_msg) != SQLITE_OK ) {
@@ -357,7 +361,7 @@ error:
 
 SKLOG_RETURN
 sklog_sqlite_u_init_logfile(uuid_t            logfile_id,
-                            struct timeval    *t)
+                            unsigned long t)
 {
     #ifdef DO_TRACE
     DEBUG
@@ -368,20 +372,24 @@ sklog_sqlite_u_init_logfile(uuid_t            logfile_id,
 
     char query[SKLOG_SMALL_BUFFER_LEN] = { 0 };
 
-    struct tm ts;
-    char ts_str[SKLOG_SMALL_BUFFER_LEN] = { 0 };
+    //~ struct tm ts;
+    //~ char ts_str[SKLOG_SMALL_BUFFER_LEN] = { 0 };
     //~ char uuid_str[UUID_STR_LEN+1] = { 0 };
     char uuid_str[SKLOG_UUID_STR_LEN+1] = { 0 };
+    
+    char *timestamp = 0;
 
-    if ( localtime_r(&(t->tv_sec),&ts) == NULL ) {
-        ERROR("localtime_r() failure");
-        goto error;
-    }
-
-    if ( strftime(ts_str,SKLOG_SMALL_BUFFER_LEN,"%Y-%m-%d %H:%M:%S",&ts) == 0 ) {
-        ERROR("strftime() failure");
-        goto error;
-    }
+    //~ if ( localtime_r(&(t->tv_sec),&ts) == NULL ) {
+        //~ ERROR("localtime_r() failure");
+        //~ goto error;
+    //~ }
+//~ 
+    //~ if ( strftime(ts_str,SKLOG_SMALL_BUFFER_LEN,"%Y-%m-%d %H:%M:%S",&ts) == 0 ) {
+        //~ ERROR("strftime() failure");
+        //~ goto error;
+    //~ }
+    
+    time_usec2ascii(&timestamp, t);
 
     //~ uuid_unparse_lower(logfile_id,uuid_str);
     //~ uuid_str[UUID_STR_LEN] = '\0';
@@ -389,7 +397,7 @@ sklog_sqlite_u_init_logfile(uuid_t            logfile_id,
 
     sprintf(query,
         "insert into LOGFILE (f_uuid,ts_start,ts_end) values ('%s','%s','0000-00-00 00:00:00')",
-        uuid_str,ts_str);
+        uuid_str,timestamp);
 
     //~ fprintf(stderr,"\n\n%s\n\n",query);
     //~ getchar();

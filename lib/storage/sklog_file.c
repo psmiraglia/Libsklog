@@ -91,7 +91,7 @@ error:
 
 SKLOG_RETURN
 sklog_file_u_flush_logfile(uuid_t            logfile_id,
-                           struct timeval    *now,
+                           unsigned long now,
                            //~ SSL               *ssl)
                            SKLOG_CONNECTION  *c)
 {
@@ -250,7 +250,7 @@ error:
 
 SKLOG_RETURN
 sklog_file_u_init_logfile(uuid_t            logfile_id,
-                            struct timeval    *t)
+                            unsigned long t)
 {
     #ifdef DO_TRACE
     DEBUG

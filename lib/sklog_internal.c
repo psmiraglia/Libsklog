@@ -1081,6 +1081,142 @@ deserialize_timeval(unsigned char     *buf,
     return SKLOG_SUCCESS;
 }
 
+SKLOG_RETURN time_now_usec(unsigned long *usec)
+{
+	#ifdef DO_TRACE
+	DEBUG
+	#endif
+	
+	int rv = 0;
+	
+	struct timeval tv;
+	struct timezone tz;
+	
+	/* initialize tv and tz structures */
+	
+	memset(&tv, 0, sizeof(tv));
+	memset(&tz, 0, sizeof(tz));
+	
+	/* get current time */
+	
+	rv = gettimeofday(&tv, &tz);
+	
+	if ( rv < 0 ) {
+		ERROR("gettimeofday() failure");
+		return SKLOG_FAILURE;
+	}
+	
+	/* return time in microseconds */
+	
+	*usec = (tv.tv_usec+(tv.tv_sec*10E6));
+	
+	return SKLOG_SUCCESS;
+}
+
+SKLOG_RETURN time_usec2ascii(char **ascii_time, unsigned long usec_time)
+{
+	#ifdef DO_TRACE
+	DEBUG
+	#endif
+	
+	int rv = 0;
+	
+	struct timeval tv;
+	
+	char buf[ASCII_TIME_STR_LEN+1] = { 0 };
+	
+	long int sec = 0;
+	long int usec = 0;
+	
+	/* initialize tv and tz structures */
+	
+	memset(&tv, 0, sizeof(tv));
+
+	/* fit usec_time in tv structure */
+	
+	sec = usec_time/10E6;
+	usec = usec_time - (sec * 10E6);
+	
+	tv.tv_sec = sec;
+	tv.tv_usec = usec;
+	
+	/* convert time in ASCII */
+	
+	rv = strftime(buf, ASCII_TIME_STR_LEN, STR_FORMAT_TIME,
+		localtime(&tv.tv_sec));
+	
+	if ( rv < 0 ) {
+		ERROR("strftime() failure");
+		return SKLOG_FAILURE;
+	}
+	
+	*ascii_time = buf;
+	
+	return SKLOG_SUCCESS;
+}
+
+SKLOG_RETURN time_serialize(unsigned char **buf, unsigned int *bufl,
+	unsigned long usec_time)
+{
+	#ifdef DO_TRACE
+    DEBUG
+    #endif
+    
+	unsigned char b[8] = { 0 };
+	
+	uint64_t val = 0;
+	uint32_t val_h = 0;
+	uint32_t val_l = 0;
+	
+	uint32_t val_h_no = 0;
+	uint32_t val_l_no = 0;
+	
+	val = usec_time;
+	val_l = val;
+	val_h = val >> 32;
+	
+	val_h_no = htonl(val_h);
+	val_l_no = htonl(val_l);
+	
+	memcpy(b, &val_h_no, sizeof(val_h_no));
+	memcpy(b+sizeof(val_h_no), &val_l_no, sizeof(val_l_no));
+	
+	*bufl = sizeof(val_h_no) + sizeof(val_l_no);
+	*buf = calloc(sizeof(val_h_no) + sizeof(val_l_no), sizeof(char));
+	memcpy(*buf, b, sizeof(val_h_no) + sizeof(val_l_no));
+	
+	return SKLOG_SUCCESS;
+}
+
+SKLOG_RETURN time_deserialize(unsigned long *usec_time,
+	unsigned char *buf, unsigned int bufl)
+{
+	#ifdef DO_TRACE
+    DEBUG
+    #endif
+    
+	uint64_t val = 0;
+	uint32_t val_h = 0;
+	uint32_t val_l = 0;
+	
+	uint32_t val_h_no = 0;
+	uint32_t val_l_no = 0;
+	
+	memcpy(&val_h_no, buf, sizeof(val_h_no));
+	memcpy(&val_l_no, buf+sizeof(val_h_no), sizeof(val_l_no));
+	
+	val_h = ntohl(val_h_no);
+	val_l = ntohl(val_l_no);
+	
+	val = val_h;
+	val = val << 32;
+	val = val | val_l;
+	
+	*usec_time = val;
+	
+	return SKLOG_SUCCESS;
+}
+	
 /*--------------------------------------------------------------------*/
 /*                       memory management                            */
 /*--------------------------------------------------------------------*/

@@ -53,12 +53,12 @@ sklog_syslog_u_store_logentry(uuid_t             logfile_id,
 
 SKLOG_RETURN
 sklog_syslog_u_flush_logfile(uuid_t    logfile_id,
-                             struct timeval *now,
+                             unsigned long now,
                              SKLOG_CONNECTION       *c);
 
 SKLOG_RETURN
 sklog_syslog_u_init_logfile(uuid_t            logfile_id,
-                            struct timeval    *t);
+                            unsigned long t);
 
 /*--------------------------------------------------------------------*/
 /*                             t                                      */

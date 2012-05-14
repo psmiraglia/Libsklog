@@ -26,30 +26,17 @@
 #include "sklog_commons.h"
 #include "sklog_u_internal.h"
 
-SKLOG_U_Ctx*
-SKLOG_U_NewCtx(void);
+SKLOG_U_Ctx *SKLOG_U_NewCtx(void);
 
-SKLOG_RETURN
-SKLOG_U_FreeCtx(SKLOG_U_Ctx**);
+SKLOG_RETURN SKLOG_U_FreeCtx(SKLOG_U_Ctx**);
 
-SKLOG_RETURN
-SKLOG_U_LogEvent(SKLOG_U_Ctx        *u_ctx,
-                 SKLOG_DATA_TYPE    type,
-                 char               *data,
-                 unsigned int       data_len,
-                 char               **le,
-                 unsigned int       *le_len);
+SKLOG_RETURN SKLOG_U_LogEvent(SKLOG_U_Ctx *u_ctx, SKLOG_DATA_TYPE type,
+	char *data, unsigned int data_len, char **le, unsigned int *le_len);
 
-SKLOG_RETURN
-SKLOG_U_Open(SKLOG_U_Ctx     *u_ctx,
-             char            **le1,
-             unsigned int    *le1_len,
-             char            **le2,
-             unsigned int    *le2_len);
+SKLOG_RETURN SKLOG_U_Open(SKLOG_U_Ctx *u_ctx, char **le1,
+	unsigned int *le1_len, char **le2, unsigned int *le2_len);
 
-SKLOG_RETURN
-SKLOG_U_Close(SKLOG_U_Ctx   *u_ctx,
-            char            **le,
-            unsigned int    *le_len);
+SKLOG_RETURN SKLOG_U_Close(SKLOG_U_Ctx *u_ctx, char **le,
+	unsigned int *le_len);
 
 #endif /* SKLOG_U_H */

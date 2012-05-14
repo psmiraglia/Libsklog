@@ -37,31 +37,6 @@ SKLOG_U_NewCtx(void)
         return NULL;
     }
 
-    /*
-    ctx->lsdriver = calloc(1,sizeof(SKLOG_U_STORAGE_DRIVER));
-
-    if ( ctx->lsdriver == NULL ) {
-        ERROR("calloc() failure");
-        return NULL;
-    }
-    
-    #ifdef USE_FILE
-    ctx->lsdriver->store_logentry =    &sklog_file_u_store_logentry;
-    ctx->lsdriver->flush_logfile =     &sklog_file_u_flush_logfile;
-    ctx->lsdriver->init_logfile =      &sklog_file_u_init_logfile;
-    #elif USE_SYSLOG
-    ctx->lsdriver->store_logentry =    &sklog_syslog_u_store_logentry;
-    ctx->lsdriver->flush_logfile =     &sklog_syslog_u_flush_logfile;
-    ctx->lsdriver->init_logfile =      &sklog_syslog_u_init_logfile;
-    #elif USE_SQLITE
-    ctx->lsdriver->store_logentry =    &sklog_sqlite_u_store_logentry;
-    ctx->lsdriver->flush_logfile =     &sklog_sqlite_u_flush_logfile;
-    ctx->lsdriver->init_logfile =      &sklog_sqlite_u_init_logfile;
-    #else
-    //~ todo: manage default case
-    #endif
-    */
-
     return ctx;
 }
 
@@ -134,15 +109,15 @@ SKLOG_U_LogEvent(SKLOG_U_Ctx        *u_ctx,
             WARNING("The logging session has to be renewed!!!")
     
             SKLOG_DATA_TYPE type = NormalCloseMessage;
-            struct timeval now;
+            
+            unsigned long now;
     
-            gettimeofday(&now,NULL);
-        
-            if ( serialize_timeval(&now,&data_blob,
-                                   &data_blob_len) == SKLOG_FAILURE ) {
-                ERROR("serialize_timeval() failure")
+            if ( time_now_usec(&now) == SKLOG_FAILURE ) {
+				ERROR("time_now_usec() failure")
                 goto error;
-            }
+			}
+			
+            time_serialize(&data_blob, &data_blob_len, now);
     
             if ( create_logentry(u_ctx,type,data_blob,
                                  data_blob_len,0,0,0) == SKLOG_FAILURE ) {
@@ -151,7 +126,7 @@ SKLOG_U_LogEvent(SKLOG_U_Ctx        *u_ctx,
             }
     
             //~ send all generated log-entries to T
-            if ( flush_logfile_execute(u_ctx,&now) == SKLOG_FAILURE ) {
+            if ( flush_logfile_execute(u_ctx, now) == SKLOG_FAILURE ) {
                 ERROR("flush_logfile_execute() failure")
                 goto error;
             }
@@ -195,8 +170,6 @@ SKLOG_U_Open(SKLOG_U_Ctx *u_ctx, char **le1, unsigned int *le1_len,
 	
 	char *b64 = 0;
 	
-	struct timeval timeout;
-	
 	SKLOG_CONNECTION *c = 0;
 
 	/* checking input parameters */
@@ -219,8 +192,7 @@ SKLOG_U_Open(SKLOG_U_Ctx *u_ctx, char **le1, unsigned int *le1_len,
 	
 	/* generate m0 */
 	
-	rv = generate_m0_message(u_ctx, &m0, &m0_len, &timeout, le1,
-		le1_len);
+	rv = generate_m0_message(u_ctx, &m0, &m0_len, le1, le1_len);
 		
 	if ( rv == SKLOG_FAILURE ) {
 		ERROR("generate_m0_message() failure");
@@ -282,7 +254,7 @@ SKLOG_U_Open(SKLOG_U_Ctx *u_ctx, char **le1, unsigned int *le1_len,
 	
 	/* check m1 message */
 	
-	rv = verify_m1_message(u_ctx, m1, m1_len, &timeout, le2, le2_len);
+	rv = verify_m1_message(u_ctx, m1, m1_len, le2, le2_len);
 	
 	if ( rv == SKLOG_FAILURE ) {
 		ERROR("verify_m1_message() failure");
@@ -320,18 +292,17 @@ SKLOG_U_Close(SKLOG_U_Ctx     *u_ctx,
     #endif
 
     SKLOG_DATA_TYPE type = NormalCloseMessage;
-    struct timeval now;
+    unsigned long now;
 
     unsigned char *data_blob = 0;
     unsigned int data_blob_len = 0;
 
-    gettimeofday(&now,NULL);
-
-    if ( serialize_timeval(&now,&data_blob,
-                           &data_blob_len) == SKLOG_FAILURE ) {
-        ERROR("serialize_timeval() failure")
+    if ( time_now_usec(&now) == SKLOG_FAILURE ) {
+		ERROR("time_now_usec() failure")
         goto error;
-    }
+	}
+	
+    time_serialize(&data_blob, &data_blob_len, now);
 
     if ( create_logentry(u_ctx,type,data_blob,
                          data_blob_len,1,le,le_len) == SKLOG_FAILURE ) {
@@ -340,7 +311,7 @@ SKLOG_U_Close(SKLOG_U_Ctx     *u_ctx,
     }
 
     //~ send all generated log-entries to T
-    if ( flush_logfile_execute(u_ctx,&now) == SKLOG_FAILURE ) {
+    if ( flush_logfile_execute(u_ctx, now) == SKLOG_FAILURE ) {
         ERROR("flush_logfile_execute() failure")
         goto error;
     }

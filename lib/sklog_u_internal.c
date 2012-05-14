@@ -552,84 +552,6 @@ SKLOG_RETURN parse_u_config_file(char *t_cert_path, char *t_address,
 	DEBUG
 	#endif
 
-	/*
-	char buffer[SKLOG_SMALL_BUFFER_LEN] = { 0 };
-	int len = 0;
-
-	cfg_opt_t opts[] = {
-		CFG_STR("t_cert",SKLOG_DEF_T_CERT_PATH,CFGF_NONE),
-		CFG_STR("t_address",SKLOG_DEF_T_ADDRESS,CFGF_NONE),
-		CFG_INT("t_port",SKLOG_DEF_T_PORT,CFGF_NONE),
-		CFG_STR("u_cert",SKLOG_DEF_U_CERT_PATH,CFGF_NONE),
-		CFG_STR("u_id",NULL,CFGF_NONE),
-		CFG_STR("u_privkey",SKLOG_DEF_U_RSA_KEY_PATH,CFGF_NONE),
-		CFG_INT("u_timeout",SKLOG_DEF_U_TIMEOUT,CFGF_NONE),
-		CFG_INT("logfile_size",SKLOG_DEF_LOGFILE_SIZE,CFGF_NONE),
-		CFG_END()
-	};
-
-	cfg_t *cfg = NULL;
-	cfg = cfg_init(opts, CFGF_NONE);
-
-	if( cfg_parse(cfg,SKLOG_U_CONFIG_FILE_PATH) == CFG_PARSE_ERROR ) {
-		ERROR("cfg_parse() failure")
-		goto error;
-	}
-
-	//~ load t_cert
-	len = sprintf(buffer,"%s",cfg_getstr(cfg,"t_cert"));
-	*t_cert = calloc(len+1,sizeof(char));
-	memcpy(*t_cert,buffer,len);
-	(*t_cert)[len] = '\0';
-	memset(buffer,0,SKLOG_SMALL_BUFFER_LEN);
-	
-	//~ load t_address
-	len = sprintf(buffer,"%s",cfg_getstr(cfg,"t_address"));
-	*t_address = calloc(len+1,sizeof(char));
-	memcpy(*t_address,buffer,len);
-	(*t_address)[len] = '\0';
-	memset(buffer,0,SKLOG_SMALL_BUFFER_LEN);
-	
-
-	//~ load t_port
-	*t_port = cfg_getint(cfg,"t_port");
-
-	//~ load u_cert
-	len = sprintf(buffer,"%s",cfg_getstr(cfg,"u_cert"));
-	*u_cert = calloc(len+1,sizeof(char));
-	memcpy(*u_cert,buffer,len);
-	(*u_cert)[len] = '\0';
-	memset(buffer,0,SKLOG_SMALL_BUFFER_LEN);
-	
-	//~ load u_id
-	len = sprintf(buffer,"%s",cfg_getstr(cfg,"u_id"));
-	*u_id = calloc(len+1,sizeof(char));
-	memcpy(*u_id,buffer,len);
-	(*u_id)[len] = '\0';
-	memset(buffer,0,SKLOG_SMALL_BUFFER_LEN);
-
-	//~ load u_privkey
-	len = sprintf(buffer,"%s",cfg_getstr(cfg,"u_privkey"));
-	*u_privkey = calloc(len+1,sizeof(char));
-	memcpy(*u_privkey,buffer,len);
-	(*u_privkey)[len] = '\0';
-	memset(buffer,0,SKLOG_SMALL_BUFFER_LEN);
-
-	//~ load u_timeout
-	*u_timeout = cfg_getint(cfg,"u_timeout");
-
-	//~ load logfile_size
-	*logfile_size = cfg_getint(cfg,"logfile_size");
-
-	cfg_free(cfg);
-
-	return SKLOG_SUCCESS;
-	
-error:
-	if ( cfg ) cfg_free(cfg);
-	return SKLOG_FAILURE;
-	*/
-
 	config_t cfg;
 	
 	const char *str_value = 0;
@@ -662,7 +584,8 @@ error:
 	if ( config_lookup_string(&cfg, "t_address", &str_value) ) {
 		memcpy(t_address, str_value, strlen(str_value));
 	} else {
-		memcpy(t_address, SKLOG_DEF_T_ADDRESS, strlen(SKLOG_DEF_T_ADDRESS));
+		memcpy(t_address, SKLOG_DEF_T_ADDRESS,
+			strlen(SKLOG_DEF_T_ADDRESS));
 	}
 	
 	/* looking for t_port */
@@ -678,7 +601,8 @@ error:
 	if ( config_lookup_string(&cfg, "u_cert", &str_value) ) {
 		memcpy(u_cert_path, str_value, strlen(str_value));
 	} else {
-		memcpy(u_cert_path, SKLOG_DEF_U_CERT_PATH, strlen(SKLOG_DEF_U_CERT_PATH));
+		memcpy(u_cert_path, SKLOG_DEF_U_CERT_PATH,
+			strlen(SKLOG_DEF_U_CERT_PATH));
 	}
 	
 	/* looking for u_id */
@@ -694,7 +618,8 @@ error:
 	if ( config_lookup_string(&cfg, "u_privkey", &str_value) ) {
 		memcpy(u_privkey_path, str_value, strlen(str_value));
 	} else {
-		memcpy(u_privkey_path, SKLOG_DEF_U_RSA_KEY_PATH, strlen(SKLOG_DEF_U_RSA_KEY_PATH));
+		memcpy(u_privkey_path, SKLOG_DEF_U_RSA_KEY_PATH,
+			strlen(SKLOG_DEF_U_RSA_KEY_PATH));
 	}
 	
 	/* looking for u_timeout */
@@ -721,9 +646,9 @@ error:
  * generate x0 blob
  * 
  */
- 
+
 SKLOG_RETURN gen_x0(SKLOG_U_Ctx *u_ctx, SKLOG_PROTOCOL_STEP p,
-	struct timeval *d, unsigned char **x0, unsigned int *x0_len)
+	unsigned long d, unsigned char **x0, unsigned int *x0_len)
 {
 	#ifdef DO_TRACE
 	DEBUG
@@ -746,7 +671,9 @@ SKLOG_RETURN gen_x0(SKLOG_U_Ctx *u_ctx, SKLOG_PROTOCOL_STEP p,
 	unsigned char *tlv = 0;
 
 	//~ serialize timestamp (d)
-	serialize_timeval(d,&dbuf,&dbuf_len);
+	time_serialize(&dbuf, &dbuf_len, d);
+	
+	SHOWBUF("buffer", dbuf, dbuf_len);
 
 	//~ serialize U's x509 certificate
 	cert_size = i2d_X509(u_ctx->u_cert,NULL);
@@ -976,8 +903,8 @@ error:
  * 
  */
 
-SKLOG_RETURN gen_d0(SKLOG_U_Ctx *u_ctx, struct timeval *d,
-	struct timeval *d_timeout, unsigned char *m0, unsigned int m0_len,
+SKLOG_RETURN gen_d0(SKLOG_U_Ctx *u_ctx, unsigned long d,
+	unsigned long d_timeout, unsigned char *m0, unsigned int m0_len,
 	unsigned char **d0, unsigned int *d0_len)
 {
 	#ifdef DO_TRACE
@@ -1002,30 +929,18 @@ SKLOG_RETURN gen_d0(SKLOG_U_Ctx *u_ctx, struct timeval *d,
 	}
 
 	//~ serialize timestamp (d)
-	if ( serialize_timeval(d,&dbuf,&dbuf_len) == SKLOG_FAILURE) {
-		ERROR("serialize_timeval() failure")
+
+	if ( time_serialize(&dbuf, &dbuf_len, d) == SKLOG_FAILURE ) {
+		ERROR("time_serialize() failure");
 		goto error;
 	}
 
 	//~ serialize timestamp (d_timeout)
-	if ( serialize_timeval(d_timeout,&dbuf2,
-						   &dbuf2_len) == SKLOG_FAILURE) {
-		ERROR("serialize_timeval() failure")
+
+	if ( time_serialize(&dbuf2, &dbuf2_len, d_timeout) == SKLOG_FAILURE ) {
+		ERROR("time_serialize() failure");
 		goto error;
 	}
-
-	/**
-	*d0_len = (dbuf_len + 8) +
-			  (dbuf2_len + 8) +
-			  (SKLOG_LOG_ID_LEN + 8) +
-			  (m0_len + 8);
-
-	//~ SKLOG_CALLOC(*d0,*d0_len,char)
-	if ( SKLOG_alloc(d0,unsigned char,*d0_len) == SKLOG_FAILURE ) {
-		ERROR("SKLOG_alloc() failure");
-		goto error;
-	}
-	*/
 
 	//~ TLV-ize d
 
@@ -1063,11 +978,6 @@ SKLOG_RETURN gen_d0(SKLOG_U_Ctx *u_ctx, struct timeval *d,
 	}
 	memcpy(buffer+ds,tlv,len); free(tlv); ds += len;
 
-	//~ if ( SKLOG_alloc(*d0,unsigned char,ds) == SKLOG_FAILURE ) {
-		//~ ERROR("SKLOG_alloc() fails");
-		//~ goto error;
-	//~ }
-	
 	*d0 = calloc(ds,sizeof(unsigned char));
 	memcpy(*d0,buffer,ds);
 	*d0_len = ds;
@@ -1448,29 +1358,25 @@ error:
  * 
  */
 
-SKLOG_RETURN verify_timeout_expiration(struct timeval *d_timeout)
+SKLOG_RETURN verify_timeout_expiration(unsigned long d_timeout)
 {
 	#ifdef DO_TRACE
 	DEBUG
 	#endif
 	
-	struct timeval now;
-	long int t1 = 0;
-	long int t2 = 0;
-
-	gettimeofday(&now,NULL);
-
-	t1 = (now.tv_sec*1000000)+(now.tv_usec);
-	t2 = (d_timeout->tv_sec*1000000)+(d_timeout->tv_usec);
-
-	if ( t2 < t1 ) {
-		#ifdef DO_NOTIFY
-		NOTIFY("timeout expired")
-		#endif
+	unsigned long now = 0;
+	
+	if ( time_now_usec(&now) == SKLOG_FAILURE ) {
+		ERROR("time_now_usec() failure");
 		return SKLOG_FAILURE;
-	} else {
-		return SKLOG_SUCCESS;
 	}
+	
+	if ( now > d_timeout ) {
+		NOTIFY("Timeout expired");
+		return SKLOG_FAILURE;
+	}
+	
+	return SKLOG_SUCCESS;
 }
 
 /*
@@ -1669,9 +1575,9 @@ SKLOG_RETURN initialize_logging_session(SKLOG_U_Ctx *u_ctx,
 
 	int retval = 0;
 
-	struct timeval d;
-	struct timeval d_timeout;
-	struct timeval now;
+	unsigned long d = 0;
+	unsigned long d_timeout = 0;
+	unsigned long now = 0;
 
 	unsigned char *x0 = 0;
 	unsigned int x0_len = 0;
@@ -1699,16 +1605,14 @@ SKLOG_RETURN initialize_logging_session(SKLOG_U_Ctx *u_ctx,
 	unsigned char *m1 = 0;
 	unsigned int m1_len = 0;
 	
-	const char *reason = 0;
-
 	unsigned char *ts = 0;
-	unsigned int ts_len = 0;
 	
-	char data[4096] = { 0 };
 	unsigned int data_len = 0;
 
-	int i = 0;
-	int j = 0;
+	char *timestamp = 0;
+	const char *reason = 0;
+	
+	char data[1024] = {0};
 
 	OpenSSL_add_all_digests();
 	ERR_load_crypto_strings();
@@ -1716,14 +1620,19 @@ SKLOG_RETURN initialize_logging_session(SKLOG_U_Ctx *u_ctx,
 	if ( data_len ) ; //to fix
 
 	//~ get current time
-	gettimeofday(&d,NULL);
+
+	if ( time_now_usec(&d) == SKLOG_FAILURE ) {
+		ERROR("time_now_usec()");
+		goto error;
+	}
 
 	//~ set timeout
+
 	d_timeout = d;
-	d_timeout.tv_sec += u_ctx->u_timeout;
+	d_timeout += u_ctx->u_timeout * 10E6;
 
 	//~ generate x0
-	if ( gen_x0(u_ctx,p,&d,&x0,&x0_len) == SKLOG_FAILURE ) {
+	if ( gen_x0(u_ctx, p , d, &x0, &x0_len) == SKLOG_FAILURE ) {
 		ERROR("gen_x0() failure")
 		goto error;
 	}
@@ -1758,7 +1667,7 @@ SKLOG_RETURN initialize_logging_session(SKLOG_U_Ctx *u_ctx,
 	}
 
 	//~ generate d0
-	if ( gen_d0(u_ctx,&d,&d_timeout,m0,m0_len,
+	if ( gen_d0(u_ctx, d, d_timeout, m0, m0_len,
 				&d0,&d0_len) == SKLOG_FAILURE ) {
 		ERROR("gen_d0() failure")
 		goto error;
@@ -1792,7 +1701,7 @@ SKLOG_RETURN initialize_logging_session(SKLOG_U_Ctx *u_ctx,
 	SKLOG_free(&x0);
 
 	//~ initialize logfile
-	if ( u_ctx->lsdriver->init_logfile(u_ctx->logfile_id,&d)
+	if ( u_ctx->lsdriver->init_logfile(u_ctx->logfile_id, d)
 													== SKLOG_FAILURE ) {
 		ERROR("u_ctx->lsdriver->init_logfile() failure");
 		goto error;
@@ -1854,7 +1763,7 @@ SKLOG_RETURN initialize_logging_session(SKLOG_U_Ctx *u_ctx,
 /*--------------------------------------------------------------------*/
 
 	//~ verify timeout expiration
-	if ( verify_timeout_expiration(&d_timeout) == SKLOG_FAILURE ) {
+	if ( verify_timeout_expiration(d_timeout) == SKLOG_FAILURE ) {
 		NOTIFY("timeout expired")
 		reason = "Timeout Expiration";
 		goto failure;
@@ -1887,21 +1796,13 @@ SKLOG_RETURN initialize_logging_session(SKLOG_U_Ctx *u_ctx,
 	return SKLOG_SUCCESS;
 
 failure:
-	gettimeofday(&now,NULL);
-	ts_len = sizeof(now);
-
-	//~ SKLOG_CALLOC(ts,ts_len,char)
-	if ( SKLOG_alloc(&ts,unsigned char,ts_len) == SKLOG_FAILURE ) {
-		ERROR("SKLOG_alloc() failure");
-		goto error;
-	}
-	memcpy(ts,&now,ts_len);
-
-	for ( i = 0 , j = 0 ; i < ts_len ; i++ , j+=2 )
-		sprintf(data+j,"%2.2x",ts[i]);
-	data[j-1] = '-';
-
-	data_len = sprintf(&data[j],"%s",reason);
+	
+	time_now_usec(&now);
+	time_usec2ascii(&timestamp, now);
+	
+	strcat(data, timestamp);
+	strcat(data, " - ");
+	strcat(data, reason);
 
 	if ( req_blob ) {
 		if ( create_logentry(u_ctx,AbnormalCloseType,
@@ -2069,7 +1970,7 @@ error:
  */
  
 SKLOG_RETURN flush_logfile_execute(SKLOG_U_Ctx *u_ctx,
-	struct timeval *now)
+	unsigned long now)
 {
 	#ifdef DO_TRACE
 	DEBUG
@@ -2100,7 +2001,7 @@ SKLOG_RETURN flush_logfile_execute(SKLOG_U_Ctx *u_ctx,
 	}
 
 	//~ flush logfile
-	if ( u_ctx->lsdriver->flush_logfile(u_ctx->logfile_id,now,conn) == SKLOG_FAILURE ) {
+	if ( u_ctx->lsdriver->flush_logfile(u_ctx->logfile_id, now, conn) == SKLOG_FAILURE ) {
 		ERROR("u_ctx->lsdriver->flush_logfile() failure");
 		goto error;
 	}
@@ -2128,8 +2029,7 @@ error:
  */
 
 SKLOG_RETURN generate_m0_message(SKLOG_U_Ctx *u_ctx, unsigned char **msg,
-	unsigned int *msg_len, struct timeval *timeout, char **le,
-	unsigned int *le_len)
+	unsigned int *msg_len, char **le, unsigned int *le_len)
 {
 	#ifdef DO_TRACE
 	DEBUG;
@@ -2137,8 +2037,8 @@ SKLOG_RETURN generate_m0_message(SKLOG_U_Ctx *u_ctx, unsigned char **msg,
 	
 	int rv = SKLOG_SUCCESS;
 	
-	struct timeval d;
-	struct timeval d_timeout;
+	unsigned long d = 0;
+	unsigned long d_timeout = 0;
 	
 	SKLOG_PROTOCOL_STEP p = 0;
 	
@@ -2172,20 +2072,21 @@ SKLOG_RETURN generate_m0_message(SKLOG_U_Ctx *u_ctx, unsigned char **msg,
 	
 	/* get current time and set timeout */
 	
-	if ( gettimeofday(&d, NULL) < 0 ) {
-		ERROR("gettimeofday() failure");
-		rv = SKLOG_FAILURE;
+	rv = time_now_usec(&d);
+	
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("time_now_usec() failure");
 		goto error;
 	}
 	
 	d_timeout = d;
-	d_timeout.tv_sec += u_ctx->u_timeout;
+	d_timeout += (u_ctx->u_timeout * 10E6 );
 	
-	*timeout = d_timeout;
+	u_ctx->u_expiration = d_timeout;
 	
 	/* generate x0 blob */
 	
-	rv = gen_x0(u_ctx, p, &d, &x0, &x0_len);
+	rv = gen_x0(u_ctx, p, d, &x0, &x0_len);
 	if ( rv == SKLOG_FAILURE ) {
 		ERROR("gen_x0() failure");
 		goto error;
@@ -2244,7 +2145,7 @@ SKLOG_RETURN generate_m0_message(SKLOG_U_Ctx *u_ctx, unsigned char **msg,
 	
 	/* generate d0 blob */
 	
-	rv = gen_d0(u_ctx, &d, &d_timeout, m0, m0_len, &d0, &d0_len);
+	rv = gen_d0(u_ctx, d, d_timeout, m0, m0_len, &d0, &d0_len);
 	
 	if ( rv == SKLOG_FAILURE ) {
 		ERROR("gen_d0() failure");
@@ -2253,7 +2154,7 @@ SKLOG_RETURN generate_m0_message(SKLOG_U_Ctx *u_ctx, unsigned char **msg,
 	
 	/* initialize logfile */
 	
-	rv = u_ctx->lsdriver->init_logfile(u_ctx->logfile_id, &d);
+	rv = u_ctx->lsdriver->init_logfile(u_ctx->logfile_id, d);
 	
 	if ( rv == SKLOG_FAILURE ) {
 		ERROR("u_ctx->lsdriver->init_logfile() failure");
@@ -2306,8 +2207,7 @@ check_input_error:
  */
 
 SKLOG_RETURN verify_m1_message(SKLOG_U_Ctx *u_ctx, unsigned char *m1,
-	unsigned int m1_len, struct timeval *d_timeout, char **le,
-	unsigned int *le_len)
+	unsigned int m1_len, char **le,	unsigned int *le_len)
 {
 	#ifdef DO_TARCE
 	DEBUG;
@@ -2315,34 +2215,27 @@ SKLOG_RETURN verify_m1_message(SKLOG_U_Ctx *u_ctx, unsigned char *m1,
 	
 	int rv = SKLOG_SUCCESS;
 	
-	//~ long int t1 = 0;
-	//~ long int t2 = 0;
-	struct timeval d_now;
-	
 	unsigned char *buf = 0;
-	unsigned int bufl = 0;
+	
+	unsigned long now = 0;
+	char *timestamp = 0;
+	char data[1024] = { 0 };
+	const char *reason = 0;
 	
 	/* check input parameters */
 	
-	if ( u_ctx == NULL || m1 == NULL || d_timeout == NULL ) {
+	if ( u_ctx == NULL || m1 == NULL ) {
 		ERROR("Bad input parameter(s). Please, double-check!");
 		goto check_input_error;
 	}
 	
 	/* verify timeout expiration */
 	
-	//~ if ( gettimeofday(&d_now, NULL) < 0 ) {
-		//~ ERROR("gettimeofday() failure");
-		//~ goto error;
-	//~ }
-
-	//~ t1 = ( d_now.tv_sec*1000000 ) + ( d_now.tv_usec );
-	//~ t2 = ( d_timeout->tv_sec*1000000 )+( d_timeout->tv_usec );
-
-	//~ if ( t2 < t1 ) {
-		//~ NOTIFY("Timeout expiration");
-		//~ goto failure;
-	//~ }
+	if ( verify_timeout_expiration(u_ctx->u_expiration) == SKLOG_FAILURE ) {
+		NOTIFY("Timeout expiration");
+		reason = "Timeout Expiration";
+		goto failure;
+	}
 	
 	/* verify m1 message */
 	
@@ -2350,6 +2243,7 @@ SKLOG_RETURN verify_m1_message(SKLOG_U_Ctx *u_ctx, unsigned char *m1,
 	
 	if ( rv == SKLOG_FAILURE ) {
 		ERROR("verify_m1() failure");
+		reason = "Verification Failure";
 		goto failure;
 	}
 	
@@ -2374,20 +2268,21 @@ failure:
 	
 	/* get current time */
 	
-	if ( gettimeofday(&d_now, NULL) < 0 ) {
-		ERROR("gettimeofday() failure");
+	if ( time_now_usec(&now) == SKLOG_FAILURE ) {
+		ERROR("time_now_usec() failure");
 		goto error;
 	}
 	
-	bufl = sizeof(d_now);
-	buf = calloc(bufl, sizeof(char));
-	memset(buf, 0, bufl);
-	memcpy(buf, &d_now, bufl);
+	time_usec2ascii(&timestamp, now);
+	
+	strcat(data, timestamp);
+	strcat(data, " - ");
+	strcat(data, reason);
 	
 	/* create logentry */
 	
-	rv = create_logentry(u_ctx, AbnormalCloseType, buf, bufl,
-		1, le, le_len);
+	rv = create_logentry(u_ctx, AbnormalCloseType, 
+		(unsigned char *)data, strlen(data), 1, le, le_len);
 		
 	if ( rv == SKLOG_FAILURE ) {
 		ERROR("create_logentry() failure");

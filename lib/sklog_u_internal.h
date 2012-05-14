@@ -74,6 +74,7 @@ struct sklog_u_ctx {
     unsigned int    u_id_len;
 
     int             u_timeout;
+    unsigned long	u_expiration;
 
     X509            *u_cert;
     char            u_cert_file_path[MAX_FILE_PATH_LEN];
@@ -109,9 +110,14 @@ struct sklog_u_ctx {
 
 struct sklog_u_storage_driver {
 
-    SKLOG_RETURN (*store_logentry) (uuid_t, SKLOG_DATA_TYPE, unsigned char *, unsigned int, unsigned char *, unsigned char *);
-    SKLOG_RETURN (*flush_logfile) (uuid_t,struct timeval *,SKLOG_CONNECTION *);
-    SKLOG_RETURN (*init_logfile) (uuid_t,struct timeval *);
+    SKLOG_RETURN (*store_logentry) (uuid_t, SKLOG_DATA_TYPE, 
+		unsigned char *, unsigned int, unsigned char *,
+		unsigned char *);
+		
+    SKLOG_RETURN (*flush_logfile) (uuid_t, unsigned long,
+		SKLOG_CONNECTION *);
+		
+    SKLOG_RETURN (*init_logfile) (uuid_t, unsigned long);
 };
 
 /*
@@ -133,18 +139,13 @@ SKLOG_RETURN renew_auth_key(SKLOG_U_Ctx *ctx);
 SKLOG_RETURN create_logentry(SKLOG_U_Ctx *u_ctx, SKLOG_DATA_TYPE type,
 	unsigned char *data, unsigned int data_len, int req_blob, 
 	char **blob, unsigned int *blob_len);
-/*
-SKLOG_RETURN parse_u_config_file(char **t_cert, char **t_address, 
-	int *t_port, char **u_cert, char **u_id, char **u_privkey,
-	unsigned int *u_timeout, unsigned int *logfile_size);
-*/
 
 SKLOG_RETURN parse_u_config_file(char *t_cert_path, char *t_address, 
 	int *t_port, char *u_cert_path, char *u_id, char *u_privkey_path,
 	unsigned int *u_timeout, unsigned int *logfile_max_size);
 
 SKLOG_RETURN gen_x0(SKLOG_U_Ctx *u_ctx, SKLOG_PROTOCOL_STEP p,
-	struct timeval *d, unsigned char **x0, unsigned int *x0_len);
+	unsigned long d, unsigned char **x0, unsigned int *x0_len);
 
 SKLOG_RETURN gen_e_k0(SKLOG_U_Ctx *u_ctx, unsigned char *x0,
 	unsigned int x0_len, unsigned char *x0_sign,
@@ -156,8 +157,8 @@ SKLOG_RETURN gen_m0(SKLOG_U_Ctx *u_ctx, SKLOG_PROTOCOL_STEP p,
 	unsigned char *e_k0, unsigned int e_k0_len, unsigned char **m0,
 	unsigned int *m0_len);
 
-SKLOG_RETURN gen_d0(SKLOG_U_Ctx *u_ctx, struct timeval *d,
-	struct timeval *d_timeout, unsigned char *m0, unsigned int m0_len,
+SKLOG_RETURN gen_d0(SKLOG_U_Ctx *u_ctx, unsigned long d,
+	unsigned long d_timeout, unsigned char *m0, unsigned int m0_len,
 	unsigned char **d0, unsigned int *d0_len);
 
 SKLOG_RETURN send_m0(SKLOG_CONNECTION *c, unsigned char *m0, 
@@ -178,7 +179,7 @@ SKLOG_RETURN parse_e_k1_content(unsigned char *in, unsigned int in_len,
 SKLOG_RETURN verify_m1(SKLOG_U_Ctx *ctx, unsigned char *m1, 
 	unsigned int m1_len);
 
-SKLOG_RETURN verify_timeout_expiration(struct timeval *d_timeout);
+SKLOG_RETURN verify_timeout_expiration(unsigned long d_timeout);
 
 SKLOG_RETURN initialize_context(SKLOG_U_Ctx *u_ctx);
 
@@ -191,14 +192,12 @@ SKLOG_RETURN flush_logfile_init(SKLOG_CONNECTION *c);
 SKLOG_RETURN flush_logfile_terminate(SKLOG_CONNECTION *c);
 
 SKLOG_RETURN flush_logfile_execute(SKLOG_U_Ctx *u_ctx,
-	struct timeval *now);
+	unsigned long now);
 	
 SKLOG_RETURN generate_m0_message(SKLOG_U_Ctx *u_ctx, unsigned char **msg,
-	unsigned int *msg_len, struct timeval *timeout, char **le,
-	unsigned int *le_len);
+	unsigned int *msg_len, char **le, unsigned int *le_len);
 	
 SKLOG_RETURN verify_m1_message(SKLOG_U_Ctx *u_ctx, unsigned char *m1,
-	unsigned int m1_len, struct timeval *d_timeout, char **le,
-	unsigned int *le_len);
+	unsigned int m1_len, char **le,	unsigned int *le_len);
 
 #endif /* SKLOG_U_INTERNAL */

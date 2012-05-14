@@ -45,13 +45,13 @@ sklog_file_u_store_logentry(uuid_t             logfile_id,
                             unsigned char      *hmac);
 SKLOG_RETURN
 sklog_file_u_flush_logfile(uuid_t            logfile_id,
-                           struct timeval    *now,
+                           unsigned long now,
                            SKLOG_CONNECTION  *c);
                            //~ SSL               *ssl);
 
 SKLOG_RETURN
 sklog_file_u_init_logfile(uuid_t            logfile_id,
-                            struct timeval    *t);
+                            unsigned long t);
 
 /*--------------------------------------------------------------------*/
 /*                             t                                      */
