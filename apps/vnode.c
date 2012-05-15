@@ -43,17 +43,21 @@ int main (int argc, char **argv) {
             case 's':
 
                 //~ open connection
-                if ( ( c = new_connection()) == 0 ) {
-                    ERROR("new_connection() failure");
+                if ( ( c = SKLOG_CONNECTION_New()) == 0 ) {
+                    ERROR("SKLOG_CONNECTION_New() failure");
                     goto terminate;
                 }
             
-                retval = setup_ssl_connection(c,vctx->t_address,vctx->t_port,
-                                              vctx->v_cert,vctx->v_privkey,
-                                              vctx->t_cert_file_path,DO_NOT_VERIFY);
-            
+                //~ retval = setup_ssl_connection(c,vctx->t_address,vctx->t_port,
+                                              //~ vctx->v_cert,vctx->v_privkey,
+                                              //~ vctx->t_cert_file_path,DO_NOT_VERIFY);
+                                              
+				retval = SKLOG_CONNECTION_Init(c, vctx->t_address, vctx->t_port,
+					vctx->v_cert, vctx->v_privkey,
+					vctx->t_cert_file_path, DO_NOT_VERIFY);
+				            
                 if ( retval == SKLOG_FAILURE ) {
-                    ERROR("setup_ssl_connection() failure");
+                    ERROR("SKLOG_CONNECTION_Init() failure");
                     goto terminate;
                 }
 
@@ -88,8 +92,10 @@ int main (int argc, char **argv) {
                 //----------------------------------------------------//
                 
                 //~ close connection
-                destroy_ssl_connection(c);
-                free_conenction(c);
+                //~ destroy_ssl_connection(c);
+                //~ free_conenction(c);
+                SKLOG_CONNECTION_Destroy(c);
+                SKLOG_CONNECTION_Free(&c);
 
                 break;
             case 'V':
@@ -101,17 +107,21 @@ int main (int argc, char **argv) {
                 sscanf(inbuf,"%d",&index);
 
                 //~ open connection
-                if ( ( c = new_connection()) == 0 ) {
-                    ERROR("new_connection() failure");
+                if ( ( c = SKLOG_CONNECTION_New()) == 0 ) {
+                    ERROR("SKLOG_CONNECTION_New() failure");
                     goto terminate;
                 }
             
-                retval = setup_ssl_connection(c,vctx->t_address,vctx->t_port,
-                                              vctx->v_cert,vctx->v_privkey,
-                                              vctx->t_cert_file_path,DO_NOT_VERIFY);
+                //~ retval = setup_ssl_connection(c,vctx->t_address,vctx->t_port,
+                                              //~ vctx->v_cert,vctx->v_privkey,
+                                              //~ vctx->t_cert_file_path,DO_NOT_VERIFY);
+                                              
+                retval = SKLOG_CONNECTION_Init(c, vctx->t_address, vctx->t_port,
+					vctx->v_cert, vctx->v_privkey,
+					vctx->t_cert_file_path, DO_NOT_VERIFY);
             
                 if ( retval == SKLOG_FAILURE ) {
-                    ERROR("setup_ssl_connection() failure");
+                    ERROR("SKLOG_CONNECTION_Init() failure");
                     goto terminate;
                 }
 
@@ -127,8 +137,10 @@ int main (int argc, char **argv) {
                 //----------------------------------------------------//
                 
                 //~ close connection
-                destroy_ssl_connection(c);
-                free_conenction(c);
+                //~ destroy_ssl_connection(c);
+                //~ free_conenction(c);
+                SKLOG_CONNECTION_Destroy(c);
+                SKLOG_CONNECTION_Free(&c);
                 
                 break;
             case 'X':

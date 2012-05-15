@@ -124,4 +124,5 @@ SKLOG_RETURN gen_m1(SKLOG_T_Ctx *t_ctx, SKLOG_PROTOCOL_STEP p,
 SKLOG_RETURN send_m1(SKLOG_T_Ctx *t_ctx, SKLOG_CONNECTION *conn,
 	unsigned char *m1, unsigned int m1_len);
 
+
 #endif /* SKLOG_T_INTERNAL */

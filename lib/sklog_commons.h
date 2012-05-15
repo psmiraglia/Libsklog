@@ -133,7 +133,7 @@ void msg_show_buffer(const char *source, const int lineno,
 #define		SKLOG_SETTING_VALUE_LEN		512
 
 #define 	ASCII_TIME_STR_LEN			64
-#define		STR_FORMAT_TIME				"%c %z"
+#define		STR_FORMAT_TIME				"%Y-%m-%d %H:%M:%S"
 
 /*--------------------------------------------------------------------*/
 /*                        temporary defines                           */
@@ -142,7 +142,7 @@ void msg_show_buffer(const char *source, const int lineno,
 #define     RSA_DEFAULT_PASSPHRASE    "123456"
 #define     DEBUG_FILE                "/home/paolo/libsklog.dbg"
 
-#define     USE_BIO
+#define     USE_SSL
 //~ #define     DISABLE_ENCRYPTION
 //~ #define		DO_TESTS	1
 
@@ -238,22 +238,14 @@ struct sklog_connection {
     int        csock;
 };
 
-SKLOG_CONNECTION *
-SKLOG_CONNECTION_New(void);
+SKLOG_CONNECTION *SKLOG_CONNECTION_New(void);
 
-SKLOG_RETURN
-SKLOG_CONNECTION_Init(SKLOG_CONNECTION    *c,
-					  const char          *addr,
-					  short int           port,
-					  X509                *cert,
-					  EVP_PKEY            *privkey,
-					  const char          *CA_cert_path,
-					  int                 do_verify);
+SKLOG_RETURN SKLOG_CONNECTION_Init(SKLOG_CONNECTION *c, 
+	const char *addr, short int port, X509 *cert, EVP_PKEY *privkey,
+	const char *CA_cert_path, int do_verify);
 
-SKLOG_RETURN
-SKLOG_CONNECTION_Destroy(SKLOG_CONNECTION *c);
+SKLOG_RETURN SKLOG_CONNECTION_Destroy(SKLOG_CONNECTION *c);
 
-SKLOG_RETURN
-SKLOG_CONNECTION_Free(SKLOG_CONNECTION **c);
+SKLOG_RETURN SKLOG_CONNECTION_Free(SKLOG_CONNECTION **c);
 
 #endif /* SKLOG_COMMONS_H */

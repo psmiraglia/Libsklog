@@ -377,7 +377,8 @@ sklog_sqlite_u_init_logfile(uuid_t            logfile_id,
     //~ char uuid_str[UUID_STR_LEN+1] = { 0 };
     char uuid_str[SKLOG_UUID_STR_LEN+1] = { 0 };
     
-    char *timestamp = 0;
+    char *ts = 0;
+    char timestamp[ASCII_TIME_STR_LEN+1] = { 0x0 };
 
     //~ if ( localtime_r(&(t->tv_sec),&ts) == NULL ) {
         //~ ERROR("localtime_r() failure");
@@ -389,7 +390,8 @@ sklog_sqlite_u_init_logfile(uuid_t            logfile_id,
         //~ goto error;
     //~ }
     
-    time_usec2ascii(&timestamp, t);
+    time_usec2ascii(&ts, t);
+    memcpy(timestamp, ts, strlen(ts));
 
     //~ uuid_unparse_lower(logfile_id,uuid_str);
     //~ uuid_str[UUID_STR_LEN] = '\0';

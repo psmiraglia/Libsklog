@@ -1722,20 +1722,24 @@ SKLOG_RETURN initialize_logging_session(SKLOG_U_Ctx *u_ctx,
 		}
 	}
 
-/*--------------------------------------------------------------------*/
-/* open connection to T											   */
+	//~ open connection to T
 
-	conn = new_connection();
+	//~ conn = new_connection();
+	conn = SKLOG_CONNECTION_New();
 
 	if ( conn == 0 ) {
 		ERROR("new_connection() failure");
 		goto error;
 	}
 
-	retval = setup_ssl_connection(conn,u_ctx->t_address,u_ctx->t_port,
-				//~ u_ctx->u_cert_file_path,u_ctx->u_privkey_file_path,
-				u_ctx->u_cert,u_ctx->u_privkey,
-				u_ctx->t_cert_file_path,DO_NOT_VERIFY);
+	//~ retval = setup_ssl_connection(conn,u_ctx->t_address,u_ctx->t_port,
+				//~ //~ u_ctx->u_cert_file_path,u_ctx->u_privkey_file_path,
+				//~ u_ctx->u_cert,u_ctx->u_privkey,
+				//~ u_ctx->t_cert_file_path,DO_NOT_VERIFY);
+				
+	retval = SKLOG_CONNECTION_Init(conn, u_ctx->t_address, u_ctx->t_port,
+		u_ctx->u_cert, u_ctx->u_privkey, u_ctx->t_cert_file_path,
+		DO_NOT_VERIFY);
 
 	if ( retval == SKLOG_FAILURE ) {
 		ERROR("setup_ssl_connection() failure");
@@ -1756,11 +1760,10 @@ SKLOG_RETURN initialize_logging_session(SKLOG_U_Ctx *u_ctx,
 	}
 
 	//~ close connection
-	destroy_ssl_connection(conn);
-	free_conenction(conn);
-
-/*																	*/
-/*--------------------------------------------------------------------*/
+	//~ destroy_ssl_connection(conn);
+	//~ free_conenction(conn);
+	SKLOG_CONNECTION_Destroy(conn);
+	SKLOG_CONNECTION_Free(&conn);
 
 	//~ verify timeout expiration
 	if ( verify_timeout_expiration(d_timeout) == SKLOG_FAILURE ) {
@@ -1835,7 +1838,7 @@ error:
 
 	ERR_free_strings();
 	return SKLOG_FAILURE;
-}	
+}
 
 /*
  * initialize logging file flushing procedure
@@ -1980,14 +1983,21 @@ SKLOG_RETURN flush_logfile_execute(SKLOG_U_Ctx *u_ctx,
 	int retval = 0;
 
 	//~ open connection
-	if ( (conn = new_connection()) == 0 ) {
+	//~ if ( (conn = new_connection()) == 0 ) {
+		//~ ERROR("new_conenction() failure");
+		//~ goto error;
+	//~ }
+	if ( ( conn = SKLOG_CONNECTION_New() ) == 0 ) {
 		ERROR("new_conenction() failure");
 		goto error;
 	}
 
-	retval = setup_ssl_connection(conn,u_ctx->t_address,u_ctx->t_port,
-								  u_ctx->u_cert,u_ctx->u_privkey,
-								  u_ctx->t_cert_file_path,DO_NOT_VERIFY);
+	//~ retval = setup_ssl_connection(conn,u_ctx->t_address,u_ctx->t_port,
+								  //~ u_ctx->u_cert,u_ctx->u_privkey,
+								  //~ u_ctx->t_cert_file_path,DO_NOT_VERIFY);
+	retval = SKLOG_CONNECTION_Init(conn, u_ctx->t_address,
+		u_ctx->t_port, u_ctx->u_cert, u_ctx->u_privkey,
+		u_ctx->t_cert_file_path, DO_NOT_VERIFY);
 
 	if ( retval == SKLOG_FAILURE ) {
 		ERROR("setup_ssl_connection() failure");
@@ -2013,8 +2023,10 @@ SKLOG_RETURN flush_logfile_execute(SKLOG_U_Ctx *u_ctx,
 	}
 
 	//~ close connection
-	destroy_ssl_connection(conn);
-	free_conenction(conn);
+	//~ destroy_ssl_connection(conn);
+	//~ free_conenction(conn);
+	SKLOG_CONNECTION_Destroy(conn);
+	SKLOG_CONNECTION_Free(&conn);
 
 	return SKLOG_SUCCESS;
 	

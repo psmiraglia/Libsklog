@@ -1254,7 +1254,12 @@ mem_free(void      **mem)
 /*--------------------------------------------------------------------*/
 
 SKLOG_RETURN
+#ifdef USE_SSL
+flush_logfile_send_logentry(SSL              *ssl,
+#endif
+#ifdef USE_BIO
 flush_logfile_send_logentry(BIO              *bio,
+#endif
                             char             *f_uuid,
                             unsigned char    *type,
                             unsigned int     type_len,
@@ -1380,6 +1385,7 @@ error:
 /*                         conenctions                                */
 /*--------------------------------------------------------------------*/
 
+/**
 SKLOG_CONNECTION*
 new_connection(void)
 {
@@ -1400,7 +1406,9 @@ new_connection(void)
 
     return c;
 }
+*/
 
+/**
 SKLOG_RETURN
 free_conenction(SKLOG_CONNECTION *c)
 {
@@ -1412,7 +1420,9 @@ free_conenction(SKLOG_CONNECTION *c)
 
     return SKLOG_SUCCESS;
 }
+*/
 
+/**
 SKLOG_RETURN
 setup_ssl_connection(SKLOG_CONNECTION    *c,
                      const char          *s_addr,
@@ -1527,23 +1537,21 @@ setup_ssl_connection(SKLOG_CONNECTION    *c,
     c->csock = sock;
     c->bio = sock_bio;
     
-    /*
-    if ( ( bio = BIO_new(BIO_f_buffer()) ) == NULL ) {
-		ERR_print_errors_fp(stderr);
-		//~ goto child_error;
-	} 
-	
-	if ( (ssl_bio = BIO_new(BIO_f_ssl())) == NULL ) {
-		ERR_print_errors_fp(stderr);
-		//~ goto child_error;
-	}
-	
-	BIO_set_ssl(ssl_bio, ssl, BIO_CLOSE);
-	BIO_push(bio, ssl_bio);
-	
-    c->bio = bio;
-    c->ssl_bio = ssl_bio;
-    */
+    //~ if ( ( bio = BIO_new(BIO_f_buffer()) ) == NULL ) {
+		//~ ERR_print_errors_fp(stderr);
+		goto child_error;
+	//~ } 
+	//~ 
+	//~ if ( (ssl_bio = BIO_new(BIO_f_ssl())) == NULL ) {
+		//~ ERR_print_errors_fp(stderr);
+		goto child_error;
+	//~ }
+	//~ 
+	//~ BIO_set_ssl(ssl_bio, ssl, BIO_CLOSE);
+	//~ BIO_push(bio, ssl_bio);
+	//~ 
+    //~ c->bio = bio;
+    //~ c->ssl_bio = ssl_bio;
 
     ERR_free_strings();
     return SKLOG_SUCCESS;
@@ -1557,7 +1565,9 @@ error:
     ERR_free_strings();
     return SKLOG_FAILURE;
 }
+*/
 
+/**
 SKLOG_RETURN
 destroy_ssl_connection(SKLOG_CONNECTION *c)
 {
@@ -1594,6 +1604,7 @@ error:
 	ERR_free_strings();
 	return rv;
 }
+*/
 
 /** do not delete
 SSL_CTX*
@@ -1787,6 +1798,7 @@ error:
 }
 */
 
+/**
 int
 tcp_bind(const char    *address,
          short int     port)
@@ -1799,8 +1811,6 @@ tcp_bind(const char    *address,
     int optval = 1;
     struct sockaddr_in sa_serv;
     
-    /* Set up a TCP socket */
-
     if ( (skt = socket(PF_INET,SOCK_STREAM,IPPROTO_TCP)) < 0 ) {
         ERROR("socket() failure")
         return -1;
@@ -1823,7 +1833,9 @@ tcp_bind(const char    *address,
 
     return skt;
 }
+*/
 
+/**
 int
 tcp_connect(const char *address, short int port)
 {
@@ -1846,7 +1858,7 @@ tcp_connect(const char *address, short int port)
     server_addr.sin_port = htons(port);
     server_addr.sin_addr.s_addr = inet_addr(address);
     
-    /* Establish a TCP/IP connection to the SSL client */
+    //~ Establish a TCP/IP connection to the SSL client
     
     NOTIFY(address)
     
@@ -1858,6 +1870,7 @@ tcp_connect(const char *address, short int port)
     
     return skt;
 }
+*/
 
 /** to delete
 int
@@ -1991,11 +2004,360 @@ void write2file(const char *file, const char *mode, unsigned char *buf, unsigned
 }
 
 
+/*--------------------------------------------------------------------*/
+/*                            networking                              */
+/*--------------------------------------------------------------------*/
 
+SKLOG_RETURN tcp_accept(int lsock, int *csock, char *cli_addr)
+{
+	#ifdef DO_TRACE
+	DEBUG
+	#endif
+	
+	int sock = 0;
+	
+	int rv = 0;
+	
+	struct sockaddr_in addr;
+	socklen_t addr_len;
+	
+	memset(&addr, 0, sizeof(addr));
+	addr_len = sizeof(addr);
+	
+	sock = accept(lsock, (struct sockaddr *) &addr, &addr_len);
+	
+	if ( sock < 0 ) {
+		ERROR("accept() failure");
+		return SKLOG_FAILURE;
+	}
+	
+	memset(&addr, 0, sizeof(addr));
+	addr_len = sizeof(addr);
+	rv = getpeername(sock, (struct sockaddr *) &addr, &addr_len);
+	
+	if ( rv < 0 ) {
+		close(sock);
+		ERROR("getpeername() failure");
+		return SKLOG_FAILURE;
+	}
+	
+	NOTIFY("accepted connection from host: %s, port: %d",
+		inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
+		
+	*csock = sock;
+	snprintf(cli_addr, INET_ADDRSTRLEN, "%s", inet_ntoa(addr.sin_addr));
+	
+	return SKLOG_SUCCESS;
+}
 
+SKLOG_RETURN tcp_bind(int lsock, const char *addr, short int port)
+{
+	#ifdef DO_TRACE
+	DEBUG
+	#endif
+	
+	int rv = 0;
+	
+	struct sockaddr_in sa_addr;
+	
+	memset(&sa_addr, 0, sizeof(sa_addr));
+	
+	sa_addr.sin_family = AF_INET;
+	sa_addr.sin_addr.s_addr = inet_addr(addr);
+	sa_addr.sin_port = htons(port);
+	
+	rv = bind(lsock, (struct sockaddr*) &sa_addr, sizeof(sa_addr));
+	
+	if ( rv < 0 ) {
+		ERROR("bind() failure");
+		return SKLOG_FAILURE;
+	}
+	
+	NOTIFY("bind to %s:%d", inet_ntoa(sa_addr.sin_addr),
+		ntohs(sa_addr.sin_port));
 
+	return SKLOG_SUCCESS;
+}
 
+SKLOG_RETURN tcp_connect(int csock, const char *addr, short int port)
+{
+	#ifdef DO_TRACE
+	DEBUG
+	#endif
+	
+	int rv = 0;
+	
+	struct sockaddr_in sa_addr;
+	
+	memset(&sa_addr, 0, sizeof(sa_addr));
+	
+	sa_addr.sin_family = AF_INET;
+	sa_addr.sin_addr.s_addr = inet_addr(addr);
+	sa_addr.sin_port = htons(port);
+	
+	rv = connect(csock, (struct sockaddr*) &sa_addr, sizeof(sa_addr));
+	
+	if ( rv < 0 ) {
+		ERROR("bind() failure");
+		return SKLOG_FAILURE;
+	}
+	
+	NOTIFY("connect to %s:%d", inet_ntoa(sa_addr.sin_addr),
+		ntohs(sa_addr.sin_port));
 
+	return SKLOG_SUCCESS;
+}
+
+SKLOG_RETURN tcp_listen(int lsock)
+{
+	#ifdef DO_TRACE
+	DEBUG
+	#endif
+	
+	int rv = 0;
+	
+	rv = listen(lsock, SOMAXCONN);
+	
+	if ( rv < 0 ) {
+		ERROR("listen() failure");
+		return SKLOG_FAILURE;
+	}
+	
+	return SKLOG_SUCCESS;
+}
+
+SKLOG_RETURN tcp_read(void)
+{
+	#ifdef DO_TRACE
+	DEBUG
+	#endif
+	
+	return SKLOG_SUCCESS;
+}
+
+SKLOG_RETURN tcp_socket(int *sock)
+{
+	#ifdef DO_TRACE
+	DEBUG
+	#endif
+	
+	int rv = 0;
+	
+	int tsock = 0;
+	int opt_value = 1;
+	
+	tsock = socket(AF_INET, SOCK_STREAM, 0);
+	
+	if ( tsock < 0 ) {
+		ERROR("socket() failure");
+		return SKLOG_FAILURE;
+	}
+	
+	rv = setsockopt(tsock, SOL_SOCKET, SO_REUSEADDR, 
+		&opt_value, sizeof(opt_value));
+	
+	if ( rv < 0 ) {
+		ERROR("setsockopt() failure");
+		return SKLOG_FAILURE;
+	}
+	
+	*sock = tsock;
+	
+	return SKLOG_SUCCESS;
+}
+
+SKLOG_RETURN tcp_write(void)
+{
+	#ifdef DO_TRACE
+	DEBUG
+	#endif
+	
+	return SKLOG_SUCCESS;
+}
+
+SKLOG_RETURN ssl_init_SSL(SSL_CTX *ssl_ctx, SSL **ssl)
+{
+	#ifdef DO_TRACE
+	DEBUG
+	#endif
+	
+	SSL *tssl = 0;
+	
+	/* check input parameters */
+	
+	if ( ssl_ctx == NULL ) {
+		ERROR("Bad input parameter(s). Please double-check it!");
+		goto error;
+	}
+	
+	/* initialize OpenSSL */
+	
+	SSL_library_init();
+	SSL_load_error_strings();
+	ERR_load_BIO_strings();
+	OpenSSL_add_all_algorithms();
+	
+	/* init SSL struct */ 
+	
+	tssl = SSL_new(ssl_ctx);
+	
+	if ( !tssl ) {
+		ERROR("SSL_new() failure");
+		ERR_print_errors_fp(stderr);
+		goto error;
+	}
+	
+	*ssl = tssl;
+	
+	ERR_free_strings();
+	
+	return SKLOG_SUCCESS;
+	
+error:
+
+	if ( tssl > 0)
+		SSL_free(tssl);
+		
+	ERR_free_strings();
+	
+	return SKLOG_FAILURE;
+}
+
+SKLOG_RETURN ssl_init_SSL_CTX(const SSL_METHOD *method, 
+	const char *cert_path, const char *privkey_path, int do_verify,
+	const char *CA_cert_path, SSL_CTX **ssl_ctx)
+{
+	#ifdef DO_TRACE
+	DEBUG
+	#endif
+	
+	int rv = 0;
+	
+	SSL_CTX *tssl_ctx = 0;
+	
+	X509 *cert = 0;
+	EVP_PKEY *privkey = 0;
+	
+	FILE *fp = 0;
+	
+	/* check input parameters */
+	
+	if ( cert_path == 0 || privkey_path == 0 ) {
+		ERROR("Bad input parameter(s). Please double-check it!");
+		goto input_params_error;
+	}
+	
+	/* initialize OpenSSL library */
+	
+	SSL_library_init();
+	SSL_load_error_strings();
+	ERR_load_BIO_strings();
+	OpenSSL_add_all_algorithms();
+	
+	/* init SSL_CTX  struct */ 
+	
+	tssl_ctx = SSL_CTX_new(method);
+	
+	if ( !tssl_ctx ) {
+		ERROR("SSL_CTX_new() failure");
+		ERR_print_errors_fp(stderr);
+		goto error;
+	}
+		
+	/* load server cert */
+	
+	fp = fopen(cert_path, "r");
+	
+	if ( fp == NULL ) {
+		ERROR("Unable to open file %s", cert_path);
+		goto error;
+	}
+	
+	if ( PEM_read_X509(fp, &cert, 0, 0) == NULL ) {
+		ERROR("PEM_read_X509() failure");
+		ERR_print_errors_fp(stderr);
+		goto error;
+	}
+	
+	rv = SSL_CTX_use_certificate(tssl_ctx, cert);
+	
+	if ( rv <= 0 ) {
+		ERROR("SSL_CTX_use_certificate() failure");
+		ERR_print_errors_fp(stderr);
+		goto error;
+	} 
+	
+	fclose(fp);
+	
+	/* load server privkey */
+	
+	fp = fopen(privkey_path, "r");
+	
+	if ( fp == NULL ) {
+		ERROR("Unable to open file %s", privkey_path);
+		goto error;
+	}
+	
+	if ( PEM_read_PrivateKey(fp, &privkey, 0, 0) == NULL ) {
+		ERROR("PEM_read_PrivateKey() failure");
+		ERR_print_errors_fp(stderr);
+		goto error;
+	}
+	
+	rv = SSL_CTX_use_PrivateKey(tssl_ctx, privkey);
+	
+	if ( rv <= 0 ) {
+		ERROR("SSL_CTX_use_PrivateKey() failure");
+		ERR_print_errors_fp(stderr);
+		goto error;
+	}
+	
+	fclose(fp);
+	
+	/* check privkey */ 
+	
+	rv = SSL_CTX_check_private_key(tssl_ctx);
+	
+	if ( rv <= 0 ) {
+		ERROR("SSL_CTX_check_private_key() failure");
+		ERR_print_errors_fp(stderr);
+		goto error;
+	}
+	
+	/* verify certificate */
+	
+	if ( do_verify ) { 
+		/**
+		 * to be implemented
+		 */
+	}
+	
+	*ssl_ctx = tssl_ctx;
+	
+	ERR_free_strings();
+	
+	return SKLOG_SUCCESS;
+	
+error:
+
+	if ( fp > 0 )
+		fclose(fp);
+		
+	if ( tssl_ctx )
+		SSL_CTX_free(tssl_ctx);
+		
+	if ( cert > 0 )
+		X509_free(cert);
+			
+	if ( privkey )
+		EVP_PKEY_free(privkey);
+		
+	ERR_free_strings();
+	
+input_params_error:
+
+	return SKLOG_FAILURE;
+}
 
 
 

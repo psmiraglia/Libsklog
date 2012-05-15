@@ -173,8 +173,7 @@ void msg_to_implement(const char *func)
 /*                          SKLOG_CONNECTION                          */
 /*--------------------------------------------------------------------*/
 
-SKLOG_CONNECTION *
-SKLOG_CONNECTION_New(void)
+SKLOG_CONNECTION *SKLOG_CONNECTION_New(void)
 {
 	#ifdef DO_TRACE
     DEBUG
@@ -182,137 +181,130 @@ SKLOG_CONNECTION_New(void)
 
     SKLOG_CONNECTION *c = 0;
 
-    c = calloc(1,sizeof(SKLOG_CONNECTION));
+    c = calloc(1, sizeof(SKLOG_CONNECTION));
 
     if ( c == 0 ) {
         ERROR("calloc() failure");
         return NULL;
     }
 
-    memset(c,0,sizeof(c));
+    memset(c, 0, sizeof(c));
 
     return c;
 }
 
-SKLOG_RETURN
-SKLOG_CONNECTION_Init(SKLOG_CONNECTION    *c,
-					  const char          *addr,
-					  short int           port,
-					  X509                *cert,
-					  EVP_PKEY            *privkey,
-					  const char          *CA_cert_path,
-					  int                 do_verify)
+SKLOG_RETURN SKLOG_CONNECTION_Init(SKLOG_CONNECTION *c, 
+	const char *addr, short int port, X509 *cert, EVP_PKEY *privkey,
+	const char *CA_cert_path, int do_verify)
 {
 	#ifdef DO_TRACE
     DEBUG
     #endif
 
+	int ret = 0;
+
     SSL_CTX *ctx = 0;
     SSL *ssl = 0;
-    int ret = 0;
-
-    int sock = 0;
-    struct sockaddr_in server_addr;
-
     BIO *sbio = 0;
     
-    if ( c == NULL ) {
-		ERROR("argument 1 must be not NULL");
+    int sock = 0;
+
+    /* check input parameters */
+    
+    if ( c == NULL || addr == NULL || cert == NULL || privkey == NULL ) {
+		ERROR("Bad input argument(s). Please, double-check it!");
 		return SKLOG_FAILURE;
 	}
-	
-	if ( addr == NULL ) {
-		ERROR("argument 2 must be not NULL");
-		return SKLOG_FAILURE;
-	}
-	
-	if ( cert == NULL ) {
-		ERROR("argument 4 must be not NULL");
-		return SKLOG_FAILURE;
-	}
-	
-	if ( privkey == NULL ) {
-		ERROR("argument 5 must be not NULL");
-		return SKLOG_FAILURE;
-	}
+
+	/* initialize OpenSSL library */
 	
     SSL_library_init();
     SSL_load_error_strings();
     ERR_load_BIO_strings();
     OpenSSL_add_all_algorithms();
 
-    //-------------initialize SSL_CTX and SSL structures--------------//
-
-    //~ create SSL_CTX structure
+    /* create SSL_CTX structure*/
+    
     ctx = SSL_CTX_new(SSLv3_method());
+    
+    if ( ctx == 0 ) {
+		ERROR("SSL_CTX_new() failure");
+		ERR_print_errors_fp(stderr);
+        goto error;
+	} 
 
-    //~ load server certificate
-    ret = SSL_CTX_use_certificate(ctx,cert);
+    /* load certificate */
+    
+    ret = SSL_CTX_use_certificate(ctx, cert);
 
     if ( ret <= 0 ) {
+		ERROR("SSL_CTX_use_certificate() failure");
         ERR_print_errors_fp(stderr);
         goto error;
     }
 
-    //~ load server private key
-    ret = SSL_CTX_use_PrivateKey(ctx,privkey);
+    /* load server private key */
+    
+    ret = SSL_CTX_use_PrivateKey(ctx, privkey);
 
     if ( ret <= 0 ) {
+		ERROR("SSL_CTX_use_PrivateKey() failure");
         ERR_print_errors_fp(stderr);
         goto error;
     }
 
-    //~ check private key
+    /* check private key */
+    
     if ( SSL_CTX_check_private_key(ctx) <= 0 ) {
+		ERROR("SSL_CTX_check_private_key() failure");
         ERR_print_errors_fp(stderr);
         goto error;
     }
 
     if ( do_verify && CA_cert_path > 0) {
 
-        //~ load CA certificate
+        /* load CA certificate */
+        
         ret = SSL_CTX_load_verify_locations(ctx,CA_cert_path,NULL);
     
         if ( ret <= 0 ) {
+			ERROR("SSL_CTX_load_verify_locations() failure");
             ERR_print_errors_fp(stderr);
             goto error;
         }
 
-        //~ set verification parameters
+        /* set verification parameters */
+        
         SSL_CTX_set_verify(ctx, SSL_VERIFY_PEER,NULL);
         SSL_CTX_set_verify_depth(ctx, 1);
     }
 
-    ssl = SSL_new(ctx);
-
-    //------------------create connection socket----------------------//
-
-    sock = socket(PF_INET,SOCK_STREAM,IPPROTO_TCP);
-
-    if ( sock <= 0 ) {
-        ERROR(strerror(errno));
-        goto error;
-    }
+    /* connection socket */
     
-    memset(&server_addr,0,sizeof(server_addr));
-    server_addr.sin_family      = AF_INET;
-    server_addr.sin_addr.s_addr = inet_addr(addr);
-    server_addr.sin_port        = htons(port);
+    ret = tcp_socket(&sock);
+    
+    if ( ret == SKLOG_FAILURE ) {
+		ERROR("tcp_socket() failure");
+		goto error;
+	}
+	
+	ret = tcp_connect(sock, addr, port);
+	
+	if ( ret == SKLOG_FAILURE ) {
+		ERROR("tcp_connect() failure");
+		goto error;
+	}
 
-    ret = connect(sock,(struct sockaddr*)&server_addr, sizeof(server_addr));
-
-    if ( ret < 0 ) {
-        ERROR(strerror(errno));
-        goto error;
-    }
-
-    //---------------------setup bio structure------------------------//
+    /* setup SSL structure */
+	
+	ssl = SSL_new(ctx);
 
     sbio = BIO_new(BIO_s_socket());
-    BIO_set_fd(sbio,sock,BIO_NOCLOSE);
-    SSL_set_bio(ssl,sbio,sbio);
+    BIO_set_fd(sbio, sock, BIO_NOCLOSE);
+    SSL_set_bio(ssl, sbio, sbio);
 
     if ( SSL_connect(ssl) < 0 ) {
+		ERROR("SSL_conenct() failure");
         ERR_print_errors_fp(stderr);
         goto error;
     }
@@ -327,9 +319,17 @@ SKLOG_CONNECTION_Init(SKLOG_CONNECTION    *c,
 
 error:
 
-    if ( sbio > 0 ) BIO_free_all(sbio);
-    if ( ssl > 0 ) SSL_free(ssl);
-    if ( ctx > 0 ) SSL_CTX_free(ctx);
+    if ( sbio > 0 )
+		BIO_free_all(sbio);
+		
+    if ( ssl > 0 )
+		SSL_free(ssl);
+		
+    if ( ctx > 0 )
+		SSL_CTX_free(ctx);
+		
+    if ( sock > 0 )
+		close(sock);
     
     ERR_free_strings();
     return SKLOG_FAILURE;
@@ -351,9 +351,8 @@ SKLOG_CONNECTION_Destroy(SKLOG_CONNECTION *c)
 	
 	SSL_load_error_strings();
 
-    BIO_free_all(c->bio);
-    
     if ( SSL_shutdown(c->ssl) < 0 ) {
+		ERROR("SSL_shutdown() failure");
 		ERR_print_errors_fp(stderr);
 		rv = SKLOG_FAILURE;
 		goto error;
@@ -363,7 +362,7 @@ SKLOG_CONNECTION_Destroy(SKLOG_CONNECTION *c)
     SSL_CTX_free(c->ssl_ctx);
 
     if ( close(c->csock) < 0 ) {
-		ERROR(strerror(errno));
+		ERROR("close() failure");
 		rv = SKLOG_FAILURE;
 	}
 

@@ -758,311 +758,438 @@ SKLOG_RETURN SKLOG_T_ManageLogfileVerify(SKLOG_T_Ctx *t_ctx,
  * 
  */
  
-void sigchld_h (int signum)
+int conn_count = 0;
+
+/* SIGCHLD handler */
+
+void sigchld_h(int signum)
 {
-    pid_t pid;
-    int status;
-    char msg[SKLOG_SMALL_BUFFER_LEN] = { 0 };
-    while ( (pid = waitpid(-1,&status,WNOHANG)) > 0)
-    
-    sprintf(msg,"child %d terminated with status %d",pid,status);
-    NOTIFY(msg);
+	pid_t pid = 0;
+	int status = 0;
+	
+	while ( ( pid = waitpid(-1, &status, WNOHANG) ) > 0 ) {
+		NOTIFY("child %d terminated with status %d", pid, status);
+		conn_count--;
+	}
 }
 
+/* server HELLO */
+
+typedef enum {
+	logging_session_init,
+	logfile_upload,
+	logfile_retrieve,
+	logfile_verification,
+	
+	none
+} action_t;
+
+static action_t t_hello(SSL *ssl, unsigned int *payload_len, 
+	unsigned char **payload)
+{
+	int rlen = 0;
+	unsigned char rbuf[SKLOG_BUFFER_LEN+1] = { 0x0 };
+	
+	uint32_t type = 0;
+	unsigned int len = 0;
+	unsigned char *value = 0;
+	
+	action_t action = none;
+	
+	/* read from network */
+	
+	rlen = SSL_read(ssl, rbuf, SKLOG_BUFFER_LEN);
+	
+	if ( rlen < 0 ) {
+		ERROR("SSL_read() failure");
+		ERR_print_errors_fp(stderr);
+		return action;
+	}
+	
+	/* get TYPE from TLV message */
+	
+	if ( tlv_get_type(rbuf, &type) == SKLOG_FAILURE ) {
+		ERROR("tlv_get_type() failure");
+		return action;
+	}
+	
+	switch ( type ) {
+		case M0_MSG:
+		
+			/* get LEN from TLV message */
+			
+			if ( tlv_get_len(rbuf, &len) == SKLOG_FAILURE ) {
+				ERROR("tlv_get_len() failure");
+				break;
+			}
+			
+			/* get VALUE from TLV message */
+			
+			if ( tlv_get_value(rbuf, &value) == SKLOG_FAILURE ) {
+				ERROR("tlv_get_value() failure");
+				break;
+			}
+			
+			*payload = value;
+			*payload_len = len;
+			
+			action = logging_session_init;
+
+			break;
+			
+		case LOGFILE_UPLOAD_REQ:
+		
+			action = logfile_upload;
+			break;
+			
+		case RETR_LOG_FILES:
+		
+			action = logfile_retrieve;
+			break;
+			
+		case VERIFY_LOGFILE:
+			
+			/* get LEN from TLV message */
+			
+			if ( tlv_get_len(rbuf, &len) == SKLOG_FAILURE ) {
+				ERROR("tlv_get_len() failure");
+				break;
+			}
+			
+			/* get VALUE from TLV message */
+			
+			if ( tlv_get_value(rbuf, &value) == SKLOG_FAILURE ) {
+				ERROR("tlv_get_value() failure");
+				break;
+			}
+			
+			*payload = value;
+			*payload_len = len;
+			
+			action = logfile_verification;
+			
+			break;
+			
+		default:
+			return (action_t)none;
+	}
+	
+	return action;
+}
+ 
 SKLOG_RETURN SKLOG_T_RunServer(SKLOG_T_Ctx *t_ctx)
 {
-    #ifdef DO_TRACE
-    DEBUG
-    #endif
-
-    SKLOG_CONNECTION *c = 0;
-    int enable_verify = 0;
-
-    unsigned char rbuf[SKLOG_BUFFER_LEN] = { 0 };
-    int  rlen = 0;
-    unsigned char wbuf[SKLOG_BUFFER_LEN] = { 0 };
-    int  wlen = 0;
-
-    int ret = 0;
-
-    struct sockaddr_in    sa_cli;
-    socklen_t             client_len = 0;
-
-    pid_t pid = 0;
-
-    char logfile_uuid[UUID_STR_LEN+1] = { 0 };
-
-    uint32_t msg_type = 0;
-    unsigned int len = 0;
-    unsigned char *value = 0;
-
-    unsigned char *m0 = 0;
-    unsigned int  m0_len = 0;
-
-    unsigned char *m1 = 0;
-    unsigned int  m1_len = 0;
-
-    char u_address[INET_ADDRSTRLEN] = { 0 };
-    
-    if ( t_ctx == NULL ) {
-		ERROR("argument 1 must be not NULL");
-		return SKLOG_FAILURE;
+	#ifdef DO_TRACE
+	DEBUG
+	#endif
+	
+	int maxconn = 0;
+	int do_verify = 0;
+	
+	int rv = 0;
+	
+	int lsock = 0;
+	int csock = 0;
+	
+	char cli_addr[INET_ADDRSTRLEN+1] = { 0x0 };
+	
+	pid_t pid = 0;
+	
+	FILE *fp = 0;
+	
+	SSL_CTX *ssl_ctx = 0;
+	SSL *ssl = 0;
+	BIO *sbio = 0;
+	
+	SKLOG_CONNECTION *conn = 0;
+	
+	action_t action = (action_t)none;
+	
+	unsigned char *payload = 0;
+	unsigned int payload_len = 0;
+	
+	unsigned char wbuf[SKLOG_BUFFER_LEN+1] = { 0x0 };
+	int wlen = 0;
+	
+	char logfile_id[UUID_STR_LEN+1] = { 0x0 };
+	
+	unsigned char *m1 = 0;
+	unsigned int m1_len = 0;
+	
+	/* check input parameters */
+	
+	if ( t_ctx == NULL ) {
+		ERROR("Bad input parameter. Please, double-check it!!!");
+		goto input_params_error;
+	}
+	
+	/* initialize SKLOG_CONNECTION */
+	
+	conn = SKLOG_CONNECTION_New();
+	
+	if ( conn == NULL ) {
+		ERROR("SKLOG_CONNECTION_New() failure");
+		goto input_params_error;
 	}
 
-    c = new_connection();
-
-    //----------------------------------------------------------------//
-    //             initialize SSL_CTX and SSL structures              //
-    //----------------------------------------------------------------//
-    
-    SSL_library_init();
-    SSL_load_error_strings();
-    ERR_load_BIO_strings();
-    OpenSSL_add_all_algorithms();
-
-    //~ create SSL_CTX structure
-    c->ssl_ctx = SSL_CTX_new(SSLv3_method());
-
-    //~ load server certificate
-    ret = SSL_CTX_use_certificate(c->ssl_ctx,t_ctx->t_cert);
-
-    if ( ret <= 0 ) {
-        ERR_print_errors_fp(stderr);
-        return SKLOG_FAILURE;
-    }
-
-    //~ load server private key
-    ret = SSL_CTX_use_PrivateKey(c->ssl_ctx,t_ctx->t_privkey);
-
-    if ( ret <= 0 ) {
-        ERR_print_errors_fp(stderr);
-        return SKLOG_FAILURE;
-    }
-
-    //~ check private key
-    if ( SSL_CTX_check_private_key(c->ssl_ctx) <= 0 ) {
-        ERR_print_errors_fp(stderr);
-        return SKLOG_FAILURE;
-    }
-
-    if ( enable_verify ) {
-
-        //~ load CA certificate
-        ret = SSL_CTX_load_verify_locations(c->ssl_ctx,
-                                            t_ctx->t_cert_file_path,
-                                            NULL);
-    
-        if ( ret <= 0 ) {
-            ERR_print_errors_fp(stderr);
-            return SKLOG_FAILURE;
-        }
-
-        //~ set verification parameters
-        SSL_CTX_set_verify(c->ssl_ctx, SSL_VERIFY_PEER,NULL);
-        SSL_CTX_set_verify_depth(c->ssl_ctx, 1);
-    }
-
-    c->ssl = SSL_new(c->ssl_ctx);
-
-    //~ create and bind lsock
-    c->lsock = tcp_bind(t_ctx->t_address,t_ctx->t_port);
-
-    if ( c->lsock < 0 ) {
-        ERROR("tcp_bind() failure")
-        return SKLOG_FAILURE;
-    }
-    
-    //~ listen on the listen socket 
-    if ( listen(c->lsock,5) < 0 ) {
-        ERROR("listen() failure");
-        return SKLOG_FAILURE;
-    }
-
-    //----------------------------------------------------------------//
-    //                          SERVER WORK                           //
-    //----------------------------------------------------------------//
-
-    signal(SIGCHLD,sigchld_h);
-    
-    while ( 1 ) {
-    
-        //~ create csock
-        c->csock = accept(c->lsock,(struct sockaddr*)&sa_cli,&client_len);
-
-        pid = fork();
-
-        if ( pid < 0 ) {
-        //------------------------------------------------------------//
-        //                        fork() error                        //
-        //------------------------------------------------------------//
-            
-            ERROR("fork() fails")
-            return SKLOG_FAILURE;
-            
-        } else if ( pid == 0 ) {
-        //------------------------------------------------------------//
-        //                       children process                     //
-        //------------------------------------------------------------//
-			
-			//~ getchar();
-			
-            //~ close lsock
-            close(c->lsock);
-            
-            //~ setup BIO structure
-
-            c->bio = BIO_new(BIO_s_socket());
-            BIO_set_fd(c->bio,c->csock,BIO_NOCLOSE);
-            SSL_set_bio(c->ssl,c->bio,c->bio);
-            
-            
-            /*
-            c->sock_bio = BIO_new(BIO_s_socket());
-            BIO_set_fd(c->sock_bio, c->csock, BIO_NOCLOSE);
-            SSL_set_bio(c->ssl, c->sock_bio, c->sock_bio);
-            */
-        
-            //~ SSL handshake (server side)
-            ret = SSL_accept(c->ssl);
-            
-            if ( ret <= 0 ) {
-				ERR_print_errors_fp(stderr);
-				//~ goto child_error;
+	/* init OpenSSL library */
+	
+	SSL_library_init();
+	SSL_load_error_strings();
+	ERR_load_BIO_strings();
+	OpenSSL_add_all_algorithms();
+	
+	/* init SSL_CTX structure */
+	
+	rv = ssl_init_SSL_CTX(SSLv3_server_method(),
+		t_ctx->t_cert_file_path, t_ctx->t_privkey_file_path, do_verify,
+		t_ctx->t_privkey_file_path, &ssl_ctx);
+		
+	if ( rv == SKLOG_FAILURE || ssl_ctx == NULL ) {
+		ERROR("ssl_init_SSL_CTX() failure");
+		goto error;
+	}
+	
+	conn->ssl_ctx = ssl_ctx;
+	
+	/* init SSL structure */
+	
+	rv = ssl_init_SSL(ssl_ctx, &ssl);
+	
+	if ( rv == SKLOG_FAILURE || ssl == NULL ) {
+		ERROR("ssl_init_SSL() failure");
+		goto error;
+	}
+	
+	conn->ssl = ssl;
+	
+	/* create listen socket */
+	
+	rv = tcp_socket(&lsock);
+	
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("tcp_socket() failure");
+		goto error;
+	}
+	
+	conn->lsock = lsock;
+	
+	/* bind listen socket */
+	
+	rv = tcp_bind(lsock, t_ctx->t_address, t_ctx->t_port);
+	
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("tcp_bind() failure");
+		goto error;
+	}
+	
+	/* listen */
+	
+	rv = tcp_listen(lsock);
+	
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("tcp_listen() failure");
+		goto error;
+	}
+	
+	signal(SIGCHLD, sigchld_h);
+	
+	while ( 1 ) {
+		
+		rv = tcp_accept(lsock, &csock, cli_addr);
+		
+		if ( rv == SKLOG_FAILURE ) {
+			ERROR("tcp_accept() failure");
+			goto error;
+		}
+		
+		conn->csock = csock;
+		
+		/* check for available connection */
+		
+		if ( maxconn > 0 ) {
+			if ( conn_count >= maxconn ) {
+				NOTIFY("No more connection available");
+				close(csock);
+				continue;
 			}
-
-			/*
-            //~ setup I/O bio
-            
-            if ( ( c->bio = BIO_new(BIO_f_buffer()) ) == NULL ) {
-				ERR_print_errors_fp(stderr);
-				//~ goto child_error;
-			} 
+		}
+		
+		pid = fork();
+		
+		if ( pid == 0 ) {
+			/* I'm a child process */
 			
-			if ( ( c->ssl_bio = BIO_new(BIO_f_ssl())) == NULL ) {
+			close(lsock);
+			
+			/* setup socket BIO */
+			
+			sbio = BIO_new_socket(csock, BIO_NOCLOSE);
+			SSL_set_bio(ssl, sbio, sbio);
+			
+			/* SSL handshake */
+			
+			rv = SSL_accept(ssl);
+			
+			if ( rv <= 0 ) {
+				ERROR("SSL_accept() failure");
 				ERR_print_errors_fp(stderr);
-				//~ goto child_error;
+				goto child_error;
 			}
 			
-			BIO_set_ssl(c->ssl_bio, c->ssl, BIO_CLOSE);
-			BIO_push(c->bio, c->ssl_bio);
-			*/
-    
-            //~ read from bio
-            if ( (rlen = BIO_read(c->bio,rbuf,SKLOG_BUFFER_LEN-1)) <= 0 ) {
-                ERR_print_errors_fp(stderr);
-                exit(1);
-            }
-            
-            //~ parse received data
-            if ( tlv_get_type(rbuf,&msg_type) == SKLOG_FAILURE ) {
-                ERROR("tlv_get_type() failure")
-                goto failure;
-            }
-
-            switch ( msg_type ) {
-                
-                case M0_MSG:
-                //----------------------------------------------------//
-                //              initialize logging session            //
-                //----------------------------------------------------//
-                    #ifdef DO_TRACE
-                    NOTIFY("received M0_MSG message");
-                    #endif
-
-                    tlv_get_len(rbuf,&m0_len);
-                    tlv_get_value(rbuf,&m0);
-
-                    inet_ntop(AF_INET,&(sa_cli.sin_addr),u_address,INET_ADDRSTRLEN);
-
-                    ret = SKLOG_T_ManageLoggingSessionInit(t_ctx,
-                        m0,m0_len,u_address,&m1,&m1_len);
-
-                    if ( ret == SKLOG_FAILURE ) {
-                        ERROR("SKLOG_T_ManageLoggingSessionInit() failure");
-                        goto failure;
-                    }
-
-                    memcpy(wbuf,m1,m1_len);
-                    wlen = m1_len; free(m1);
-
-                    if ( (ret = send_m1(t_ctx,c,wbuf,wlen) ) == SKLOG_FAILURE ) {
-                        ERROR("send_m1() failure");
-                        goto failure;
-                    }
-                    
-                    break;
-                    
-                case LOGFILE_UPLOAD_REQ:
-                //----------------------------------------------------//
-                //                logfile upload request              //
-                //----------------------------------------------------//
-                    #ifdef DO_TRACE
-                    NOTIFY("received LOGFILE_UPLOAD_REQ message");
-                    #endif
-                    
-                    ret = SKLOG_T_ManageLogfileUpload(t_ctx,c);
-                    
-                    if ( ret == SKLOG_FAILURE ) {
-                        ERROR("SKLOG_T_ManageLogfileUpload() failure");
-                        goto failure;
-                    }
-                    
-                    break;
-                case RETR_LOG_FILES:
-                //----------------------------------------------------//
-                //             retrieve logfile list request          //
-                //----------------------------------------------------//
-                    #ifdef DO_TRACE
-                    NOTIFY("received RETR_LOG_FILES message");
-                    #endif
-
-                    ret = SKLOG_T_ManageLogfileRetrieve(t_ctx,c);
-
-                    if ( ret == SKLOG_FAILURE ) {
-                        ERROR("SKLOG_T_ManageLogfileRetrieve() failure");
-                        goto failure;
-                    }
-
-                    break;
-
-                case VERIFY_LOGFILE:
-                //----------------------------------------------------//
-                //              logfile verification request          //
-                //----------------------------------------------------//
-                    #ifdef DO_TRACE
-                    NOTIFY("received VERIFY_LOGFILE message");
-                    #endif
-                    
-                    tlv_get_len(rbuf,&len);
-                    tlv_get_value(rbuf,&value);
-
-                    memcpy(logfile_uuid,value,UUID_STR_LEN);
-                    
-                    
-                    SKLOG_T_ManageLogfileVerify(t_ctx,c,logfile_uuid);
-                    break;
-                default:
-                    NOTIFY("protocol error");
-                    break;
-            }
-failure:
-            destroy_ssl_connection(c);
-            free_conenction(c);
-            exit(0);
-            
-        } else {
-        //------------------------------------------------------------//
-        //                     parent process                         //
-        //------------------------------------------------------------//
-
-            NOTIFY("Server says: goodbye...");
-            fprintf(stderr, ">>> %d <<<\n", pid);
-            close(c->csock);
-
-        }
-    }
-
-    destroy_ssl_connection(c);
-    free_conenction(c);
-    return SKLOG_SUCCESS;
+			/* server hello */
+			
+			action = t_hello(ssl, &payload_len, &payload);
+			
+			/* action */
+			
+			switch( action ) {
+				case logging_session_init:
+					
+					/*
+					 * m0 = payload
+					 * m0_len = payload_len
+					 * 
+					 */
+					 
+					rv = SKLOG_T_ManageLoggingSessionInit(t_ctx, payload,
+						payload_len, cli_addr, &m1, &m1_len);
+						
+					if ( rv == SKLOG_FAILURE ) {
+						ERROR("SKLOG_T_ManageLoggingSessionInit() failure");
+						goto child_error;
+					}
+					
+					memcpy(wbuf, m1, m1_len);
+					wlen = m1_len;
+					free(m1);
+					
+					rv = send_m1(t_ctx, conn, wbuf, wlen);
+					
+					if ( rv == SKLOG_FAILURE ) {
+						ERROR("send_m1() failure");
+						goto child_error;
+					} 
+					
+					break;
+					
+				case logfile_retrieve:
+				
+					rv = SKLOG_T_ManageLogfileRetrieve(t_ctx, conn);
+					
+					if ( rv == SKLOG_FAILURE ) {
+						ERROR("SKLOG_T_ManageLogfileRetrieve() failure");
+						goto child_error;
+					}
+					
+					break;
+					
+				case logfile_upload:
+				
+					rv = SKLOG_T_ManageLogfileUpload(t_ctx, conn);
+					
+					if ( rv == SKLOG_FAILURE ) {
+						ERROR("SKLOG_T_ManageLogfileUpload() failure");
+						goto child_error;
+					}
+					
+					break;
+					
+				case logfile_verification:
+				
+					/*
+					 * logfile_id = payload
+					 * 
+					 */
+					
+					memcpy(logfile_id, payload, UUID_STR_LEN);
+					
+					rv = SKLOG_T_ManageLogfileVerify(t_ctx, conn, logfile_id);
+					
+					if ( rv == SKLOG_FAILURE ) {
+						ERROR("SKLOG_T_ManageLogfileUpload() failure");
+						goto child_error;
+					}
+					 
+					break;
+					
+				case none:
+				default:
+					break;
+			}
+			
+			/* child termination */
+			
+child_error:
+			/* free SSL and SSL_CTX structures */
+			
+			rv = SSL_shutdown(ssl);
+			
+			if ( rv < 0 ) {
+				ERROR("SSL_shutdown() failure")
+				ERR_print_errors_fp(stderr);
+				exit(1);
+			}
+			
+			SSL_free(ssl);
+			SSL_CTX_free(ssl_ctx);
+			
+			/* free OpenSSL error strings */
+			
+			ERR_free_strings();
+			
+			/* close socket */
+			
+			close(csock);
+			
+			exit(0);
+			
+		} else if ( pid > 0 ) {
+			/* I'm a parent process */
+			
+			/* increment connection counter */
+			
+			conn_count++;
+			
+			/* close connection socket */
+			
+			close(csock);
+			
+			NOTIFY("child %d spawned", pid);
+			
+			if ( maxconn > 0 ) 
+				NOTIFY("%d connections still available",
+					maxconn-conn_count);
+				
+		} else {
+			/* Dho!!! */
+error:
+			if ( lsock > 0 )
+				close(lsock);
+				
+			if ( csock > 0 )
+				close(csock);
+				
+			if ( fp > 0 )
+				fclose(fp);
+			
+			if ( ssl > 0)
+				SSL_free(ssl);
+				
+			if ( ssl_ctx > 0 )
+				SSL_CTX_free(ssl_ctx);
+				
+			ERR_free_strings();
+		
+			exit (1);				
+		} 
+	} 
+	
+input_params_error:
+	exit(1);
 }
+
+
+
+
+

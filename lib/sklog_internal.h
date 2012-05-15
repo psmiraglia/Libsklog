@@ -208,25 +208,25 @@ flush_logfile_send_logentry(BIO              *bio,
 /*                         conenctions                                */
 /*--------------------------------------------------------------------*/
 
-SKLOG_CONNECTION*
-new_connection(void);
+//~ SKLOG_CONNECTION*
+//~ new_connection(void);
 
-SKLOG_RETURN
-free_conenction(SKLOG_CONNECTION *c);
+//~ SKLOG_RETURN
+//~ free_conenction(SKLOG_CONNECTION *c);
 
-SKLOG_RETURN
-setup_ssl_connection(SKLOG_CONNECTION    *c,
-                     const char          *s_addr,
-                     short int           s_port,
-                 //~ const char          *cert_file_path,
-                     X509                *cert,
-                 //~ const char          *key_file_path,
-                     EVP_PKEY            *privkey,
-                     const char          *cacert_file_path,
-                     int                 enable_verify);
+//~ SKLOG_RETURN
+//~ setup_ssl_connection(SKLOG_CONNECTION    *c,
+                     //~ const char          *s_addr,
+                     //~ short int           s_port,
+                 //~//~ const char          *cert_file_path,
+                     //~ X509                *cert,
+                 //~//~ const char          *key_file_path,
+                     //~ EVP_PKEY            *privkey,
+                     //~ const char          *cacert_file_path,
+                     //~ int                 enable_verify);
 
-SKLOG_RETURN
-destroy_ssl_connection(SKLOG_CONNECTION *c);                     
+//~ SKLOG_RETURN
+//~ destroy_ssl_connection(SKLOG_CONNECTION *c);                     
 
 //~ SSL_CTX*
 //~ init_ssl_ctx(const char    *cert_file_path,
@@ -244,12 +244,13 @@ destroy_ssl_connection(SKLOG_CONNECTION *c);
 //~ init_ssl_structure_c(SSL_CTX    *ctx,
                      //~ int        socket);
 
-int
-tcp_bind(const char    *address,
-         short int     port);
-int
-tcp_connect(const char    *address,
-            short int     port);
+//~ int
+//~ tcp_bind(const char    *address,
+         //~ short int     port);
+         
+//~ int
+//~ tcp_connect(const char    *address,
+            //~ short int     port);
 
 //~ int
 //~ sock_connect(const char *s_addr,
@@ -280,4 +281,30 @@ sklog_show_buffer(int pid,
 int sklog_uuid_unparse(uuid_t u, char *out);
 
 void write2file(const char *file, const char *mode, unsigned char *buf, unsigned int bufl);
+
+/*--------------------------------------------------------------------*/
+/*                            networking                              */
+/*--------------------------------------------------------------------*/
+
+SKLOG_RETURN tcp_accept(int lsock, int *csock, char *cli_addr);
+
+SKLOG_RETURN tcp_bind(int lsock, const char *addr, short int port);
+
+SKLOG_RETURN tcp_connect(int csock, const char *addr, short int port);
+
+SKLOG_RETURN tcp_listen(int lsock);
+
+SKLOG_RETURN tcp_read(void);
+
+SKLOG_RETURN tcp_socket(int *sock);
+
+SKLOG_RETURN tcp_write(void);
+
+SKLOG_RETURN ssl_init_SSL(SSL_CTX *ssl_ctx, SSL **ssl);
+
+SKLOG_RETURN ssl_init_SSL_CTX(const SSL_METHOD *method, 
+	const char *cert_path, const char *privkey_path, int do_verify,
+	const char *CA_cert_path, SSL_CTX **ssl_ctx);
+
+
 #endif /* SKLOG_INTERNAL_H */

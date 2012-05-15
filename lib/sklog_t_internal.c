@@ -23,7 +23,6 @@
 #include "sklog_t_internal.h"
 #include "sklog_internal.h"
 
-//~ #include <confuse.h>
 #include <libconfig.h>
 
 #include <netinet/in.h>
@@ -32,6 +31,8 @@
 #include <openssl/pem.h>
 #include <openssl/rand.h>
 #include <openssl/ssl.h>
+
+#include <sys/wait.h>
 
 /*
  * parse T configuration file
@@ -628,7 +629,7 @@ SKLOG_RETURN send_m1(SKLOG_T_Ctx *t_ctx, SKLOG_CONNECTION *conn,
 	#endif
 
 	#ifdef USE_SSL
-	if ( SSL_write(ssl,wbuf,wlen) < 0 ) {
+	if ( SSL_write(conn->ssl,wbuf,wlen) < 0 ) {
 		ERR_print_errors_fp(stderr);
 		return SKLOG_FAILURE;
 	}
