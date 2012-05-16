@@ -35,7 +35,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 
-#define MSG_BUFLEN 2048
+#define MSG_BUFLEN 4096
 
 /*--------------------------------------------------------------------*/
 /*                           messaging system                         */
@@ -46,6 +46,8 @@ typedef enum message_type {
 	error,
 	notify,
 	warning,
+	query,
+	buffer,
 	
 	undefined
 } MSG_TYPE;
@@ -65,18 +67,32 @@ static void msg(MSG_TYPE type, const char *source, const int lineno,
 			snprintf(buf, MSG_BUFLEN, "[DEBUG]    ");
 			bufl = strlen(buf);
 			break;
+			
 		case error:
 			snprintf(buf, MSG_BUFLEN, "[ERROR]    ");
 			bufl = strlen(buf);
 			break;
+			
 		case notify:
 			snprintf(buf, MSG_BUFLEN, "[NOTIFY]   ");
 			bufl = strlen(buf);
 			break;
+			
 		case warning:
 			snprintf(buf, MSG_BUFLEN, "[WARNING]  ");
 			bufl = strlen(buf);
 			break;
+			
+		case query:
+			snprintf(buf, MSG_BUFLEN, "[QUERY]    ");
+			bufl = strlen(buf);
+			break;
+			
+		case buffer:
+			snprintf(buf, MSG_BUFLEN, "[BUFFER]   ");
+			bufl = strlen(buf);
+			break;
+			
 		default:
 			break;
 	}
@@ -94,7 +110,7 @@ static void msg(MSG_TYPE type, const char *source, const int lineno,
 	
 	/* append errno string */
 	
-	if ( type != notify && type != debug && errno > 0 ) {
+	if ( type == error && errno > 0 ) {
 		snprintf(buf+bufl, MSG_BUFLEN-bufl, ": %s",
 			strerror(curr_errno));
 		bufl = strlen(buf);
@@ -168,6 +184,40 @@ void msg_to_implement(const char *func)
 	return;
 }
 
+void msg_show_query(const char *source, const int lineno,
+	const char *func, const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	msg(query, source, lineno, func, fmt, ap);
+	va_end(ap);
+	return;
+}
+
+static void __msg_show_buffer(const char *source, const int lineno,
+	const char *func, const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	msg(buffer, source, lineno, func, fmt, ap);
+	va_end(ap);
+	return;
+}
+
+void msg_show_buffer(const char *source, const int lineno, 
+	const char *func, const char *bufname, unsigned char *buf,
+	unsigned int bufl)
+{
+	char *b64 = 0;
+	
+	b64_enc(buf, bufl, &b64);
+
+	__msg_show_buffer(source, lineno, func, "%s: {%s}", bufname, b64);
+	
+	free(b64);
+
+	return;
+}
 
 /*--------------------------------------------------------------------*/
 /*                          SKLOG_CONNECTION                          */

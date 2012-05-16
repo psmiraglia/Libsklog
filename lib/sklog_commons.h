@@ -51,13 +51,12 @@ void msg_warning(const char *source, const int lineno, const char *func,
 
 void msg_to_implement(const char *func);
 
-/*
 void msg_show_query(const char *source, const int lineno,
 	const char *func, const char *fmt, ...);
 	
-void msg_show_buffer(const char *source, const int lineno,
-	const char *func, const char *fmt, ...);
-*/
+void msg_show_buffer(const char *source, const int lineno, 
+	const char *func, const char *bufname, unsigned char *buf,
+	unsigned int bufl);
 
 #define DEBUG \
 	msg_debug(__FILE__, __LINE__, __func__);
@@ -74,14 +73,17 @@ void msg_show_buffer(const char *source, const int lineno,
 #define TO_IMPLEMENT \
 	msg_to_implement(__func__);
 
-#define SHOWQUERY(q) { \
-	fprintf(stderr,"[QUERY]     (%d) Libsklog (%s:%d): %s(): %s\n", \
-	getpid(),__FILE__,__LINE__,__func__,q); \
-}
+#define SHOWQUERY(fmt, args...) \
+	msg_show_query(__FILE__, __LINE__, __func__, fmt, ##args);
+	
+#define SHOWBUF(bufname, buf, bufl) \
+	msg_show_buffer(__FILE__, __LINE__, __func__, bufname, buf, bufl);
 
+/*
 #define SHOWBUF(bufname,buf,bufl) \
 	sklog_show_buffer(getpid(), __FILE__, __LINE__, __func__, bufname, \
 		buf, bufl);
+*/
 
 /*--------------------------------------------------------------------*/
 /*                    memory management macros                        */

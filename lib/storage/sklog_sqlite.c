@@ -156,7 +156,7 @@ sklog_sqlite_u_store_logentry(uuid_t             logfile_id,
         f_uuid,type,buf_data,buf_hash,buf_hmac);
         
 #ifdef DO_TRACE
-	SHOWQUERY(query);
+	SHOWQUERY("%s", query);
 #endif
 
     sqlite3_open(SKLOG_U_DB,&db);
@@ -240,7 +240,7 @@ sklog_sqlite_u_flush_logfile(uuid_t    logfile_id,
     );
 
 #ifdef DO_TRACE
-	SHOWQUERY(query);
+	SHOWQUERY("%s", query);
 #endif
 
     if ( sqlite3_prepare_v2(db,query,strlen(query)+1,
@@ -687,7 +687,7 @@ sklog_sqlite_t_store_logentry(unsigned char    *blob,
         f_uuid,w,d,y,z
     );
     
-    SHOWQUERY(query);
+    SHOWQUERY("%s", query);
 
     SKLOG_free(&d);
     SKLOG_free(&y);
@@ -759,7 +759,7 @@ sklog_sqlite_t_retrieve_logfiles(unsigned char    **uuid_list,
     query_len = sprintf(query,"select * from AUTHKEY");
 
 #ifdef DO_TRACE
-	SHOWQUERY(query);
+	SHOWQUERY("%s", query);
 #endif
 
     if ( sqlite3_prepare_v2(db,query,query_len+1,
@@ -880,7 +880,7 @@ sklog_sqlite_t_verify_logfile(unsigned char *uuid)
         "SELECT authkey FROM AUTHKEY WHERE f_uuid='%s'",uuid);
         
 #ifdef DO_TRACE
-	SHOWQUERY(query);
+	SHOWQUERY("%s", query);
 #endif
 
     //~ open database
@@ -978,7 +978,7 @@ terminate_authkey:
         "SELECT e_type,e_data,e_hash,e_hmac FROM LOGENTRY WHERE f_uuid = '%s'",uuid);
 	
 #ifdef DO_TRACE
-	SHOWQUERY(query);
+	SHOWQUERY("%s", query);
 #endif
     
     //~ open database

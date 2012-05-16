@@ -806,6 +806,8 @@ static action_t t_hello(SSL *ssl, unsigned int *payload_len,
 		return action;
 	}
 	
+	SHOWBUF("hello_buffer", rbuf, rlen);
+	
 	/* get TYPE from TLV message */
 	
 	if ( tlv_get_type(rbuf, &type) == SKLOG_FAILURE ) {
