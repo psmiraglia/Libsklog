@@ -48,7 +48,7 @@ endif
 
 libsklog_la_LDFLAGS = \
 	--version-info $(LIB_VERSION) \
-	-luuid -lconfig\
+	-luuid -lconfig \
 	-L@SSLDIR@/lib -lcrypto -lssl
 
 if HAVE_STORAGE_SQLITE
