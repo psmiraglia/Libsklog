@@ -57,6 +57,9 @@ void msg_show_query(const char *source, const int lineno,
 void msg_show_buffer(const char *source, const int lineno, 
 	const char *func, const char *bufname, unsigned char *buf,
 	unsigned int bufl);
+	
+void msg_json(const char *source, const int lineno, const char *func,
+	char *json_str);
 
 #define DEBUG \
 	msg_debug(__FILE__, __LINE__, __func__);
@@ -78,6 +81,9 @@ void msg_show_buffer(const char *source, const int lineno,
 	
 #define SHOWBUF(bufname, buf, bufl) \
 	msg_show_buffer(__FILE__, __LINE__, __func__, bufname, buf, bufl);
+	
+#define SHOW_JSON(json_str) \
+	msg_json(__FILE__, __LINE__, __func__, json_str);
 
 /*
 #define SHOWBUF(bufname,buf,bufl) \
@@ -155,6 +161,7 @@ void msg_show_buffer(const char *source, const int lineno,
 //~ #define		DO_TESTS	1
 
 #define		PREPARE_TESTS	1
+//~ #define		UMBERLOG	1
 
 /*--------------------------------------------------------------------*/
 /*                              types                                 */

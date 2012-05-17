@@ -25,7 +25,7 @@
 
 #include <errno.h>
 #include <string.h>
-
+#include <jansson.h>
 #include <arpa/inet.h>
 
 #include <openssl/bio.h>
@@ -48,6 +48,7 @@ typedef enum message_type {
 	warning,
 	query,
 	buffer,
+	json,
 	
 	undefined
 } MSG_TYPE;
@@ -90,6 +91,11 @@ static void msg(MSG_TYPE type, const char *source, const int lineno,
 			
 		case buffer:
 			snprintf(buf, MSG_BUFLEN, "[BUFFER]   ");
+			bufl = strlen(buf);
+			break;
+			
+		case json:
+			snprintf(buf, MSG_BUFLEN, "[JSON]     ");
 			bufl = strlen(buf);
 			break;
 			
@@ -218,6 +224,48 @@ void msg_show_buffer(const char *source, const int lineno,
 
 	return;
 }
+
+static void __msg_json(const char *source, const int lineno,
+	const char *func, const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	msg(json, source, lineno, func, fmt, ap);
+	va_end(ap);
+	return;
+}
+
+void msg_json(const char *source, const int lineno, const char *func,
+	char *json_str)
+{
+	json_t *json = 0;
+	json_error_t json_error;
+	
+	char *out_str = 0;
+	
+	memset(&json_error, 0, sizeof(json_error));
+	json = json_loads(json_str, JSON_DECODE_ANY, &json_error);
+	
+	if ( !json ) {
+		ERROR("json_loads() failure");
+		return;
+	}
+	
+	out_str = json_dumps(json, JSON_INDENT(2) | JSON_ENSURE_ASCII |
+		JSON_SORT_KEYS);
+		
+	if ( out_str == 0 ) {
+		ERROR("json_dumps() failure");
+		return;
+	}
+		
+	__msg_json(source, lineno, func, "\n%s\n", out_str);
+	
+	free(out_str);
+	free(json);
+	
+	return;
+}	
 
 /*--------------------------------------------------------------------*/
 /*                          SKLOG_CONNECTION                          */

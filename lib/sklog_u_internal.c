@@ -24,6 +24,10 @@
 #include "sklog_internal.h"
 #include "sklog_u.h"
 
+#ifdef UMBERLOG
+	#include "umberlog.h"
+#endif
+
 #ifdef USE_FILE
     #include "storage/sklog_file.h"
 #elif USE_SYSLOG
@@ -34,7 +38,6 @@
     #include "storage/sklog_dummy.h"
 #endif
 
-//~ #include <confuse.h>
 #include <libconfig.h>
 #include <string.h>
 #include <unistd.h>
@@ -327,14 +330,10 @@ error:
  * 
  */
 
-SKLOG_RETURN create_logentry(SKLOG_U_Ctx *u_ctx, SKLOG_DATA_TYPE type,
-	unsigned char *data, unsigned int data_len, int req_blob, 
-	char **blob, unsigned int *blob_len)
+SKLOG_RETURN __create_logentry(SKLOG_U_Ctx *u_ctx,
+	SKLOG_DATA_TYPE type, unsigned char *data, unsigned int data_len,
+	int req_blob, char **blob, unsigned int *blob_len)
 {
-	#ifdef DO_TRACE
-	DEBUG
-	#endif
-
 	unsigned char enc_key[SKLOG_ENC_KEY_LEN] = {0};
 
 	unsigned char *data_enc = 0;
@@ -374,7 +373,7 @@ SKLOG_RETURN create_logentry(SKLOG_U_Ctx *u_ctx, SKLOG_DATA_TYPE type,
 		ERROR("encrypt_aes256() failure")
 		goto error;
 	}
-#endif
+#endif /* DISABLE_ENCRYPTION */
 
 	/*
 	 * TEMPORARY
@@ -537,6 +536,212 @@ SKLOG_RETURN create_logentry(SKLOG_U_Ctx *u_ctx, SKLOG_DATA_TYPE type,
 error:
 	if ( data_enc > 0 ) free(data_enc);
 	return SKLOG_FAILURE;
+}	
+
+SKLOG_RETURN __create_logentry_umberlog(SKLOG_U_Ctx *u_ctx,
+	SKLOG_DATA_TYPE type, unsigned char *data, unsigned int data_len,
+	int req_blob, char **blob, unsigned int *blob_len)
+{
+	int rv = SKLOG_SUCCESS;
+	
+	unsigned char enc_key[SKLOG_AUTH_KEY_LEN] = { 0x0 };
+	
+	unsigned char *enc_data = 0;
+	unsigned int enc_data_len = 0;
+	char *enc_data_b64 = 0;
+	
+	unsigned char hash[SKLOG_HASH_CHAIN_LEN] = { 0x0 };
+	char *hash_b64 = 0;
+	
+	unsigned char hmac[SKLOG_HMAC_LEN] = { 0x0 };
+	char *hmac_b64 = 0;
+	
+	char session_id[UUID_STR_LEN+1] = { 0x0 };
+	
+	char *json_str = 0;
+	
+	/* check input parameters */
+	
+	if ( u_ctx == NULL || data == NULL ) {
+		ERROR("Bad input parameter(s). Please double-check it!");
+		rv = SKLOG_FAILURE;
+		goto check_input_error;
+	}
+	
+	/* genrate encryption key */
+	
+	rv = gen_enc_key(u_ctx, type, enc_key);
+	
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("gen_enc_key() failure");
+		goto error;
+	}
+	
+	/* encrypt data */
+	
+	rv = aes256_encrypt(data, data_len, enc_key, SKLOG_ENC_KEY_LEN,
+		&enc_data, &enc_data_len);
+		
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("aes256_encrypt() failure");
+		goto error;
+	}
+	
+	/* calculate hash */
+	
+	rv = gen_hash_chain(u_ctx, enc_data, enc_data_len, type, hash);
+	
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("gen_hash_chain() failure");
+		goto error;
+	}
+	
+	/* calculate hmac */
+	
+	rv = gen_hmac(u_ctx, hash, hmac);
+	
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("gen_hmac() failure");
+		goto error;
+	}
+	
+	/* renew authkey */
+	
+	rv = renew_auth_key(u_ctx);
+	
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("renew_auth_key() failure");
+		goto error;
+	}
+	
+	/* compose logentry */
+	
+	uuid_unparse_lower(u_ctx->logfile_id, session_id);
+	
+	rv = b64_enc(enc_data, enc_data_len, &enc_data_b64);
+	
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("b64_enc() failure");
+		goto error;
+	}
+	
+	rv = b64_enc(hash, SKLOG_HASH_CHAIN_LEN, &hash_b64);
+	
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("b64_enc() failure");
+		goto error;
+	}
+	
+	rv = b64_enc(hmac, SKLOG_HMAC_LEN, &hmac_b64);
+	
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("b64_enc() failure");
+		goto error;
+	}
+	
+	/* 
+	 * generate JSON string that contains SK log entry elements
+	 * in addiction to those specified by CEE (Common Events Expression)
+	 * 
+	 *    more references at http://cee.mitre.org
+	 *
+	 */
+	
+	
+	json_str = ul_format(LOG_NOTICE,
+		"%s", enc_data_b64,
+		"sklog_type", "%#x", type,
+		"sklog_hash", "%s", hash_b64,
+		"sklog_hmac", "%s", hmac_b64,
+		"sklog_session", "%s", session_id,
+		NULL);
+		
+	if ( json_str == NULL ) {
+		ERROR("ul_format() failure");
+		goto error;
+	}
+	
+	*blob = calloc(strlen(json_str)+1, sizeof(char));
+	
+	if ( *blob == NULL ) {
+		ERROR("calloc() failure");
+		goto error;
+	}
+	
+	*blob_len = strlen(json_str);
+	
+	memcpy(*blob, json_str, strlen(json_str));
+	
+	/* free memory */
+	
+	free(enc_data_b64);
+	enc_data_b64 = 0;
+	free(hash_b64);
+	hash_b64 = 0;
+	free(hmac_b64);
+	hmac_b64 = 0;
+	free(json_str);
+	json_str = 0;
+	
+	/* store logentry */
+	
+	rv = u_ctx->lsdriver->store_logentry(u_ctx->logfile_id, type,
+		enc_data, enc_data_len, hash, hmac);
+		
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("lsdriver->store_logentry() failure");
+		goto error;
+	}
+	
+	/* increase counter */
+	
+	u_ctx->logfile_counter += 1;
+	
+error:
+
+	if ( enc_data_b64 )
+		free(enc_data_b64);
+		
+	if ( hash_b64 )	
+		free(hash_b64);
+		
+	if ( hmac_b64 )
+		free(hmac_b64);
+		
+	if ( json_str )
+		free(json_str);
+		
+	if ( enc_data )
+		free(enc_data);
+
+check_input_error:
+
+	return rv;
+}
+
+SKLOG_RETURN create_logentry(SKLOG_U_Ctx *u_ctx, SKLOG_DATA_TYPE type,
+	unsigned char *data, unsigned int data_len, int req_blob, 
+	char **blob, unsigned int *blob_len)
+{
+	#ifdef DO_TRACE
+	DEBUG
+	#endif
+	
+	int rv = 0;
+	
+	#ifdef UMBERLOG
+		rv = __create_logentry_umberlog(u_ctx, type, data, data_len,
+			req_blob, blob, blob_len);
+	#else
+		rv = __create_logentry(u_ctx, type, data, data_len, req_blob,
+			blob, blob_len);
+	#endif
+	
+	#ifdef DO_TRACE
+	SHOW_JSON(*blob);
+	#endif
+	
+	return rv;
 }
 	
 /*

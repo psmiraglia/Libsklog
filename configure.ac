@@ -9,9 +9,9 @@ AC_PROG_LIBTOOL
 
 AC_SUBST([LIB_VERSION],[0:1:0])
 
-dnl
+dnl ********************************************************************
 dnl utilities
-dnl
+dnl ********************************************************************
 
 showflags() { :
 	echo
@@ -21,9 +21,9 @@ showflags() { :
 	echo
 }
 
-dnl
+dnl ********************************************************************
 dnl --enable-debug
-dnl
+dnl ********************************************************************
 
 AC_MSG_CHECKING([whether to build in debug mode])
 AC_ARG_ENABLE(
@@ -38,9 +38,9 @@ AC_ARG_ENABLE(
 	AC_MSG_RESULT(no)]
 )
 
-dnl
+dnl ********************************************************************
 dnl --enable-encryption
-dnl
+dnl ********************************************************************
 
 AC_ARG_ENABLE(
 	[encryption],
@@ -56,9 +56,9 @@ if test "x$enable_encryption" = "xno" ; then
 	AC_DEFINE([DISABLE_ENCRYPTION],[1],[Foo Desc])
 fi
 
-dnl
+dnl ********************************************************************
 dnl --enable-tests
-dnl
+dnl ********************************************************************
 
 AC_ARG_ENABLE(
 	[tests],
@@ -77,9 +77,9 @@ else
 	AM_CONDITIONAL([HAVE_TESTS],[false])
 fi
 
-dnl
+dnl ********************************************************************
 dnl --enable-bindings-python
-dnl
+dnl ********************************************************************
 
 AC_ARG_ENABLE(
 	[bindings-python],
@@ -107,9 +107,31 @@ else
 	AM_CONDITIONAL([HAVE_PYTHON],[false])
 fi
 
-dnl
+dnl ********************************************************************
+dnl --with-lumberjack
+dnl ********************************************************************
+
+AC_ARG_WITH([lumberjack],
+	AC_HELP_STRING(
+		[--with-lumberjack],
+		[Build Libsklog with Lumberjack project capabilities [default=no]]
+	),
+	lumberjack="$withval",
+	lumberjack="no"
+)
+
+if test "x$lumberjack" == "xyes"; then
+	AC_DEFINE([UMBERLOG], [1], [Enable libumberlog features])
+	AC_SUBST([UMBERLOG_CFLAGS], ["-Ilibumberlog/include"])
+	AC_SUBST([UMBERLOG_LDFLAGS], ["-Llibumberlog/lib -lumberlog"])
+	AM_CONDITIONAL([HAVE_UMBERLOG], [true])
+else
+	AM_CONDITIONAL([HAVE_UMBERLOG], [false])
+fi
+
+dnl ********************************************************************
 dnl --with-storage[=type]
-dnl
+dnl ********************************************************************
 
 AC_ARG_WITH([storage],
 	AC_HELP_STRING(
@@ -148,9 +170,9 @@ case "x$storage" in
 		;;
 esac
 
-dnl
+dnl ********************************************************************
 dnl --with-ssl=PATH
-dnl
+dnl ********************************************************************
 
 checkssldir() { :
     if test -f "$1/include/openssl/ssl.h"
@@ -191,9 +213,9 @@ fi
 AC_MSG_RESULT([$ssldir])
 AC_SUBST([SSLDIR],"$ssldir")
 
-dnl
+dnl ********************************************************************
 dnl checking for libraries
-dnl
+dnl ********************************************************************
 
 AC_CHECK_LIB(
 	[ssl],
@@ -221,6 +243,13 @@ AC_CHECK_LIB(
 	[main],
 	[],
 	AC_MSG_ERROR([libconfig is required from Libsklog])
+)
+
+AC_CHECK_LIB(
+	[jansson],
+	[main],
+	[],
+	AC_MSG_ERROR([libjansson is required from Libsklog])
 )
 
 AC_CONFIG_HEADERS([config.h])

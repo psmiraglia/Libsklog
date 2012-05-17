@@ -46,10 +46,16 @@ if HAVE_PYTHON
 libsklog_la_CFLAGS += @PY_CFLAGS@
 endif
 
+if HAVE_UMBERLOG
+libsklog_la_CFLAGS += @UMBERLOG_CFLAGS@
+endif
+
 libsklog_la_LDFLAGS = \
 	--version-info $(LIB_VERSION) \
 	-luuid -lconfig \
-	-L@SSLDIR@/lib -lcrypto -lssl
+	-L@SSLDIR@/lib -lcrypto -lssl \
+	-Llibumberlog/lib -lumberlog \
+	-ljansson
 
 if HAVE_STORAGE_SQLITE
 libsklog_la_LDFLAGS += -lsqlite3
@@ -61,4 +67,8 @@ endif
 	
 if HAVE_PYTHON
 libsklog_la_LDFLAGS += @PY_LDFLAGS@
+endif
+
+if HAVE_UMBERLOG
+libsklog_la_LDFLAGS += @UMBERLOG_LDFLAGS@
 endif
