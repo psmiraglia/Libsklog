@@ -1,33 +1,45 @@
-#-----------------------------------------------------------------------------
-# T settings
-#-----------------------------------------------------------------------------
+#---------------------------------------------------------------------#
+# U API configuration file                                            #
+#                                                                     #
+# Leave all parameters commented to use default values                #
+#---------------------------------------------------------------------#
 
-# X509 T's certificate (CA)
-t_cert="%%%SYSCONFDIR%%%/libsklog/certs/ca/ca_cert.pem"
+#
+# Information about remote T node
+#
 
-# T's address
-t_address = "127.0.0.1"
+#
+# CA certificate file path. Note that T acts as CA for U clients.
+#
+# t_cert="%%%SYSCONFDIR%%%/libsklog/certs/ca/ca_cert.pem"
 
-# T's port
-t_port = 5555
+#
+# T address and port
+#
+# t_address = "127.0.0.1"
+# t_port = 5555
 
-#-----------------------------------------------------------------------------
-# U settings
-#-----------------------------------------------------------------------------
+#
+# Information about local U node
+#
 
-# X509 U's certificate
-u_cert="%%%SYSCONFDIR%%%/libsklog/certs/u1_cert.pem"
+#
+# X509 certificate and private key files path
+#
+# u_cert="%%%SYSCONFDIR%%%/libsklog/certs/u1_cert.pem"
+# u_privkey="%%%SYSCONFDIR%%%/libsklog/certs/private/u1_key.pem"
 
-# U's identificator
-u_id="u1.example.com"
+#
+# Identificator
+#
+# u_id="u1.example.com"
 
-# U's RSA private key file
-u_privkey="%%%SYSCONFDIR%%%/libsklog/certs/private/u1_key.pem"
+#
+# Timeout for expiration of logging session initialisation.
+# 
+# u_timeout = 30 
 
-# U's timeout
-u_timeout = 30 
-
-# Max number of log entries in logfile
-logfile_size = 7
-
-
+#
+# Max number of log entries for each logging session
+#
+# logfile_size = 7
