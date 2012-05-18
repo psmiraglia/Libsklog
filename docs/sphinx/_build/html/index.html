@@ -1,0 +1,157 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Welcome to Libsklog’s documentation! &mdash; Libsklog 0.1alpha documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.1alpha',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Libsklog 0.1alpha documentation" href="#" />
+    <link rel="next" title="Installation" href="_doc/installation.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="_doc/installation.html" title="Installation"
+             accesskey="N">next</a> |</li>
+        <li><a href="#">Libsklog 0.1alpha documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="welcome-to-libsklog-s-documentation">
+<h1>Welcome to Libsklog&#8217;s documentation!<a class="headerlink" href="#welcome-to-libsklog-s-documentation" title="Permalink to this headline">¶</a></h1>
+<p>This is the documentation for Libsklog 0.1alpha, last updated May 18, 2012.</p>
+<div class="section" id="introduction">
+<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>Libsklog is a C library which allows users to create logentries
+according to the scheme defined by B. Schneier and J. Kelsey in
+<a class="reference external" href="http://www.schneier.com/paper-auditlogs.html">Secure Audit Logs to Support Computer Forensics</a>. This document will
+illustrate you about how to install the library under Linux systems,
+how to configure the environment and finally how to use it.</p>
+<p>To get more information, to notify a bug or more in general to contact
+me, please send an email to <a class="reference external" href="mailto:paolo&#46;smiraglia&#37;&#52;&#48;polito&#46;it">paolo<span>&#46;</span>smiraglia<span>&#64;</span>polito<span>&#46;</span>it</a></p>
+</div>
+<div class="section" id="contents">
+<h2>Contents<a class="headerlink" href="#contents" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="_doc/installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="_doc/installation.html#get-sources-and-install-library">Get Sources and Install Library</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="_doc/configuration.html">Configuration</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="_doc/configuration.html#libsklog-u-conf"><tt class="docutils literal"><span class="pre">libsklog-u.conf</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="_doc/configuration.html#libsklog-t-conf"><tt class="docutils literal"><span class="pre">libsklog-t.conf</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="_doc/configuration.html#libsklog-v-conf"><tt class="docutils literal"><span class="pre">libsklog-v.conf</span></tt></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="_doc/api.html">API References</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="_doc/api.html#preliminaries">Preliminaries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_doc/api.html#global-types">Global types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_doc/api.html#sklog-u-apis">SKLOG_U APIs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_doc/api.html#sklog-t-apis">SKLOG_T APIs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_doc/api.html#sklog-v-apis">SKLOG_V APIs</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="_doc/tutorial.html">Tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="_doc/tutorial.html#preliminaries">Preliminaries</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_doc/tutorial.html#using-u-api">Using U API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_doc/tutorial.html#using-t-api">Using T API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="_doc/tutorial.html#using-v-api">Using V API</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Welcome to Libsklog&#8217;s documentation!</a><ul>
+<li><a class="reference internal" href="#introduction">Introduction</a></li>
+<li><a class="reference internal" href="#contents">Contents</a><ul>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  <h4>Next topic</h4>
+  <p class="topless"><a href="_doc/installation.html"
+                        title="next chapter">Installation</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/index.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="_doc/installation.html" title="Installation"
+             >next</a> |</li>
+        <li><a href="#">Libsklog 0.1alpha documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Paolo Smiraglia.
+      Last updated on May 18, 2012.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,290 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Tutorial &mdash; Libsklog 0.1alpha documentation</title>
+    
+    <link rel="stylesheet" href="../_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1alpha',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <link rel="top" title="Libsklog 0.1alpha documentation" href="../index.html" />
+    <link rel="prev" title="API Reference" href="api.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="api.html" title="API Reference"
+             accesskey="P">previous</a> |</li>
+        <li><a href="../index.html">Libsklog 0.1alpha documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="tutorial">
+<h1>Tutorial<a class="headerlink" href="#tutorial" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="preliminaries">
+<h2>Preliminaries<a class="headerlink" href="#preliminaries" title="Permalink to this headline">¶</a></h2>
+<p>To build application that use Libsklog it&#8217;s necessary to add
+<tt class="docutils literal"><span class="pre">-I/urs/local/include</span></tt> to <tt class="docutils literal"><span class="pre">CFLAGS</span></tt> and <tt class="docutils literal"><span class="pre">-L/usr/local/lib</span>
+<span class="pre">-lsklog</span></tt> to <tt class="docutils literal"><span class="pre">LDFLAGS</span></tt></p>
+<div class="highlight-c"><div class="highlight"><pre><span class="n">gcc</span> <span class="o">-</span><span class="n">Wall</span> <span class="o">-</span><span class="n">Werror</span> <span class="o">-</span><span class="n">I</span><span class="o">/</span><span class="n">urs</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="n">include</span> <span class="n">my_log_app</span><span class="p">.</span><span class="n">c</span> <span class="o">-</span><span class="n">o</span> <span class="n">my_log_app</span><span class="p">.</span><span class="n">bin</span> <span class="o">-</span><span class="n">L</span><span class="o">/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="n">lib</span> <span class="o">-</span><span class="n">lsklog</span>
+</pre></div>
+</div>
+<p>Probably to run your application you will need to set <tt class="docutils literal"><span class="pre">LD_LIBRARY_PATH</span></tt> environment variable:</p>
+<div class="highlight-c"><div class="highlight"><pre><span class="n">LD_LIBRARY_PATH</span><span class="o">=/</span><span class="n">usr</span><span class="o">/</span><span class="n">local</span><span class="o">/</span><span class="n">lib</span> <span class="p">.</span><span class="o">/</span><span class="n">my_log_app</span><span class="p">.</span><span class="n">bin</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="using-u-api">
+<h2>Using U API<a class="headerlink" href="#using-u-api" title="Permalink to this headline">¶</a></h2>
+<p>To use U API it&#8217;s necessary to include the following libraries</p>
+<div class="highlight-c"><div class="highlight"><pre><span class="cp">#include &lt;stdio.h&gt;</span>
+<span class="cp">#include &lt;sklog_u.h&gt;</span>
+</pre></div>
+</div>
+<p>The first step is the initialization of the U context and then the
+initialization of a new logging session</p>
+<div class="highlight-c"><div class="highlight"><pre><span class="kt">int</span> <span class="nf">main</span> <span class="p">(</span> <span class="kt">void</span> <span class="p">)</span> <span class="p">{</span>
+
+        <span class="n">SKLOG_RETURN</span> <span class="n">rv</span> <span class="o">=</span> <span class="n">SKLOG_SUCCESS</span><span class="p">;</span>
+        <span class="n">SKLOG_U_Ctx</span> <span class="o">*</span><span class="n">ctx</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+        <span class="kt">char</span> <span class="o">*</span><span class="n">le1</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+        <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">le1_len</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+        <span class="kt">char</span> <span class="o">*</span><span class="n">le2</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+        <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">le2_len</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+        <span class="p">...</span>
+
+        <span class="cm">/* create empty context */</span>
+
+        <span class="n">ctx</span> <span class="o">=</span> <span class="n">SKLOG_U_NewCtx</span><span class="p">();</span>
+
+        <span class="k">if</span> <span class="p">(</span> <span class="o">!</span><span class="n">ctx</span> <span class="p">)</span> <span class="p">{</span>
+
+                <span class="cm">/* manage error */</span>
+
+        <span class="p">}</span>
+
+        <span class="cm">/* initialize new logging session */</span>
+
+        <span class="n">rv</span> <span class="o">=</span> <span class="n">SKLOG_U_Open</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">le1</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">le1_len</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">le2</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">le2_len</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span> <span class="n">rv</span> <span class="o">==</span> <span class="n">SKLOG_FAILURE</span> <span class="p">)</span> <span class="p">{</span>
+
+                <span class="cm">/* manage error */</span>
+        <span class="p">}</span>
+
+        <span class="p">...</span>
+
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>After that, users are ready to log their events using <tt class="docutils literal"><span class="pre">SKLOG_U_LogEvent()</span></tt> function</p>
+<div class="highlight-c"><div class="highlight"><pre><span class="kt">int</span> <span class="nf">main</span> <span class="p">(</span> <span class="kt">void</span> <span class="p">)</span> <span class="p">{</span>
+
+        <span class="kt">char</span> <span class="n">data</span><span class="p">[</span><span class="n">BUFLEN</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span> <span class="mh">0x0</span> <span class="p">};</span>
+
+        <span class="p">...</span>
+
+        <span class="cm">/* create logentry */</span>
+
+        <span class="n">snprintf</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">BUFLEN</span><span class="p">,</span> <span class="s">&quot;This is a sample event description&quot;</span><span class="p">);</span>
+
+        <span class="n">rv</span> <span class="o">=</span> <span class="n">SKLOG_U_LogEvent</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">type</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">strlen</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="o">&amp;</span><span class="n">le1</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">le1_len</span><span class="p">);</span>
+
+        <span class="k">if</span> <span class="p">(</span> <span class="n">rv</span> <span class="o">==</span> <span class="n">SKLOG_FAILURE</span> <span class="p">)</span> <span class="p">{</span>
+
+                <span class="cm">/* manage error */</span>
+        <span class="p">}</span>
+
+        <span class="p">...</span>
+
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>To terminate the logging session users have to close it and free the
+context</p>
+<div class="highlight-c"><div class="highlight"><pre><span class="kt">int</span> <span class="nf">main</span> <span class="p">(</span> <span class="kt">void</span> <span class="p">)</span> <span class="p">{</span>
+
+        <span class="p">...</span>
+
+        <span class="cm">/* close logging session */</span>
+
+        <span class="n">rv</span> <span class="o">=</span> <span class="n">SKLOG_U_Close</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">le1</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">le1_len</span><span class="p">);</span>
+
+        <span class="k">if</span> <span class="p">(</span> <span class="n">rv</span> <span class="o">==</span> <span class="n">SKLOG_FAILURE</span> <span class="p">)</span> <span class="p">{</span>
+
+                <span class="cm">/* manage error */</span>
+
+        <span class="p">}</span>
+
+        <span class="cm">/* free memory */</span>
+
+        <span class="n">rv</span> <span class="o">=</span> <span class="n">SKLOG_U_FreeCtx</span><span class="p">(</span><span class="o">&amp;</span><span class="n">u_ctx</span><span class="p">);</span>
+
+        <span class="k">if</span> <span class="p">(</span> <span class="n">rv</span> <span class="o">==</span> <span class="n">SKLOG_FAILURE</span> <span class="p">)</span> <span class="p">{</span>
+
+                <span class="cm">/* manage error */</span>
+
+        <span class="p">}</span>
+
+        <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="using-t-api">
+<h2>Using T API<a class="headerlink" href="#using-t-api" title="Permalink to this headline">¶</a></h2>
+<p>To use U API it&#8217;s necessary to include the following libraries</p>
+<div class="highlight-c"><div class="highlight"><pre><span class="cp">#include &lt;stdio.h&gt;</span>
+<span class="cp">#include &lt;sklog_t.h&gt;</span>
+</pre></div>
+</div>
+<p>To run a simple T application users can use the function <tt class="docutils literal"><span class="pre">SKLOG_T_RunServer()</span></tt></p>
+<div class="highlight-c"><div class="highlight"><pre><span class="cp">#include &lt;sklog_t.h&gt;</span>
+
+<span class="kt">int</span> <span class="nf">main</span> <span class="p">(</span> <span class="kt">void</span> <span class="p">)</span> <span class="p">{</span>
+
+        <span class="n">SKLOG_RETURN</span> <span class="n">rv</span> <span class="o">=</span> <span class="n">SKLOG_SUCCESS</span><span class="p">;</span>
+        <span class="n">SKLOG_T_Ctx</span> <span class="o">*</span><span class="n">ctx</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+        <span class="cm">/* create empty context */</span>
+
+        <span class="n">ctx</span> <span class="o">=</span> <span class="n">SKLOG_T_NewCtx</span><span class="p">();</span>
+
+        <span class="k">if</span> <span class="p">(</span> <span class="o">!</span><span class="n">ctx</span> <span class="p">)</span> <span class="p">{</span>
+
+                <span class="cm">/* manage error */</span>
+
+        <span class="p">}</span>
+
+        <span class="cm">/* initialize context */</span>
+
+        <span class="n">rv</span> <span class="o">=</span> <span class="n">SKLOG_T_InitCtx</span><span class="p">(</span><span class="n">ctx</span><span class="p">);</span>
+
+        <span class="k">if</span> <span class="p">(</span> <span class="n">rv</span> <span class="o">==</span> <span class="n">SKLOG_FAILURE</span> <span class="p">)</span> <span class="p">{</span>
+
+                <span class="cm">/* manage error */</span>
+
+        <span class="p">}</span>
+
+        <span class="cm">/* run T server */</span>
+
+        <span class="n">rv</span> <span class="o">=</span> <span class="n">SKLOG_T_RunServer</span><span class="p">(</span><span class="n">ctx</span><span class="p">);</span>
+
+        <span class="k">if</span> <span class="p">(</span> <span class="n">rv</span> <span class="o">==</span> <span class="n">SKLOG_FAILURE</span> <span class="p">)</span> <span class="p">{</span>
+
+                <span class="cm">/* manage error */</span>
+
+        <span class="p">}</span>
+
+        <span class="cm">/* free memory */</span>
+
+        <span class="n">rv</span> <span class="o">=</span> <span class="n">SKLOG_T_FreeCtx</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ctx</span><span class="p">);</span>
+
+        <span class="k">if</span> <span class="p">(</span> <span class="n">rv</span> <span class="o">==</span> <span class="n">SKLOG_FAILURE</span> <span class="p">)</span> <span class="p">{</span>
+
+                <span class="cm">/* manage error */</span>
+
+        <span class="p">}</span>
+
+        <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="using-v-api">
+<h2>Using V API<a class="headerlink" href="#using-v-api" title="Permalink to this headline">¶</a></h2>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Tutorial</a><ul>
+<li><a class="reference internal" href="#preliminaries">Preliminaries</a></li>
+<li><a class="reference internal" href="#using-u-api">Using U API</a></li>
+<li><a class="reference internal" href="#using-t-api">Using T API</a></li>
+<li><a class="reference internal" href="#using-v-api">Using V API</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="api.html"
+                        title="previous chapter">API Reference</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="../_sources/_doc/tutorial.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="api.html" title="API Reference"
+             >previous</a> |</li>
+        <li><a href="../index.html">Libsklog 0.1alpha documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Paolo Smiraglia.
+      Last updated on May 18, 2012.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>

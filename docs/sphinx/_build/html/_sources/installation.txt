@@ -1,0 +1,54 @@
+************
+Installation
+************
+
+In this section is shown the procedure to install the library and to
+configure the environment. All steps are described assuming that the
+library installation prefix ($PREFIX) is::
+
+   /usr/local
+
+
+Get Sources and Install Library
+===============================
+
+Before proceeding with the installation, several dependencies need to 
+be resolved:::
+
+    Libtool
+    Autoconf
+    OpenSSL >= 0.9.8
+    SQLite 3.x
+    libuuid
+    libconf
+    libjansson
+
+Get the sources from GitHub repository::
+
+	mkdir ~/temp
+	cd ~/temp
+	git clone https://github.com/psmiraglia/Libsklog.git libsklog
+	
+Generate ./configure script (usually only the first time)::
+
+	cd libsklog
+	autoreconf --install --force --verbose
+	
+Run ./configure script using the option --enable-debug (strongly
+recommended). Other options are available, to see them run::
+
+	./configure --help
+	
+Build and install the library::
+
+	./configure --enable-debug
+	make
+	make install (as root)
+	
+If you are Debian addicted, you can use "checkinstall" instead
+of "make install". In this way a .deb package will be created and
+installed.::
+
+	./configure --enable-debug
+	make
+	checkinstall (as root)
