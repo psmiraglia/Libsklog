@@ -40,10 +40,10 @@ SKLOG_RETURN SKLOG_T_ManageLogfileUpload(SKLOG_T_Ctx *t_ctx,
 	SKLOG_CONNECTION *c);
 
 SKLOG_RETURN SKLOG_T_ManageLogfileRetrieve(SKLOG_T_Ctx *t_ctx,
-	SKLOG_CONNECTION *c);
+	char *logfile_list[], unsigned int *logfile_list_len);
 
 SKLOG_RETURN SKLOG_T_ManageLogfileVerify(SKLOG_T_Ctx *t_ctx,
-	SKLOG_CONNECTION *c, char *logfile_id);
+	char *logfile_id);
 
 SKLOG_RETURN SKLOG_T_RunServer(SKLOG_T_Ctx *t_ctx);
 

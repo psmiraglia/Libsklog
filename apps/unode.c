@@ -312,35 +312,143 @@ char logfile[300][LOGENTRY_LEN] = {
 
 int main (void) {
 
-    SKLOG_RETURN retval = 0;
+    SKLOG_RETURN rv = 0;
     int index = 0;
 
-    char *le1 = 100;
+    char *le1 = 0;
     unsigned int le1_len = 0;
-    char *le2 = 200;
-    unsigned int le2_len = 0;
-
-    SKLOG_U_Ctx *u_ctx = SKLOG_U_NewCtx();
-
-    SKLOG_U_Open(u_ctx,&le1,&le1_len,&le2,&le2_len);
-    fprintf(stderr,"%s\n\n",le1);
-    fprintf(stderr,"%s\n\n",le2);
-
-    while ( index < LOGFILE_SIZE ) {
-        retval = SKLOG_U_LogEvent(u_ctx,Undefined,logfile[index],strlen(logfile[index]),&le1,&le1_len);
-        fprintf(stderr,"%s\n\n",le1);
-        
-        if ( retval == SKLOG_FAILURE ) {
-            ERROR("SKLOG_U_LogEvent() failure");
-            return 1;
-        }
-        index++;
-    }
-
-    SKLOG_U_Close(u_ctx,&le1,&le1_len);
-    fprintf(stderr,"%s\n",le1);
     
+    char *le2 = 0;
+    unsigned int le2_len = 0;
+    
+    unsigned char *m0 = 0;
+    unsigned int m0_len = 0;
+    
+    unsigned char *m1 = 0;
+    unsigned int m1_len = 0;
+
+    SKLOG_U_Ctx *u_ctx = 0;
+    
+    SKLOG_CONNECTION *c = 0;
+
+
+init_logging_session:
+    
+    /* initialize context */
+    
+    u_ctx = SKLOG_U_NewCtx();
+    
+    if ( u_ctx == NULL ) {
+		ERROR("SKLOG_U_NewCtx() failure");
+		return 1;
+	}
+    
+    rv = SKLOG_U_InitCtx(u_ctx);
+    
+    if ( rv == SKLOG_FAILURE ) {
+		ERROR("SKLOG_U_InitCtx() failure");
+		return 1;
+	}
+
+
+	
+	/*
+	 *  initialize logging session phase
+	 *
+	 */
+
+	
+	rv = SKLOG_U_Open_M0(u_ctx, &m0, &m0_len, &le1, &le1_len);
+	
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("SKLOG_U_Open_M0() failure");
+		return 1;
+	}
+    
+    /* setup connection */
+	
+	c = SKLOG_CONNECTION_New();
+	
+	if ( c == NULL ) {
+		ERROR("SKLOG_CONNECTION_New() failure");
+		rv = SKLOG_FAILURE;
+		goto error;
+	}
+	
+	rv = SKLOG_CONNECTION_Init(c, u_ctx->t_address, u_ctx->t_port,
+		u_ctx->u_cert, u_ctx->u_privkey, 0, 0);
+		
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("SKLOG_CONNECTION_Init() failure");
+		goto error;
+	}
+	
+	/* send m0 message */
+	
+	rv = send_m0(c, m0, m0_len);
+	
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("send_m0() failure");
+		goto error;
+	}
+	
+	/* waiting for m1 message */
+	
+	rv = receive_m1(c, &m1, &m1_len);
+	
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("receive_m1() failure");
+		goto error;
+	}
+	
+	/* free connection */
+	
+	rv = SKLOG_CONNECTION_Free(&c);
+	
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("SKLOG_CONNECTION_Free() failure");
+		goto error;
+	}
+	
+	rv = SKLOG_U_Open_M1(u_ctx, m1, m1_len, &le2, &le2_len);
+    
+    if ( rv == SKLOG_FAILURE ) {
+		ERROR("SKLOG_U_Open_M1() failure");
+		return 1;
+	}
+	
+	/*
+	 *  start logging
+	 *
+	 */
+	
+	
+	while ( index < LOGFILE_SIZE ) {
+		
+		/* create log entry */
+		
+		rv = SKLOG_U_LogEvent(u_ctx, Undefined, logfile[1],
+			strlen(logfile[1]), &le1, &le1_len);
+		
+		if ( rv == SKLOG_SESSION_TO_RENEW ) {
+			SKLOG_U_Close(u_ctx, &le1, &le1_len);
+			SKLOG_U_FreeCtx(&u_ctx);
+			goto init_logging_session;
+		}
+		
+		index++;
+	}
+	
+	/*
+	 *  end application
+	 *
+	 */
+
+    SKLOG_U_Close(u_ctx, &le1, &le1_len);
     SKLOG_U_FreeCtx(&u_ctx);
         
     return 0;
+    
+error:
+	return 1;
 }

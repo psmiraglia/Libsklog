@@ -40,6 +40,33 @@ SKLOG_U_NewCtx(void)
     return ctx;
 }
 
+SKLOG_RETURN SKLOG_U_InitCtx(SKLOG_U_Ctx *ctx)
+{
+	#ifdef DO_TRACE
+    DEBUG
+    #endif
+    
+    int rv = SKLOG_SUCCESS;
+    
+    /* check input parameters */
+    
+    if ( ctx == NULL ) {
+		ERROR("Bad input parameter. Please double-check it!");
+		return SKLOG_FAILURE;
+	}
+	
+	/* initialize ctx */
+	
+	rv = initialize_context(ctx);
+	
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("initialize_context() failure");
+		return SKLOG_FAILURE;
+	}
+	
+	return SKLOG_SUCCESS;
+}
+
 SKLOG_RETURN
 SKLOG_U_FreeCtx(SKLOG_U_Ctx **ctx)
 {
@@ -62,6 +89,71 @@ SKLOG_U_FreeCtx(SKLOG_U_Ctx **ctx)
     return SKLOG_SUCCESS;
 }
 
+SKLOG_RETURN SKLOG_U_LogEvent(SKLOG_U_Ctx *ctx, SKLOG_DATA_TYPE type,
+	char *data, unsigned int data_len, char **logentry,
+	unsigned int *logentry_len)
+{
+	#ifdef DO_TRACE
+    DEBUG
+    #endif
+    
+	int rv = SKLOG_SUCCESS;
+    
+    unsigned char *buf = 0;
+    unsigned int bufl = 0;
+    
+    /* check input parameter */
+    
+    if ( ctx == NULL || data == NULL ) {
+		ERROR("Bad input parameter(s). Please double-check it!");
+		return SKLOG_FAILURE;
+	}
+	
+	/* checking for session renewing */
+	
+	if ( ctx->logfile_counter >= ctx->logfile_size ) {
+		WARNING("Logging session needs to be renewed!");
+		return SKLOG_SESSION_TO_RENEW;
+	}
+    
+    /* serialize content */
+    
+    buf = calloc(data_len, sizeof(char));
+    
+    if ( buf == 0 ) {
+		ERROR("calloc() failure");
+		goto error;
+	}
+	
+	memcpy(buf, data, data_len);
+	bufl = data_len;
+	
+	/* checking for context initialization */
+	
+	if ( ctx->context_state != SKLOG_U_CTX_INITIALIZED ) {
+		ERROR("Context must be initialized");
+		goto error;
+	}
+	
+	/* generate logentry */
+	
+	rv = create_logentry(ctx, type, buf, bufl, 1, logentry,
+		logentry_len);
+		
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("create_logentry() failure");
+		goto error;
+	}
+	
+error:
+
+	if ( buf ) 
+		free(buf);
+		
+	return rv;
+}
+
+/**
 SKLOG_RETURN
 SKLOG_U_LogEvent(SKLOG_U_Ctx        *u_ctx,
                  SKLOG_DATA_TYPE    type,
@@ -144,6 +236,7 @@ error:
     if ( data_blob > 0 ) free(data_blob);
     return SKLOG_FAILURE;
 }
+*/
 
 SKLOG_RETURN
 SKLOG_U_Open(SKLOG_U_Ctx *u_ctx, char **le1, unsigned int *le1_len,
@@ -282,20 +375,150 @@ check_input_error:
 	return SKLOG_FAILURE;
 }
 
+/*
+ * Logging Session Opening: step 1
+ * 
+ * Client generates the M0 message (stored in buf1) and the first
+ * logentry (stored in buf2).
+ * 
+ */
+ 
+SKLOG_RETURN SKLOG_U_Open_M0(SKLOG_U_Ctx *ctx, unsigned char **buf1,
+	unsigned int *buf1l, char **buf2, unsigned int *buf2l)
+{
+	#ifdef DO_TRACE
+    DEBUG
+    #endif
+    
+    /**
+     * NOTES
+     * 
+     * 	- buf1 <-- m0 message
+     * 	- buf2 <-- logentry
+     *
+     */
+    
+    int rv = SKLOG_SUCCESS;
+    
+    unsigned char *m0 = 0;
+    unsigned int m0_len = 0;
+    
+    char *logentry = 0;
+    unsigned int logentry_len = 0;
+    
+    /* checking input parameters */
+	
+	if ( ctx == NULL ) {
+		ERROR("Argument 1 must be not null");
+		goto check_input_error;
+	}
+	
+	/* checking for context initialization */
+	
+	if ( ctx->context_state != SKLOG_U_CTX_INITIALIZED ) {
+		ERROR("Context must be initialized");
+		goto check_input_error;
+	}
+	
+	/* generate m0 and the first logentry */
+	
+	rv = generate_m0_message(ctx, &m0, &m0_len, &logentry, &logentry_len);
+		
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("generate_m0_message() failure");
+		goto error;
+	}
+	
+	/* save data */
+	
+	*buf1 = m0;
+	*buf1l = m0_len;
+	
+	*buf2 = logentry;
+	*buf2l = logentry_len;
+	
+error:
+
+	return rv;
+	
+check_input_error:
+
+	return SKLOG_FAILURE;
+}	
+
+/*
+ * Logging Session Opening: step 2
+ * 
+ * Client analyse the M1 message (stored in buf1) received by T and put
+ * the verification result in a logentry stored in buf2. 
+ * 
+ */
+ 	
+SKLOG_RETURN SKLOG_U_Open_M1(SKLOG_U_Ctx *ctx, unsigned char *buf1,
+	unsigned int buf1l, char **buf2, unsigned int *buf2l)
+{
+	#ifdef DO_TRACE
+    DEBUG
+    #endif
+    
+    int rv = SKLOG_SUCCESS;
+    
+    char *logentry = 0;
+    unsigned int logentry_len = 0;
+    
+	/* checking input parameters */
+	
+	if ( ctx == NULL || buf1 == NULL ) {
+		ERROR("Bad input parameter(s). Please double-check it!!!");
+		goto check_input_error;
+	}
+    
+    /* check m1 message */
+	
+	rv = verify_m1_message(ctx, buf1, buf1l, &logentry, &logentry_len);
+	
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("verify_m1_message() failure");
+		goto error;
+	}
+	
+	/* save data */
+	
+	*buf2 = logentry;
+	*buf2l = logentry_len;
+	
+error:
+
+	return rv;
+	
+check_input_error:
+
+	return SKLOG_FAILURE;
+}	
+	
 SKLOG_RETURN
-SKLOG_U_Close(SKLOG_U_Ctx     *u_ctx,
-              char            **le,
-              unsigned int    *le_len)
+SKLOG_U_Close(SKLOG_U_Ctx *u_ctx, char **le, unsigned int *le_len)
 {
     #ifdef DO_TRACE
     DEBUG
     #endif
+
+	int rv = SKLOG_SUCCESS;
 
     SKLOG_DATA_TYPE type = NormalCloseMessage;
     unsigned long now;
 
     unsigned char *data_blob = 0;
     unsigned int data_blob_len = 0;
+    
+    /* check input parameters */
+    
+    if ( u_ctx == NULL ) {
+		ERROR("Bad input parameter(s). Please double-check it!");
+		return SKLOG_FAILURE;
+	}
+	
+	/* get current time */
 
     if ( time_now_usec(&now) == SKLOG_FAILURE ) {
 		ERROR("time_now_usec() failure")
@@ -303,24 +526,33 @@ SKLOG_U_Close(SKLOG_U_Ctx     *u_ctx,
 	}
 	
     time_serialize(&data_blob, &data_blob_len, now);
+    
+    /* create closure logentry */
 
-    if ( create_logentry(u_ctx,type,data_blob,
-                         data_blob_len,1,le,le_len) == SKLOG_FAILURE ) {
+	rv = create_logentry(u_ctx, type, data_blob, data_blob_len, 1, le,
+		le_len);
+
+    if ( rv == SKLOG_FAILURE ) {
         ERROR("create_logentry() failure")
         goto error;
     }
 
-    //~ send all generated log-entries to T
+    /* send all generated log-entries to T */
+    
+    /**
     if ( flush_logfile_execute(u_ctx, now) == SKLOG_FAILURE ) {
         ERROR("flush_logfile_execute() failure")
         goto error;
     }
+    */
 
-    //~ flush the current context and mark it as uninitialized
-    memset(u_ctx,0,sizeof(*u_ctx));
+    /* flush the current context and mark it as uninitialized */
+    
+    memset(u_ctx, 0, sizeof(*u_ctx));
     u_ctx->context_state = SKLOG_U_CTX_NOT_INITIALIZED;
 
     free(data_blob);
+    
     return SKLOG_SUCCESS;
 
 error:

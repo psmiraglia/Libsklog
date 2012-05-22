@@ -79,6 +79,7 @@ struct sklog_t_storage_driver {
     SKLOG_RETURN (*store_m0_msg) (char*,uuid_t,unsigned char*,unsigned int);
     SKLOG_RETURN (*store_logentry) (unsigned char*,unsigned int);
     SKLOG_RETURN (*retrieve_logfiles) (unsigned char **,unsigned int *);
+    SKLOG_RETURN (*retrieve_logfiles_2) (char *uuid_list[],unsigned int *);
     SKLOG_RETURN (*verify_logfile) (unsigned char *);
 };
 

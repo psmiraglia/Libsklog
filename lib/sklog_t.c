@@ -82,6 +82,7 @@ SKLOG_T_Ctx* SKLOG_T_NewCtx(void)
     ctx->lsdriver->store_m0_msg =      &sklog_sqlite_t_store_m0_msg;
     ctx->lsdriver->store_logentry =    &sklog_sqlite_t_store_logentry;
     ctx->lsdriver->retrieve_logfiles = &sklog_sqlite_t_retrieve_logfiles;
+    ctx->lsdriver->retrieve_logfiles_2 = &sklog_sqlite_t_retrieve_logfiles_2;
     ctx->lsdriver->verify_logfile =    &sklog_sqlite_t_verify_logfile;
     #else
     ctx->lsdriver->store_authkey =     &sklog_sqlite_t_store_authkey;
@@ -638,56 +639,31 @@ error:
  */
  
 SKLOG_RETURN SKLOG_T_ManageLogfileRetrieve(SKLOG_T_Ctx *t_ctx,
-	SKLOG_CONNECTION *c)
+	char *logfile_list[], unsigned int *logfile_list_len)
 {
     #ifdef DO_TRACE
     DEBUG
     #endif
 
-    unsigned char *tlv = 0;
-    unsigned char *value = 0;
-    unsigned int len = 0;
+	int rv = SKLOG_SUCCESS;
 
-    unsigned char wbuf[SKLOG_BUFFER_LEN] = { 0 };
-    unsigned int wlen = 0;
-    
+	/* check input parameters */
+	
     if ( t_ctx == NULL ) {
 		ERROR("argument 1 must be not NULL");
 		return SKLOG_FAILURE;
 	}
-
-    t_ctx->lsdriver->retrieve_logfiles(&value,&len);
-
-    if ( tlv_create_message(LOG_FILES,len,value,&tlv,&wlen) == SKLOG_FAILURE ) {
-        ERROR("tlv_create_message() failure");
-        return SKLOG_FAILURE;
-    }
-    memcpy(wbuf,tlv,wlen); free(tlv);
-
-	write2file("t_out_retrieve.dat", "w+", wbuf, wlen);
 	
-	#ifdef DO_TESTS
-	
-		write2file("data/retrieve.dat", "w+", wbuf, wlen);
+	/* retrieve logfiles */
+
+	rv = t_ctx->lsdriver->retrieve_logfiles_2(logfile_list,
+		logfile_list_len);
 		
-	#else
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("retrieve_logfiles_2() failure");
+		return SKLOG_FAILURE;
+	}
 	
-    #ifdef USE_BIO
-    if ( BIO_write(c->bio,wbuf,wlen) <= 0 ) {
-            ERR_print_errors_fp(stderr);
-            return SKLOG_FAILURE;
-    }
-    #endif
-
-    #ifdef USE_SSL
-    if ( SSL_write(c->ssl,wbuf,wlen) <= 0 ) {
-            ERR_print_errors_fp(stderr);
-            return SKLOG_FAILURE;
-    }
-    #endif
-    
-    #endif
-
     return SKLOG_SUCCESS;
 }
 
@@ -697,60 +673,26 @@ SKLOG_RETURN SKLOG_T_ManageLogfileRetrieve(SKLOG_T_Ctx *t_ctx,
  */
  
 SKLOG_RETURN SKLOG_T_ManageLogfileVerify(SKLOG_T_Ctx *t_ctx,
-	SKLOG_CONNECTION *c, char *logfile_id)
+	char *logfile_id)
 {
     #ifdef DO_TRACE
     DEBUG
     #endif
+	
+    unsigned char uuid[UUID_STR_LEN+1] = { 0x0 };
 
-    unsigned char wbuf[SKLOG_BUFFER_LEN] = { 0 };
-    unsigned int wlen = 0;
-
-    unsigned char uuid[UUID_STR_LEN+1] = { 0 };
-
-    unsigned char *tlv = 0;
+    /* check input parameters */
     
-    if ( t_ctx == NULL ) {
-		ERROR("argument 1 must be not NULL");
+    if ( t_ctx == NULL || logfile_id == NULL) {
+		ERROR("Bad input parameter(s). Please double-check it!");
 		return SKLOG_FAILURE;
 	}
 	
-	if ( logfile_id == NULL ) {
-		ERROR("argument 3 must be not NULL");
-		return SKLOG_FAILURE;
-	}
+	/* verify */
 
-    memcpy(uuid,logfile_id,UUID_STR_LEN);
-
-    if ( t_ctx->lsdriver->verify_logfile(uuid) == SKLOG_FAILURE ) {
-        tlv_create_message(VERIFY_LOGFILE_FAILURE,0,NULL,&tlv,&wlen);
-        memcpy(wbuf,tlv,wlen); free(tlv);
-    } else {
-        tlv_create_message(VERIFY_LOGFILE_SUCCESS,0,NULL,&tlv,&wlen);
-        memcpy(wbuf,tlv,wlen); free(tlv);
-    }
-
-	write2file("t_out_verify.dat", "w+", wbuf, wlen);
-	#ifdef DO_TESTS
-		write2file("data/verify_result.dat", "w+", wbuf, wlen);
-	#else
-	
-    #ifdef USE_BIO
-    if ( BIO_write(c->bio,wbuf,wlen) <= 0 ) {
-            ERR_print_errors_fp(stderr);
-            return SKLOG_FAILURE;
-    }
-    #endif
-
-    #ifdef USE_SSL
-    if ( SSL_write(c->ssl,wbuf,wlen) <= 0 ) {
-            ERR_print_errors_fp(stderr);
-            return SKLOG_FAILURE;
-    }
-    #endif
-    #endif
-
-    return SKLOG_SUCCESS;
+    memcpy(uuid, logfile_id, UUID_STR_LEN);
+    
+    return (t_ctx->lsdriver->verify_logfile(uuid));
 }
 
 /*
@@ -890,6 +832,8 @@ SKLOG_RETURN SKLOG_T_RunServer(SKLOG_T_Ctx *t_ctx)
 	
 	int rv = 0;
 	
+	int nwrite = 0;
+	
 	int lsock = 0;
 	int csock = 0;
 	
@@ -910,13 +854,27 @@ SKLOG_RETURN SKLOG_T_RunServer(SKLOG_T_Ctx *t_ctx)
 	unsigned char *payload = 0;
 	unsigned int payload_len = 0;
 	
-	unsigned char wbuf[SKLOG_BUFFER_LEN+1] = { 0x0 };
-	int wlen = 0;
+	unsigned char wbuf[BUF_8192+1] = { 0x0 };
+	unsigned int wlen = 0;
+	
+	/**
+	unsigned char rbuf[BUF_8192+1] = { 0x0 };
+	unsigned int rlen = 0;
+	*/
+	
+	char buf[BUF_8192+1] = { 0x0 };
+	int bufl = 0;
 	
 	char logfile_id[UUID_STR_LEN+1] = { 0x0 };
 	
 	unsigned char *m1 = 0;
 	unsigned int m1_len = 0;
+	
+	unsigned char *tlv = 0;
+	
+	char *logfile_list[BUF_1024] = { 0x0 };
+	unsigned int logfile_list_len = 0;
+	int i = 0;
 	
 	/* check input parameters */
 	
@@ -1077,10 +1035,52 @@ SKLOG_RETURN SKLOG_T_RunServer(SKLOG_T_Ctx *t_ctx)
 					
 				case logfile_retrieve:
 				
-					rv = SKLOG_T_ManageLogfileRetrieve(t_ctx, conn);
+					/* retrieve list of log files */
+					
+					rv = SKLOG_T_ManageLogfileRetrieve(t_ctx, 
+						logfile_list, &logfile_list_len);
 					
 					if ( rv == SKLOG_FAILURE ) {
 						ERROR("SKLOG_T_ManageLogfileRetrieve() failure");
+						goto child_error;
+					}
+					
+					/* create CSV buffer
+					 * 
+					 * 	logfile_id;logfile_id;...;logfile_id;
+					 * 
+					 */
+					
+					memset(buf, 0, BUF_8192);
+					
+					for ( i = 0 ; i < logfile_list_len ; i++ ) {
+						strncat(buf, logfile_list[i], UUID_STR_LEN);
+						strcat(buf, ";");
+					}
+					
+					bufl = strlen(buf);
+					
+					/* generate TLV message */
+					
+					rv = tlv_create_message(LOG_FILES, bufl,
+						(unsigned char *) buf, &tlv, &wlen);
+						
+					if ( rv == SKLOG_FAILURE ) {
+						ERROR("tlv_create_message() failure");
+						goto child_error;
+					}
+					
+					memset(wbuf, 0, BUF_8192);
+					memcpy(wbuf, tlv, wlen);
+					free(tlv);
+					
+					/* send TLV message */
+					
+					nwrite = SSL_write(conn->ssl, wbuf, wlen);
+					
+					if ( nwrite <= 0 ) {
+						ERROR("SSL_write() error");
+						ERR_print_errors_fp(stderr);
 						goto child_error;
 					}
 					
@@ -1106,10 +1106,52 @@ SKLOG_RETURN SKLOG_T_RunServer(SKLOG_T_Ctx *t_ctx)
 					
 					memcpy(logfile_id, payload, UUID_STR_LEN);
 					
-					rv = SKLOG_T_ManageLogfileVerify(t_ctx, conn, logfile_id);
+					/* verify logfile */
+					
+					rv = SKLOG_T_ManageLogfileVerify(t_ctx, logfile_id);
 					
 					if ( rv == SKLOG_FAILURE ) {
-						ERROR("SKLOG_T_ManageLogfileUpload() failure");
+						
+						WARNING("SKLOG_T_ManageLogfileUpload() failure");
+						
+						/* verification failure */
+						
+						rv = tlv_create_message(VERIFY_LOGFILE_FAILURE,
+							0, NULL, &tlv, &wlen);
+						
+						if ( rv == SKLOG_FAILURE ) {
+							ERROR("tlv_create_message() failure");
+							goto child_error;
+						}
+						
+						memset(wbuf, 0, BUF_8192);
+						memcpy(wbuf, tlv, wlen);
+						free(tlv);
+						
+					} else {
+						
+						/* verification success */
+						
+						rv = tlv_create_message(VERIFY_LOGFILE_SUCCESS,
+							0, NULL, &tlv, &wlen);
+						
+						if ( rv == SKLOG_FAILURE ) {
+							ERROR("tlv_create_message() failure");
+							goto child_error;
+						}
+						
+						memset(wbuf, 0, BUF_8192);
+						memcpy(wbuf, tlv, wlen);
+						free(tlv);
+					}
+					
+					/* send result */
+					
+					nwrite = SSL_write(conn->ssl, wbuf, wlen);
+					
+					if ( nwrite <= 0 ) {
+						ERROR("SSL_write() error");
+						ERR_print_errors_fp(stderr);
 						goto child_error;
 					}
 					 

@@ -28,6 +28,8 @@
 
 SKLOG_U_Ctx *SKLOG_U_NewCtx(void);
 
+SKLOG_RETURN SKLOG_U_InitCtx(SKLOG_U_Ctx *ctx);
+
 SKLOG_RETURN SKLOG_U_FreeCtx(SKLOG_U_Ctx**);
 
 SKLOG_RETURN SKLOG_U_LogEvent(SKLOG_U_Ctx *u_ctx, SKLOG_DATA_TYPE type,
@@ -35,6 +37,12 @@ SKLOG_RETURN SKLOG_U_LogEvent(SKLOG_U_Ctx *u_ctx, SKLOG_DATA_TYPE type,
 
 SKLOG_RETURN SKLOG_U_Open(SKLOG_U_Ctx *u_ctx, char **le1,
 	unsigned int *le1_len, char **le2, unsigned int *le2_len);
+	
+SKLOG_RETURN SKLOG_U_Open_M0(SKLOG_U_Ctx *ctx, unsigned char **buf1,
+	unsigned int *buf1l, char **buf2, unsigned int *buf2l);
+	
+SKLOG_RETURN SKLOG_U_Open_M1(SKLOG_U_Ctx *ctx, unsigned char *buf1,
+	unsigned int buf1l, char **buf2, unsigned int *buf2l);
 
 SKLOG_RETURN SKLOG_U_Close(SKLOG_U_Ctx *u_ctx, char **le,
 	unsigned int *le_len);

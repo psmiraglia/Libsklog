@@ -795,6 +795,101 @@ error:
 	return SKLOG_FAILURE;
 }
 
+SKLOG_RETURN sklog_sqlite_t_retrieve_logfiles_2(char *uuid_list[],
+	unsigned int *uuid_list_len)
+{
+	#ifdef DO_TRACE
+	DEBUG
+	#endif
+
+	const unsigned char *token = 0;
+	unsigned int token_len = 0;
+
+	sqlite3 *db = 0;
+	sqlite3_stmt *stmt = 0;
+	char query[BUF_2048+1] = { 0 };
+	unsigned int query_len = 0;
+	char *err_msg = 0;
+	int sql_step = 0;
+
+	int go_next = 1;
+	int counter = 0;
+
+	//~ open database
+	
+	sqlite3_open(SKLOG_T_DB, &db);
+	
+	if ( db == NULL ) {
+		ERROR("SQLite3: Can't open database: %s", sqlite3_errmsg(db));
+		goto error;
+	}
+
+	//~ compose query
+	
+	query_len = snprintf(query,BUF_2048, "select * from AUTHKEY");
+
+#ifdef DO_TRACE
+
+	SHOWQUERY("%s", query);
+	
+#endif
+
+	if ( sqlite3_prepare_v2(db, query, query_len+1, &stmt, NULL) != SQLITE_OK ) {
+		ERROR("SQLite3: sqlite3_prepare_v2() failure: %s", sqlite3_errmsg(db));
+		goto error;
+	}
+
+	//~ flush logfile
+	
+	while ( go_next ) {
+		
+		sql_step = sqlite3_step(stmt);
+
+		switch ( sql_step ) {
+			case SQLITE_ROW:
+			
+				token = sqlite3_column_text(stmt, 2);
+				token_len = sqlite3_column_bytes(stmt, 2);
+				
+				uuid_list[counter] = calloc(UUID_STR_LEN+1, sizeof(char));
+				memset(uuid_list[counter], 0, UUID_STR_LEN);
+				memcpy(uuid_list[counter], token, token_len);
+				
+				counter++;
+
+				break;
+
+			case SQLITE_DONE:
+				go_next = 0;
+				break;
+
+			default:
+				ERROR("SQLite3: %s", sqlite3_errmsg(db));
+				goto error;
+				break;
+		}
+	}
+
+	*uuid_list_len = counter;
+
+	if ( db )
+		sqlite3_close(db);
+		
+	if ( err_msg )
+		sqlite3_free(err_msg);
+		
+	return SKLOG_SUCCESS;
+
+error:
+	if ( db )
+		sqlite3_close(db);
+		
+	if ( err_msg )
+		sqlite3_free(err_msg);
+		
+	return SKLOG_FAILURE;
+}
+
 SKLOG_RETURN sklog_sqlite_t_verify_logfile(unsigned char *uuid)
 {
 	#ifdef DO_TRACE

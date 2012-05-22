@@ -650,7 +650,7 @@ SKLOG_RETURN __create_logentry_umberlog(SKLOG_U_Ctx *u_ctx,
 	
 	json_str = ul_format(LOG_NOTICE,
 		"%s", enc_data_b64,
-		"sklog_type", "%#x", type,
+		"sklog_type", "0x%8.8x", type,
 		"sklog_hash", "%s", hash_b64,
 		"sklog_hmac", "%s", hmac_b64,
 		"sklog_session", "%s", session_id,

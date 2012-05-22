@@ -149,6 +149,8 @@ void msg_json(const char *source, const int lineno, const char *func,
 #define 	ASCII_TIME_STR_LEN			64
 #define		STR_FORMAT_TIME				"%Y-%m-%d %H:%M:%S"
 
+#define		SKLOG_SESSION_TO_RENEW		2
+
 /*--------------------------------------------------------------------*/
 /*                        temporary defines                           */
 /*--------------------------------------------------------------------*/
