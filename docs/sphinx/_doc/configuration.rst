@@ -11,7 +11,7 @@ In Schneier and Kelsey logging scheme, three entities are defined
 * V is an **external** entity who wants to access/verify the collected logentries
 
 For each entity, Libsklog provides a set of APIs, each of which needs to
-be configured. To perform the configuration users have to edit the
+be configured. To perform the configuration, users have to edit the
 configuration files placed in ``$PREFIX/etc/libsklog``.
 
 

@@ -8,15 +8,16 @@ Preliminaries
 =============
 
 All declarations are in ``sklog_u.h``, ``sklog_t.h`` and 
-``sklog_v.h``, so it's enough to include one or more of these
+``sklog_v.h``, so it's enough to include one or more of these libraries
+in each source file.
 
 ::
 
-   #include <sklog_u.h>
-   #include <sklog_t.h>
-   #include <sklog_v.h>
+   #include <sklog_u.h> // to access U API
+   #include <sklog_t.h> // to access T API
+   #include <sklog_v.h> // to access V API
 
-in each source file.
+
 
 Global types
 ============
@@ -137,41 +138,55 @@ Types
 Functions
 ---------
 
-.. c:function:: SKLOG_U_Ctx *SKLOG_U_NewCtx(void)
+SKLOG_U_NewCtx()
+^^^^^^^^^^^^^^^^
 
-	**Description**
+**Synopsis**
+
+	.. c:function:: SKLOG_U_Ctx *SKLOG_U_NewCtx(void)
+
+**Description**
 	
 	Allocate a new ``SKLOG_U_Ctx`` structure and return a pointer to it.
 	
-	**Return values**
+**Return values**
 	
 	The function returns a valid pointer to a ``SKLOG_U_Ctx`` 
 	structure in case of success, ``NULL`` in case of error.
 
+SKLOG_U_FreeCtx()
+^^^^^^^^^^^^^^^^^
 
-.. c:function:: SKLOG_RETURN SKLOG_U_FreeCtx(SKLOG_U_Ctx **ctx)
+**Synopsis**
 
-	**Description**
+	.. c:function:: SKLOG_RETURN SKLOG_U_FreeCtx(SKLOG_U_Ctx **ctx)
+
+**Description**
 	
 	Free the memory allocated for ``ctx`` data structure.
 
-	**Return values**
+**Return values**
 	
 	
 	The function returns ``SKLOG_SUCCES`` in case of success, 
 	``SKLOG_FAILURE`` in case of failure.
 
+SKLOG_U_LogEvent()
+^^^^^^^^^^^^^^^^^^
 
-.. c:function:: SKLOG_RETURN SKLOG_U_LogEvent(SKLOG_U_Ctx *u_ctx, \
-	SKLOG_DATA_TYPE type,	char *data, unsigned int data_len, \
-	char **le, unsigned int *le_len)
+**Synopsis**
+
+	.. c:function:: SKLOG_RETURN SKLOG_U_LogEvent(SKLOG_U_Ctx *u_ctx, SKLOG_DATA_TYPE type,	char *data, unsigned int data_len, char **le, unsigned int *le_len)
 	
-	**Description**
+**Description**
 	
 	Log an event of type ``type`` described the buffer ``data`` of 
 	``data_len`` bytes and put the generated logenrty in ``le`` 
-	buffer and its length in ``ls_len``. The logentry can assume two 
-	different format. The default one is ::
+	buffer and its length in ``ls_len``.
+	
+**Notes**
+
+	The logentry can assume two different format. The default one is ::
 	
 		[Undefined]-[/uD/HihG8/UpeoQTvX25XnmCEhhVXUSIlJ1xVaaE+rIz48ttdcazL+r/fVJ2kysT\]-[N759xRQyV2LBH5QEqWR0EGoYGlPCszzsKafBhgo+FgQ=]-[hfAKmuNyGf1I1SwnNfsIY8sTePhMTdhqx04OP42vmL8=]
 	
@@ -202,16 +217,19 @@ Functions
 		
 		./configure --enable-debug --with-lumberjack
 	
-	**Return values**
+**Return values**
 	
 	The function returns ``SKLOG_SUCCES`` in case of success, 
 	``SKLOG_FAILURE`` in case of failure.
 
-.. c:function:: SKLOG_RETURN SKLOG_U_Open(SKLOG_U_Ctx *u_ctx, \
-	char **le1, unsigned int *le1_len, char **le2, \
-	unsigned int *le2_len)
+SKLOG_U_Open()
+^^^^^^^^^^^^^^
 
-	**Description**
+**Synopsis**
+
+	.. c:function:: SKLOG_RETURN SKLOG_U_Open(SKLOG_U_Ctx *u_ctx, char **le1, unsigned int *le1_len, char **le2, unsigned int *le2_len)
+
+**Description**
 	
 	Initialize a new logging session. By scheme definition this 
 	phase generate two logentries: the former, saved in ``le1`` 
@@ -220,26 +238,28 @@ Functions
 	buffer which is ``le2_len`` byte len, the result of the operation.
 	
 	
-	**Return values**
+**Return values**
 	
 	The function returns ``SKLOG_SUCCES`` in case of success, 
 	``SKLOG_FAILURE`` in case of failure.
 
-.. c:function:: SKLOG_RETURN SKLOG_U_Close(SKLOG_U_Ctx *u_ctx, \
-	char **le, unsigned int *le_len)
+SKLOG_U_Close()
+^^^^^^^^^^^^^^^
 
-	**Description**
+**Synopsis**
+
+	.. c:function:: SKLOG_RETURN SKLOG_U_Close(SKLOG_U_Ctx *u_ctx, char **le, unsigned int *le_len)
+
+**Description**
 	
 	Terminate an already opened logging session. This phase 
 	generates a logentry which is saved in ``le`` buffer and its 
 	length in ``le_len``.
 	
-	**Return values**
+**Return values**
 	
 	The function returns ``SKLOG_SUCCES`` in case of success, 
 	``SKLOG_FAILURE`` in case of failure.
-
-
 
 SKLOG_T APIs
 ============
@@ -289,79 +309,133 @@ Types
 Functions
 ---------
 
-.. c:function:: SKLOG_T_Ctx* SKLOG_T_NewCtx(void)
+SKLOG_T_NewCtx()
+^^^^^^^^^^^^^^^^
 
-	**Description**
+**Synopsis**
+
+	.. c:function:: SKLOG_T_Ctx* SKLOG_T_NewCtx(void)
+
+**Description**
+
+	Allocates a new ``SKLOG_T_Ctx`` empty structure.
 	
-	**Return values**
+**Return values**
 	
 	The function returns a valid pointer to a ``SKLOG_T_Ctx`` 
 	structure in case of success, ``NULL`` in case of error.
 
+SKLOG_T_FreeCtx()
+^^^^^^^^^^^^^^^^^
 
-.. c:function:: SKLOG_RETURN SKLOG_T_FreeCtx(SKLOG_T_Ctx **t_ctx)
+**Synopsis**
 
-	**Description**
+	.. c:function:: SKLOG_RETURN SKLOG_T_FreeCtx(SKLOG_T_Ctx **t_ctx)
+
+**Description**
+
+	Free the memory allocated for ``t_ctx`` structure.
 	
-	**Return values**
+**Return values**
 	
 	The function returns ``SKLOG_SUCCES`` in case of success, 
 	``SKLOG_FAILURE`` in case of failure.
 
-.. c:function:: SKLOG_RETURN SKLOG_T_InitCtx(SKLOG_T_Ctx *t_ctx)
+SKLOG_T_InitCtx()
+^^^^^^^^^^^^^^^^^
 
-	**Description**
+**Synopsis**
+
+	.. c:function:: SKLOG_RETURN SKLOG_T_InitCtx(SKLOG_T_Ctx *t_ctx)
+
+**Description**
+
+	Initialize the T API context ``t_ctx`` by reading the configuration
+	file ``libsklog-t.conf``.
 	
-	**Return values**
+**Return values**
 	
 	The function returns ``SKLOG_SUCCES`` in case of success, 
 	``SKLOG_FAILURE`` in case of failure.
 
-.. c:function:: SKLOG_RETURN SKLOG_T_ManageLoggingSessionInit(\
-	SKLOG_T_Ctx *t_ctx, unsigned char *m0, unsigned int m0_len, \
-	char *u_address, unsigned char **m1, unsigned int *m1_len)
-	
-	**Description**
-	
-	**Return values**	
-	
-	The function returns ``SKLOG_SUCCES`` in case of success, 
-	``SKLOG_FAILURE`` in case of failure.
-.. c:function:: SKLOG_RETURN SKLOG_T_ManageLogfileUpload(\
-	SKLOG_T_Ctx *t_ctx, SKLOG_CONNECTION *c)
-	
-	**Description**
-	
-	**Return values**
-	
-	The function returns ``SKLOG_SUCCES`` in case of success, 
-	``SKLOG_FAILURE`` in case of failure.
+SKLOG_T_ManageLoggingSessionInit()
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. c:function:: SKLOG_RETURN SKLOG_T_ManageLogfileRetrieve(\
-	SKLOG_T_Ctx *t_ctx,	SKLOG_CONNECTION *c)
+**Synopsis**
 
-	**Description**
+	.. c:function:: SKLOG_RETURN SKLOG_T_ManageLoggingSessionInit(SKLOG_T_Ctx *t_ctx, unsigned char *m0, unsigned int m0_len, char *u_address, unsigned char **m1, unsigned int *m1_len)
 	
-	**Return values**
+**Description**
+	
+	Manage the logging session initialization requests coming from a
+	client who has ``u_address`` IP address. The buffer ``m0``, that is
+	``m0_len`` bytes len, contains the request data.
+	
+**Return values**	
 	
 	The function returns ``SKLOG_SUCCES`` in case of success, 
 	``SKLOG_FAILURE`` in case of failure.
 
-.. c:function:: SKLOG_RETURN SKLOG_T_ManageLogfileVerify(\
-	SKLOG_T_Ctx *t_ctx,	SKLOG_CONNECTION *c, char *logfile_id)
+SKLOG_T_ManageLogfileUpload()
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**Synopsis**
 	
-	**Description**
+	.. c:function:: SKLOG_RETURN SKLOG_T_ManageLogfileUpload(SKLOG_T_Ctx *t_ctx, SKLOG_CONNECTION *c)
 	
-	**Return values**
+**Description**
+	
+	TODO
+	
+**Return values**
 	
 	The function returns ``SKLOG_SUCCES`` in case of success, 
 	``SKLOG_FAILURE`` in case of failure.
-	
-.. c:function:: SKLOG_RETURN SKLOG_T_RunServer(SKLOG_T_Ctx *t_ctx)
 
-	**Description**
+SKLOG_T_ManageLogfileRetrieve()
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**Synopsis**
+
+	.. c:function:: SKLOG_RETURN SKLOG_T_ManageLogfileRetrieve(SKLOG_T_Ctx *t_ctx,	SKLOG_CONNECTION *c)
+
+**Description**
 	
-	**Return values**
+	TODO
+	
+**Return values**
+	
+	The function returns ``SKLOG_SUCCES`` in case of success, 
+	``SKLOG_FAILURE`` in case of failure.
+
+SKLOG_T_ManageLogfileVerify()
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**Synopsis**
+
+	.. c:function:: SKLOG_RETURN SKLOG_T_ManageLogfileVerify(SKLOG_T_Ctx *t_ctx, SKLOG_CONNECTION *c, char *logfile_id)
+	
+**Description**
+
+	TODO
+	
+**Return values**
+	
+	The function returns ``SKLOG_SUCCES`` in case of success, 
+	``SKLOG_FAILURE`` in case of failure.
+
+SKLOG_T_RunServer()
+^^^^^^^^^^^^^^^^^^^
+
+**Synopsis**
+
+	.. c:function:: SKLOG_RETURN SKLOG_T_RunServer(SKLOG_T_Ctx *t_ctx)
+
+**Description**
+	
+	TODO
+	
+**Return values**
 	
 	The function returns ``SKLOG_SUCCES`` in case of success, 
 	``SKLOG_FAILURE`` in case of failure.
@@ -379,56 +453,98 @@ Types
 Functions
 ---------
 
-.. c:function:: SKLOG_V_Ctx* SKLOG_V_NewCtx(void)
+SKLOG_V_NewCtx()
+^^^^^^^^^^^^^^^^
 
-	**Description**
+**Synopsis**
 	
-	**Return values**
+	.. c:function:: SKLOG_V_Ctx* SKLOG_V_NewCtx(void)
+
+**Description**
+	
+	TODO
+	
+**Return values**
 	
 	The function returns a valid pointer to a ``SKLOG_V_Ctx`` 
 	structure in case of success, ``NULL`` in case of error.
 
-.. c:function:: SKLOG_RETURN SKLOG_V_InitCtx(SKLOG_V_Ctx *ctx)
+SKLOG_V_InitCtx()
+^^^^^^^^^^^^^^^^^
 
-	**Description**
+**Synopsis**
+
+	.. c:function:: SKLOG_RETURN SKLOG_V_InitCtx(SKLOG_V_Ctx *ctx)
+
+**Description**
 	
-	**Return values**
+	TODO
+	
+**Return values**
 	
 	The function returns ``SKLOG_SUCCES`` in case of success, 
 	``SKLOG_FAILURE`` in case of failure.
-	
-.. c:function:: SKLOG_RETURN SKLOG_V_FreeCtx(SKLOG_V_Ctx **ctx)
 
-	**Description**
+SKLOG_V_FreeCtx()
+^^^^^^^^^^^^^^^^^
+
+**Synopsis**
 	
-	**Return values**
+	.. c:function:: SKLOG_RETURN SKLOG_V_FreeCtx(SKLOG_V_Ctx **ctx)
+
+**Description**
+	
+	TODO
+	
+**Return values**
 	
 	The function returns ``SKLOG_SUCCES`` in case of success, 
 	``SKLOG_FAILURE`` in case of failure.
-	
-.. c:function:: SKLOG_RETURN SKLOG_V_RetrieveLogFiles(SKLOG_V_Ctx *v_ctx, SKLOG_CONNECTION *c)
 
-	**Description**
+SKLOG_V_RetrieveLogFiles()
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**Synopsis**
 	
-	**Return values**
+	.. c:function:: SKLOG_RETURN SKLOG_V_RetrieveLogFiles(SKLOG_V_Ctx *v_ctx, SKLOG_CONNECTION *c)
+
+**Description**
+	
+	TODO
+	
+**Return values**
 	
 	The function returns ``SKLOG_SUCCES`` in case of success, 
 	``SKLOG_FAILURE`` in case of failure.
-	
-.. c:function:: SKLOG_RETURN SKLOG_V_VerifyLogFile(SKLOG_V_Ctx *v_ctx, SKLOG_CONNECTION *c, unsigned int logfile_id)
 
-	**Description**
+SKLOG_V_VerifyLogFile()
+^^^^^^^^^^^^^^^^^^^^^^^
+
+**Synopsis**
 	
-	**Return values**
+	.. c:function:: SKLOG_RETURN SKLOG_V_VerifyLogFile(SKLOG_V_Ctx *v_ctx, SKLOG_CONNECTION *c, unsigned int logfile_id)
+
+**Description**
+	
+	TODO
+	
+**Return values**
 	
 	The function returns ``SKLOG_SUCCES`` in case of success, 
 	``SKLOG_FAILURE`` in case of failure.
-	
-.. c:function:: SKLOG_RETURN SKLOG_V_VerifyLogFile_uuid(SKLOG_V_Ctx *v_ctx, SKLOG_CONNECTION *c, char *logfile_id)
 
-	**Description**
+SKLOG_V_VerifyLogFile_uuid()
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**Synopsis**
 	
-	**Return values**
+	.. c:function:: SKLOG_RETURN SKLOG_V_VerifyLogFile_uuid(SKLOG_V_Ctx *v_ctx, SKLOG_CONNECTION *c, char *logfile_id)
+
+**Description**
+	
+	TODO
+	
+**Return values**
 	
 	The function returns ``SKLOG_SUCCES`` in case of success, 
 	``SKLOG_FAILURE`` in case of failure.

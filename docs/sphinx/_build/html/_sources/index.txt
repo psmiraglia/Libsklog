@@ -17,8 +17,9 @@ according to the scheme defined by B. Schneier and J. Kelsey in
 illustrate you about how to install the library under Linux systems,
 how to configure the environment and finally how to use it.
 
-To get more information, to notify a bug or more in general to contact
-me, please send an email to paolo.smiraglia@polito.it
+To get more information about the project, to notify bug(s) or, more 
+in general, to contact me, please send an email to 
+paolo.smiraglia@polito.it.
 
 .. _`Secure Audit Logs to Support Computer Forensics`: http://www.schneier.com/paper-auditlogs.html
 
