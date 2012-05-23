@@ -11,218 +11,102 @@ libsklog - Make secure logging using Schneier and Kelsey scheme
 1 Introduction
 ==============
 
-libsklog is a library for C language which allows to perform secure
-remote logging following the schema defined by B.Schneier and
-J.Kelsey in "Secure Audit Logs to Support Computer Forensics".
-This document illustrates how to install libsklog under Linux
-operating systems and how to configure the system enviroment to use it.
-To get more information, to notify a bug, or generally to contact me
-write at paolo.smiraglia@polito.it.
+Libsklog is a C library which allows users to create logentries
+according to the scheme defined by B. Schneier and J. Kelsey in
+"Secure Audit Logs to Support Computer Forensics". This document will
+illustrate you about how to install the library under Linux systems,
+how to configure the environment and finally how to use it.
 
-A PDF version of this document is available in
+To get more information, to notify a bug or more in general to contact
+me, please send an email to <paolo.smiraglia@polito.it>
 
-   docs/user_guide/user_guide.pdf
+
 
 2. Installation
 ===============
 
-libsklog allows to write applications which act as the actors U, T
-and V defined by Schneier and Kelsey. In this section is described
-the libsklog installation procedure and how to configure the
-environment for each component of Scneier-Kelsey's schema.
-All steps are described assuming that libsklog installation
-prefix is "/usr/local" and that a SQLite database is used to store
-data locally.
+In this section is shown the procedure to install the library and to
+configure the environment. All steps are described assuming that the
+library installation prefix ($PREFIX) is
+
+   /usr/local
+
 
 2.1 Get Sources and Install Library
 ===================================
 
-Before proceeding with the installation, the dependencies listed below
-need to be resolved:
+Before proceeding with the installation, several dependencies need to 
+be resolved:
 
     Libtool
     Autoconf
     OpenSSL >= 0.9.8
     SQLite 3.x
     libuuid
-    libconfuse
+    libconf
+    libjansson
 
-Installing libsklog is rather painless through the use of the GNU
-autoconf package. Simply get the sources from the Git repository,
-generate the "configure" script and finally run it. In most cases,
-"configure" will automatically determine everything it needs to know
-in order to compile. However, there are a few options to "configure"
-to help it out, or change the default behavior:
+Get the sources from GitHub repository
 
-    --enable-trace     Enable high verbosity mode for libsklog library
-                       [default=no]
+	$ mkdir ~/temp
+	$ cd ~/temp
+	$ git clone https://github.com/psmiraglia/Libsklog.git libsklog
+	
+Generate ./configure script (usually only the first time)
 
-    --enable-notify    Enable notify messages for libsklog library
-                       [default=no]
-    
-    --enable-debug     Enable debug support [default=no]
+	$ cd libsklog
+	$ autoreconf --install --force --verbose
+	
+Run ./configure script using the option --enable-debug (strongly
+recommended). Other options are available, to see them run
 
-The commands listed below, show you how to get the libsklog sources,
-how to generate the "configure" script and finally how to install
-the library.
+	$ ./configure --help
+	
+Build and install the library
 
-    $ mkdir ~/temp
-    $ cd ~/temp
-    $ git clone https://github.com/psmiraglia/Libsklog.git libsklog
-    
-    $ cd libsklog
-    $ mkdir m4
-    $ autoreconf --install --force --verbose
-    
-    $ ./configure --prefix=/usr/local [other options]
-    $ make
-    $ make install (as root)
+	$ ./configure --enable-debug
+	$ make
+	$ make install (as root)
+	
+If you are Debian addicted, you can use "checkinstall" instead
+of "make install". In this way a .deb package will be created and
+installed.
 
-At this point the library should be correctly installed. Below is
-reported the installation result. Now you can proceed with the
-configuration of the components.
-
-    /usr/local
-    /usr/local/bin
-    /usr/local/bin/tnode
-    /usr/local/bin/unode
-    /usr/local/etc
-    /usr/local/etc/libsklog
-    /usr/local/etc/libsklog/certs
-    /usr/local/etc/libsklog/certs/ca
-    /usr/local/etc/libsklog/certs/ca/ca_cert.pem
-    /usr/local/etc/libsklog/certs/private
-    /usr/local/etc/libsklog/certs/private/ca_key.pem
-    /usr/local/etc/libsklog/certs/private/u1_key.pem
-    /usr/local/etc/libsklog/certs/u1_cert.pem
-    /usr/local/etc/libsklog/libsklog-t.conf.example
-    /usr/local/etc/libsklog/libsklog-u.conf.example
-    /usr/local/etc/libsklog/sql
-    /usr/local/etc/libsklog/sql/t_database.sql
-    /usr/local/etc/libsklog/sql/u_database.sql
-    /usr/local/include
-    /usr/local/include/libsklog
-    /usr/local/include/libsklog/sklog_commons.h
-    /usr/local/include/libsklog/sklog_err.h
-    /usr/local/include/libsklog/sklog_internal.h
-    /usr/local/include/libsklog/sklog_t.h
-    /usr/local/include/libsklog/sklog_u.h
-    /usr/local/include/libsklog/sklog_utils.h
-    /usr/local/include/libsklog/sklog_v.h
-    /usr/local/lib
-    /usr/local/lib/libsklog.a
-    /usr/local/lib/libsklog.la
-    /usr/local/lib/libsklog.so -> libsklog.so.0.0.0
-    /usr/local/lib/libsklog.so.0 -> libsklog.so.0.0.0
-    /usr/local/lib/libsklog.so.0.0.0
-    /usr/local/var
-    /usr/local/var/libsklog
-    /usr/local/var/libsklog/db
-    /usr/local/var/libsklog/db/t.db
-    /usr/local/var/libsklog/db/u.db
-
-2.2 Setup U Component
+	$ ./configure --enable-debug
+	$ make
+	$ checkinstall (as root)
+	
+	
+2.2 Setup environment
 =====================
 
-2.2.1 Configuration File
-========================
+According to the Schneier and Kelsey entities (U, T and V), the library
+provides three different set of APIs. Each API set requires a
+configuration that can be executed by editing a file. Files are
+provided including comments about the parameters that can be set.
 
-To configure a U component it's necessary to create a file
-called "libsklog-u.conf" in "/usr/local/etc/libsklog"
-which will contains all required settings. If the configuration
-file is not prersent, default values will be used. Below 
-all settable parameters:
-
-    t_cert          Specifies the path where the certificate of T is
-                    installed. T acts also as certification authority.
-
-    t_address       Specifies the IP address of T.
-
-    t_port          Specifies the port on where T is listening.
-
-    u_cert          Specifies the path where the certificate of U,
-                    issued by T, is installed.
-
-    u_id            Specifies the identifier (common name) of U.
-
-    u_privkey       Specifies the path where the private key of U is
-                    installed.
-
-    u_timeout       Sets the timeout for the logfile initialization
-                    procedure.
-
-    logfile_size    Sets the number of log entries which can be
-                    collected into the logfile.
-
-The file libsklog-u.conf.example is a template of a
-configuration file for U component. You can use it as staring point
-for the definition of a new file:
-
-    $ cd /usr/local/etc/libsklog
-    $ cp libsklog-u.conf.example libsklog-u.conf
-    $ vim libsklog-u.conf
-      (edit your file)
-
-2.2.2 Database Initialization
-=============================
-
-    $ cd /usr/local/var/libsklog/db
-    $ sqlite3 u.db < /usr/local/etc/libsklog/sql/u_database.sql
-
-
-2.3 Setup T Component
-=====================
-
-2.3.1 Configuration File
-========================
-
-To configure a T component it's necessary to create a file
-called "libsklog-t.conf" in "/usr/local/etc/libsklog"
-which will contains all required settings. If the configuration
-file is not present, default values will be used. Below all settable
-parameters:
-
-    t_cert       Specifies the path where the certificate of T is
-                 installed. T acts also as certification authority.
-
-    t_privkey    Specifies the path where the private key of T is
-                 installed.
-
-    t_id         Specifies the identifier (common name) of T.
-
-    t_address    Specifies the IP address of T.
-
-    t_port       Specifies the port on where T is listening.
-    
-The file "libsklog-t.conf.example" is a template of a
-configuration file for T component. You can use it as staring point
-for the definition of a new file:
-
-    $ cd /usr/local/etc/libsklog
-    $ cp libsklog-t.conf.example libsklog-t.conf
-    $ vim libsklog-t.conf
-      (edit your file)
-
-2.3.2 Database Initialization
-=============================
-
-    $ cd /usr/local/var/libsklog/db
-    $ sqlite3 t.db < /usr/local/etc/libsklog/sql/t_database.sql
-
-
-2.4 Setup V Component
-=====================
-
-Not yet implemented. Do you want to help me? :-)
-
+	$PREFIX/etc/libsklog/libsklog-u.conf
+	$PREFIX/etc/libsklog/libsklog-t.conf
+	$PREFIX/etc/libsklog/libsklog-v.conf
+	
 3 Usage
 =======
 
-The installation of libsklog provides two sample application
-called "tnode" and "unode". The applications are available
-in the path "/usr/local/bin/". During the execution of the
-application you have to provide a passphrase which is
-"123456" if you use the default certificates.
+The installation of Libsklog provides also three sample application for
+each set of API.
+
+	$PREFIX/bin/unode (for U API)
+	$PREFIX/bin/tnode (for T API)
+	$PREFIX/bin/vnode (for V API)
+	
+During the execution of the tnode binary, you will have to provide a
+certificate passphrase (123456).
+
+For the documentation about the usage of the APIs, see comments placed
+in the source code.
+
+
+
 
 3.1 U component
 ===============
@@ -323,3 +207,121 @@ To build application run:
 To build application run:
 
     $ gcc -I/usr/local/include -L/usr/local/lib t_app.c -o t_app -lsklog
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+
+
+
+
+
+
+
+2.2.1 Configuration File
+========================
+
+To configure a U component it's necessary to create a file
+called "libsklog-u.conf" in "/usr/local/etc/libsklog"
+which will contains all required settings. If the configuration
+file is not prersent, default values will be used. Below 
+all settable parameters:
+
+    t_cert          Specifies the path where the certificate of T is
+                    installed. T acts also as certification authority.
+
+    t_address       Specifies the IP address of T.
+
+    t_port          Specifies the port on where T is listening.
+
+    u_cert          Specifies the path where the certificate of U,
+                    issued by T, is installed.
+
+    u_id            Specifies the identifier (common name) of U.
+
+    u_privkey       Specifies the path where the private key of U is
+                    installed.
+
+    u_timeout       Sets the timeout for the logfile initialization
+                    procedure.
+
+    logfile_size    Sets the number of log entries which can be
+                    collected into the logfile.
+
+The file libsklog-u.conf.example is a template of a
+configuration file for U component. You can use it as staring point
+for the definition of a new file:
+
+    $ cd /usr/local/etc/libsklog
+    $ cp libsklog-u.conf.example libsklog-u.conf
+    $ vim libsklog-u.conf
+      (edit your file)
+
+2.2.2 Database Initialization
+=============================
+
+    $ cd /usr/local/var/libsklog/db
+    $ sqlite3 u.db < /usr/local/etc/libsklog/sql/u_database.sql
+
+
+2.3 Setup T Component
+=====================
+
+2.3.1 Configuration File
+========================
+
+To configure a T component it's necessary to create a file
+called "libsklog-t.conf" in "/usr/local/etc/libsklog"
+which will contains all required settings. If the configuration
+file is not present, default values will be used. Below all settable
+parameters:
+
+    t_cert       Specifies the path where the certificate of T is
+                 installed. T acts also as certification authority.
+
+    t_privkey    Specifies the path where the private key of T is
+                 installed.
+
+    t_id         Specifies the identifier (common name) of T.
+
+    t_address    Specifies the IP address of T.
+
+    t_port       Specifies the port on where T is listening.
+    
+The file "libsklog-t.conf.example" is a template of a
+configuration file for T component. You can use it as staring point
+for the definition of a new file:
+
+    $ cd /usr/local/etc/libsklog
+    $ cp libsklog-t.conf.example libsklog-t.conf
+    $ vim libsklog-t.conf
+      (edit your file)
+
+2.3.2 Database Initialization
+=============================
+
+    $ cd /usr/local/var/libsklog/db
+    $ sqlite3 t.db < /usr/local/etc/libsklog/sql/t_database.sql
+
+
+2.4 Setup V Component
+=====================
+
+Not yet implemented. Do you want to help me? :-)
+
+

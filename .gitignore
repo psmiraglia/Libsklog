@@ -53,3 +53,8 @@ lib/config.h
 lib/stamp-h1
 
 *.xml
+
+*.pyc
+*.aux
+*.toc
+*.log
