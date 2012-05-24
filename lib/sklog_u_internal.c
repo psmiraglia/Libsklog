@@ -1706,7 +1706,7 @@ SKLOG_RETURN initialize_context(SKLOG_U_Ctx *u_ctx)
 	u_ctx->logfile_counter = 0;
 
 	//~ set logfile_id
-	uuid_generate_time(u_ctx->logfile_id);
+	uuid_generate(u_ctx->logfile_id);
 
 	//~ set session_key
 	RAND_bytes(u_ctx->session_key,SKLOG_SESSION_KEY_LEN);
@@ -1739,6 +1739,7 @@ SKLOG_RETURN initialize_context(SKLOG_U_Ctx *u_ctx)
 	#elif USE_SQLITE
 	u_ctx->lsdriver->store_logentry =	&sklog_sqlite_u_store_logentry;
 	u_ctx->lsdriver->flush_logfile =	 &sklog_sqlite_u_flush_logfile;
+	u_ctx->lsdriver->flush_logfile_v2 =	 &sklog_sqlite_u_flush_logfile_v2;
 	u_ctx->lsdriver->init_logfile =	  &sklog_sqlite_u_init_logfile;
 	#else
 	u_ctx->lsdriver->store_logentry =	&sklog_dummy_u_store_logentry;

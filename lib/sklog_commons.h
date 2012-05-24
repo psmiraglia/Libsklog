@@ -38,6 +38,9 @@
 /*                       message macros                               */
 /*--------------------------------------------------------------------*/
 
+#define	MSG_BAD_INPUT_PARAMS \
+	"Bad input parameter(s). Please double-check it!!!"
+
 void msg_debug(const char *source, const int lineno, const char *func);
 
 void msg_error(const char *source, const int lineno, const char *func,

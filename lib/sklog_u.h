@@ -46,5 +46,8 @@ SKLOG_RETURN SKLOG_U_Open_M1(SKLOG_U_Ctx *ctx, unsigned char *buf1,
 
 SKLOG_RETURN SKLOG_U_Close(SKLOG_U_Ctx *u_ctx, char **le,
 	unsigned int *le_len);
+	
+SKLOG_RETURN SKLOG_U_FlushLogfile(SKLOG_U_Ctx *ctx, char *logs[],
+	unsigned int *logs_size);
 
 #endif /* SKLOG_U_H */

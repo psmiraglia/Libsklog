@@ -559,3 +559,72 @@ error:
     if ( data_blob > 0 ) free(data_blob);
     return SKLOG_FAILURE;
 }
+
+SKLOG_RETURN SKLOG_U_FlushLogfile(SKLOG_U_Ctx *ctx, char *logs[],
+	unsigned int *logs_size)
+{
+	#ifdef DO_TRACE
+    DEBUG
+    #endif
+    
+    int rv = SKLOG_SUCCESS;
+    char logfile_id[UUID_STR_LEN+1] = { 0x0 };
+    
+    /* check input parameters */
+    
+    if ( ctx == NULL ) {
+		ERROR("%s", MSG_BAD_INPUT_PARAMS);
+		return SKLOG_FAILURE;
+	}
+	
+	/* get current logfile_id */
+	
+	/*
+	 * temporary disabled
+	 * 
+	 * uuid_unparse_lower(ctx->logfile_id, logfile_id);
+	 * 
+	 */
+	
+	sklog_uuid_unparse(ctx->logfile_id, logfile_id);
+	
+	NOTIFY("logfile_id = %s", logfile_id);
+	
+	getchar();
+	
+	rv = ctx->lsdriver->flush_logfile_v2(logfile_id, logs, logs_size);
+	
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("ctx->lsdriver->flush_logfile_v2() failure");
+		return SKLOG_FAILURE;
+	}
+	
+	return SKLOG_SUCCESS;
+}	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

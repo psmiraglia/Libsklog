@@ -375,6 +375,153 @@ error:
 	return SKLOG_FAILURE;
 }
 
+SKLOG_RETURN sklog_sqlite_u_flush_logfile_v2(char *logfile_id,
+	char *logs[], unsigned int *logs_size)
+{
+	#ifdef DO_TRACE
+	DEBUG
+	#endif
+	int rv = SKLOG_SUCCESS;
+	
+	sqlite3 *db = 0;
+	sqlite3_stmt *stmt = 0;
+	char query[BUF_4096+1] = { 0x0 };
+	int sql_step = 0;
+	
+	int one_step_forward = 1;
+	
+	uint32_t type = 0;
+	char data[BUF_8192+1] = { 0x0 };
+	char hash[BUF_512+1] = { 0x0 };
+	char hmac[BUF_512+1] = { 0x0 };
+	
+	const unsigned char *text = 0;
+	int bytes = 0;
+	
+	int index = 0;
+	char logentry[BUF_8192+1] = { 0x0 };
+	int logentry_len = 0;
+	
+	/* check input parameters */
+	
+	if ( logfile_id == NULL ) {
+		ERROR("%s", MSG_BAD_INPUT_PARAMS);
+		return SKLOG_FAILURE;
+	}
+	
+	/* compose query */
+	
+	snprintf(query, BUF_4096,
+		"select * from LOGENTRY where f_id = "
+		"(select f_id from LOGFILE where f_uuid='%s')",
+		logfile_id);
+		
+	/* open database connection */
+	
+	sqlite3_open(SKLOG_U_DB, &db);
+	
+	if ( db == NULL ) {
+		ERROR("sqlite3_open() failure: %s",
+			sqlite3_errmsg(db));
+		goto error;
+	}
+	
+	rv = sqlite3_prepare_v2(db, query, strlen(query), &stmt, NULL);
+	
+	if ( rv != SQLITE_OK ) {
+		ERROR("sqlite3_prepare_v2() failure: %s",
+			sqlite3_errmsg(db));
+		goto error;
+	}
+	
+	/* flush logfile */
+	
+	while ( one_step_forward ) {
+		
+		sql_step = sqlite3_step(stmt);
+		
+		switch ( sql_step ) {
+			
+			case SQLITE_ROW:
+			
+				/* get type */
+				
+				type = sqlite3_column_int(stmt, TAB_LOGENRTY_COL_TYPE);
+				//~ type = htonl(bytes);
+				
+				/* get data */
+				
+				bytes = sqlite3_column_bytes(stmt,
+					TAB_LOGENRTY_COL_DATA);
+				text = sqlite3_column_text(stmt, TAB_LOGENRTY_COL_DATA);
+				
+				memcpy(data, text, bytes);
+				text = 0x0;
+				
+				/* get hash */
+				
+				bytes = sqlite3_column_bytes(stmt,
+					TAB_LOGENRTY_COL_HASH);
+				text = sqlite3_column_text(stmt, TAB_LOGENRTY_COL_HASH);
+				
+				memcpy(hash, text, bytes);
+				text = 0x0;
+				
+				/* get hmac */
+				
+				bytes = sqlite3_column_bytes(stmt,
+					TAB_LOGENRTY_COL_HMAC);
+				text = sqlite3_column_text(stmt, TAB_LOGENRTY_COL_HMAC);
+				
+				memcpy(hmac, text, bytes);
+				text = 0x0;
+				
+				/* ------------------ */
+				/*  compose logentry  */
+				/* ------------------ */
+				
+				logentry_len = snprintf(logentry, BUF_8192,
+					"[0x%8.8x]-[%s]-[%s]-[%s]", type, data, hash, hmac);
+				
+				logs[index] = calloc(logentry_len+1, sizeof(char));
+				
+				if ( logs[index] == NULL ) {
+					ERROR("calloc() failure");
+					return SKLOG_FAILURE;
+				}
+				
+				memset(logs[index], 0, logentry_len+1);
+				memcpy(logs[index], logentry, logentry_len);
+				
+				/* free buffer and increment counter */
+				
+				memset(logentry, 0, BUF_8192);
+				index++;
+				
+				break;
+				
+			case SQLITE_DONE:
+			
+				one_step_forward = 0;
+				break;
+				
+			default:
+				ERROR("%s", sqlite3_errmsg(db));
+				goto error;
+		}
+	}
+	
+	sqlite3_close(db);
+	
+	*logs_size = index;
+	
+	return SKLOG_SUCCESS;
+	
+error:
+	sqlite3_close(db);
+	return SKLOG_FAILURE;
+}
+	
 SKLOG_RETURN sklog_sqlite_u_init_logfile(uuid_t logfile_id,
 	unsigned long t)
 {

@@ -118,6 +118,9 @@ struct sklog_u_storage_driver {
 		SKLOG_CONNECTION *);
 		
     SKLOG_RETURN (*init_logfile) (uuid_t, unsigned long);
+    
+    SKLOG_RETURN (*flush_logfile_v2) (char *logfile_id, char *logs[],
+		unsigned int *logs_size);
 };
 
 /*

@@ -326,6 +326,9 @@ int main (void) {
     
     unsigned char *m1 = 0;
     unsigned int m1_len = 0;
+    
+    char *logs[BUF_512] = { 0x0 };
+    unsigned int logs_size = 0;
 
     SKLOG_U_Ctx *u_ctx = 0;
     
@@ -431,6 +434,9 @@ init_logging_session:
 			strlen(logfile[1]), &le1, &le1_len);
 		
 		if ( rv == SKLOG_SESSION_TO_RENEW ) {
+			
+			SKLOG_U_FlushLogfile(u_ctx, logs, &logs_size);
+			
 			SKLOG_U_Close(u_ctx, &le1, &le1_len);
 			SKLOG_U_FreeCtx(&u_ctx);
 			goto init_logging_session;

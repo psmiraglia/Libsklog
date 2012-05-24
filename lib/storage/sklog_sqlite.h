@@ -41,12 +41,20 @@
 #define  SKLOG_U_DB  VAR_PREFIX"/libsklog/db/u.db"
 #define  SKLOG_T_DB  VAR_PREFIX"/libsklog/db/t.db"
 
+#define	TAB_LOGENRTY_COL_TYPE 2
+#define	TAB_LOGENRTY_COL_DATA 3
+#define	TAB_LOGENRTY_COL_HASH 4
+#define	TAB_LOGENRTY_COL_HMAC 5
+
 SKLOG_RETURN sklog_sqlite_u_store_logentry(uuid_t logfile_id,
 	SKLOG_DATA_TYPE	type, unsigned char *data, unsigned int	data_len,
 	unsigned char *hash, unsigned char *hmac);
 
 SKLOG_RETURN sklog_sqlite_u_flush_logfile(uuid_t logfile_id,
 	unsigned long now, SKLOG_CONNECTION *c);
+	
+SKLOG_RETURN sklog_sqlite_u_flush_logfile_v2(char *logfile_id,
+	char *logs[], unsigned int *logs_size);
 
 SKLOG_RETURN sklog_sqlite_u_init_logfile(uuid_t logfile_id,
 	unsigned long t);
