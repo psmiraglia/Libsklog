@@ -214,7 +214,7 @@ SKLOG_RETURN sklog_sqlite_u_flush_logfile(uuid_t logfile_id,
 
 	int go_next = 1;
 
-	char *timestamp = 0;
+	char timestamp[BUF_512+1] = { 0x0 };
 
 	/* unparse logfile_id */
 	
@@ -342,7 +342,7 @@ SKLOG_RETURN sklog_sqlite_u_flush_logfile(uuid_t logfile_id,
 
 	memset(query, 0, BUF_4096);
 
-	if ( time_usec2ascii(&timestamp, now) == SKLOG_FAILURE ) {
+	if ( time_usec2ascii(timestamp, now) == SKLOG_FAILURE ) {
 		ERROR("time_usec2ascii() failure");
 		goto error;
 	}
@@ -536,13 +536,13 @@ SKLOG_RETURN sklog_sqlite_u_init_logfile(uuid_t logfile_id,
 
 	char uuid_str[SKLOG_UUID_STR_LEN+1] = { 0 };
 	
-	char *ts = 0;
+	char ts[BUF_512+1] = { 0x0 };
 	char timestamp[ASCII_TIME_STR_LEN+1] = { 0x0 };
 	
 	int rv = 0;
 
 	
-	time_usec2ascii(&ts, t);
+	time_usec2ascii(ts, t);
 	memcpy(timestamp, ts, strlen(ts));
 
 	sklog_uuid_unparse(logfile_id, uuid_str);

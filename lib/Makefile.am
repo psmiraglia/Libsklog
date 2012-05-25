@@ -25,6 +25,10 @@ if HAVE_STORAGE_SYSLOG
 libsklog_la_SOURCES += storage/sklog_syslog.c storage/sklog_syslog.h
 endif
 
+if HAVE_STORAGE_MISC
+libsklog_la_SOURCES += storage/sklog_misc.c storage/sklog_misc.h
+endif
+
 if HAVE_STORAGE_NONE
 libsklog_la_SOURCES += \
 	storage/sklog_dummy.c storage/sklog_dummy.h \
@@ -62,6 +66,10 @@ libsklog_la_LDFLAGS += -lsqlite3
 endif
 
 if HAVE_STORAGE_NONE
+libsklog_la_LDFLAGS += -lsqlite3
+endif
+
+if HAVE_STORAGE_MISC
 libsklog_la_LDFLAGS += -lsqlite3
 endif
 	

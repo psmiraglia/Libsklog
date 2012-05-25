@@ -72,6 +72,8 @@ int main (int argc, char **argv) {
                 */
                     
                 SKLOG_V_RetrieveLogFiles(vctx,c);
+                
+                NOTIFY("I'm here...");
 
                 fprintf(stdout,"\n"\
                     "  Verifiable logfile at host %s\n"\
@@ -80,7 +82,7 @@ int main (int argc, char **argv) {
                     "  +------+--------------------------------------+\n",
                     vctx->t_address);
 
-                for ( index = 0 ; index < 256 ; index++ ) {
+                for ( index = 0 ; index < vctx->verifiable_logfiles_size ; index++ ) {
                     if ( strlen(vctx->verifiable_logfiles[index]) > 0 ) 
                         fprintf(stdout,"  | %4d | %s |\n",index,vctx->verifiable_logfiles[index]);
                 }

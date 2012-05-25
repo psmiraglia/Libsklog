@@ -58,7 +58,8 @@ struct sklog_v_ctx {
     char            t_address[IPADDR_LEN];
     short int       t_port;
 
-    char            verifiable_logfiles[LOGFILE_LIST_SIZE][UUID_STR_LEN+1];
+    char            verifiable_logfiles[BUF_4096][UUID_STR_LEN+1];
+    int				verifiable_logfiles_size;
     
 };
 

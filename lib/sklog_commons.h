@@ -40,6 +40,8 @@
 
 #define	MSG_BAD_INPUT_PARAMS \
 	"Bad input parameter(s). Please double-check it!!!"
+	
+#define MSG_NOT_IMPLEMENTED "Function not implemented"
 
 void msg_debug(const char *source, const int lineno, const char *func);
 
@@ -153,6 +155,15 @@ void msg_json(const char *source, const int lineno, const char *func,
 #define		STR_FORMAT_TIME				"%Y-%m-%d %H:%M:%S"
 
 #define		SKLOG_SESSION_TO_RENEW		2
+
+/*
+ * dump modes
+ * 
+ */
+ 
+#define DUMP_MODE_RAW	0 
+#define DUMP_MODE_JSON	1
+#define DUMP_MODE_SOAP	2
 
 /*--------------------------------------------------------------------*/
 /*                        temporary defines                           */

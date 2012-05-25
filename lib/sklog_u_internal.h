@@ -110,6 +110,32 @@ struct sklog_u_ctx {
 
 struct sklog_u_storage_driver {
 
+
+	SKLOG_RETURN (*store_logentry_v2)
+		(char *logfile_id, char *logentry);
+	
+	SKLOG_RETURN (*flush_logfile_v2)
+		(char *logfile_id, char *logs[], unsigned int *logs_size);
+		
+	SKLOG_RETURN (*init_logfile_v2)
+		(char *logfile_id, unsigned long timestamp);
+		
+	SKLOG_RETURN (*close_logfile_v2)
+		(char *logfile_id, unsigned long timestamp);
+		
+	SKLOG_RETURN (*dump_raw)
+		(char *logfile_id, const char *filename);
+	
+	SKLOG_RETURN (*dump_json)
+		(char *logfile_id, const char *filename);
+	
+	SKLOG_RETURN (*dump_soap)
+		(char *logfile_id, const char *filename);
+
+	/* ------------ */
+	/*  deprecated  */
+	/* ------------ */
+	
     SKLOG_RETURN (*store_logentry) (uuid_t, SKLOG_DATA_TYPE, 
 		unsigned char *, unsigned int, unsigned char *,
 		unsigned char *);
@@ -119,8 +145,7 @@ struct sklog_u_storage_driver {
 		
     SKLOG_RETURN (*init_logfile) (uuid_t, unsigned long);
     
-    SKLOG_RETURN (*flush_logfile_v2) (char *logfile_id, char *logs[],
-		unsigned int *logs_size);
+    
 };
 
 /*
@@ -202,5 +227,9 @@ SKLOG_RETURN generate_m0_message(SKLOG_U_Ctx *u_ctx, unsigned char **msg,
 	
 SKLOG_RETURN verify_m1_message(SKLOG_U_Ctx *u_ctx, unsigned char *m1,
 	unsigned int m1_len, char **le,	unsigned int *le_len);
+	
+SKLOG_RETURN dump_raw(SKLOG_U_Ctx *ctx, const char *filename);
+SKLOG_RETURN dump_json(SKLOG_U_Ctx *ctx, const char *filename);
+SKLOG_RETURN dump_soap(SKLOG_U_Ctx *ctx, const char *filename);
 
 #endif /* SKLOG_U_INTERNAL */

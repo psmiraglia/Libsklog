@@ -162,8 +162,7 @@ deserialize_timeval(unsigned char     *buf,
 
 SKLOG_RETURN time_now_usec(unsigned long *usec);
 
-SKLOG_RETURN time_usec2ascii(char **ascii_time,
-	unsigned long usec_time);
+SKLOG_RETURN time_usec2ascii(char *ascii_time, unsigned long usec_time);
 
 SKLOG_RETURN time_serialize(unsigned char **buf, unsigned int *bufl,
 	unsigned long usec_time);

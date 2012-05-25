@@ -276,6 +276,7 @@ SKLOG_V_RetrieveLogFiles(SKLOG_V_Ctx         *v_ctx,
 
                 strncpy(v_ctx->verifiable_logfiles[index++],token,UUID_STR_LEN);
                 token = strtok(NULL,";");
+                NOTIFY("OK - %d", index);
             }
             
             break;
@@ -284,8 +285,8 @@ SKLOG_V_RetrieveLogFiles(SKLOG_V_Ctx         *v_ctx,
             break;
     }
 
-    
-
+	NOTIFY("I'm here...");
+	v_ctx->verifiable_logfiles_size = index;
     ERR_free_strings();
     return SKLOG_SUCCESS;
 

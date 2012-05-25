@@ -29,6 +29,8 @@
     #include "storage/sklog_syslog.h"
 #elif USE_SQLITE
     #include "storage/sklog_sqlite.h"
+#elif USE_MISC
+	#include "storage/sklog_misc.h"
 #else
     #include "storage/sklog_dummy.h"
     #include "storage/sklog_sqlite.h"
@@ -39,6 +41,7 @@
 #include <sys/wait.h>
 
 #include <openssl/rand.h>
+#include <openssl/err.h>
 
 #include <arpa/inet.h>
 
@@ -84,6 +87,11 @@ SKLOG_T_Ctx* SKLOG_T_NewCtx(void)
     ctx->lsdriver->retrieve_logfiles = &sklog_sqlite_t_retrieve_logfiles;
     ctx->lsdriver->retrieve_logfiles_2 = &sklog_sqlite_t_retrieve_logfiles_2;
     ctx->lsdriver->verify_logfile =    &sklog_sqlite_t_verify_logfile;
+    #elif USE_MISC
+    ctx->lsdriver->store_authkey_v2 = &sklog_misc_t_store_authkey_v2;
+    ctx->lsdriver->store_m0_msg_v2 = &sklog_misc_t_store_m0_msg_v2;
+    ctx->lsdriver->retrieve_logfiles_v2 = &sklog_misc_t_retrieve_logfiles_v2;
+    ctx->lsdriver->verify_logfile_v2 = &sklog_misc_t_verify_logfile_v2;
     #else
     ctx->lsdriver->store_authkey =     &sklog_sqlite_t_store_authkey;
     ctx->lsdriver->store_m0_msg =      &sklog_sqlite_t_store_m0_msg;
@@ -224,6 +232,8 @@ SKLOG_RETURN SKLOG_T_ManageLoggingSessionInit(SKLOG_T_Ctx *t_ctx,
     #ifdef DO_TRACE
     DEBUG
     #endif
+	
+	int rv = SKLOG_SUCCESS;
 
     SKLOG_PROTOCOL_STEP p = 0;
     
@@ -264,6 +274,10 @@ SKLOG_RETURN SKLOG_T_ManageLoggingSessionInit(SKLOG_T_Ctx *t_ctx,
     unsigned char *m1_tmp = 0;
     unsigned int m1_tmp_len = 0;
     
+#ifdef USE_MISC
+	char logfile_id_str[UUID_STR_LEN+1] = { 0x0 };
+#endif    
+    
     if ( t_ctx == NULL ) {
 		ERROR("argument 1 must be not NULL");
 		return SKLOG_FAILURE;
@@ -293,11 +307,26 @@ SKLOG_RETURN SKLOG_T_ManageLoggingSessionInit(SKLOG_T_Ctx *t_ctx,
     write2file("data/logfileid.dat", "w+", logfile_id, 16);
     #endif
     
-    //~ store m0_msg
-    if ( t_ctx->lsdriver->store_m0_msg(u_address, logfile_id, m0, m0_len) == SKLOG_FAILURE ) {
+    /* store m0_msg */
+    
+#ifdef USE_MISC
+	uuid_unparse_lower(logfile_id, logfile_id_str);
+	
+	rv = t_ctx->lsdriver->store_m0_msg_v2(u_address, logfile_id_str,
+		m0, m0_len);
+	
+	if ( rv == SKLOG_FAILURE ) {
         ERROR("store_m0_msg() failure");
         goto error;
     }
+#else
+	rv = t_ctx->lsdriver->store_m0_msg(u_address, logfile_id, m0, m0_len);
+	if ( rv == SKLOG_FAILURE ) {
+        ERROR("store_m0_msg() failure");
+        goto error;
+    }
+#endif    
+    
     
     SKLOG_free(&m0); // PS: to check
 
@@ -367,12 +396,24 @@ SKLOG_RETURN SKLOG_T_ManageLoggingSessionInit(SKLOG_T_Ctx *t_ctx,
     
     /*----------------------------------------------------------------*/
 
-    //~ store auth_key
-    if ( t_ctx->lsdriver->store_authkey(u_address,logfile_id,
+    /* store auth_key */
+#ifdef USE_MISC
+	rv = t_ctx->lsdriver->store_authkey_v2(u_address, logfile_id_str,
+		auth_key);
+		
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("store_auth_key_v2() failure")
+        goto error;
+	}
+	
+#else
+	if ( t_ctx->lsdriver->store_authkey(u_address,logfile_id,
                                          auth_key) == SKLOG_FAILURE ) {
         ERROR("store_auth_key() failure")
         goto error;
     }
+#endif   
+    
     
     //~ remove auth_key from memory
     memset(auth_key,0,SKLOG_AUTH_KEY_LEN); 
@@ -655,7 +696,15 @@ SKLOG_RETURN SKLOG_T_ManageLogfileRetrieve(SKLOG_T_Ctx *t_ctx,
 	}
 	
 	/* retrieve logfiles */
-
+#ifdef USE_MISC
+	rv = t_ctx->lsdriver->retrieve_logfiles_v2(logfile_list,
+		logfile_list_len);
+		
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("retrieve_logfiles_2() failure");
+		return SKLOG_FAILURE;
+	}
+#else
 	rv = t_ctx->lsdriver->retrieve_logfiles_2(logfile_list,
 		logfile_list_len);
 		
@@ -663,6 +712,7 @@ SKLOG_RETURN SKLOG_T_ManageLogfileRetrieve(SKLOG_T_Ctx *t_ctx,
 		ERROR("retrieve_logfiles_2() failure");
 		return SKLOG_FAILURE;
 	}
+#endif
 	
     return SKLOG_SUCCESS;
 }
@@ -679,7 +729,9 @@ SKLOG_RETURN SKLOG_T_ManageLogfileVerify(SKLOG_T_Ctx *t_ctx,
     DEBUG
     #endif
 	
+#ifndef USE_MISC
     unsigned char uuid[UUID_STR_LEN+1] = { 0x0 };
+#endif
 
     /* check input parameters */
     
@@ -690,9 +742,12 @@ SKLOG_RETURN SKLOG_T_ManageLogfileVerify(SKLOG_T_Ctx *t_ctx,
 	
 	/* verify */
 
-    memcpy(uuid, logfile_id, UUID_STR_LEN);
-    
+#ifdef USE_MISC
+    return (t_ctx->lsdriver->verify_logfile_v2(logfile_id));
+#else
+	memcpy(uuid, logfile_id, UUID_STR_LEN);
     return (t_ctx->lsdriver->verify_logfile(uuid));
+#endif
 }
 
 /*
@@ -872,7 +927,7 @@ SKLOG_RETURN SKLOG_T_RunServer(SKLOG_T_Ctx *t_ctx)
 	
 	unsigned char *tlv = 0;
 	
-	char *logfile_list[BUF_1024] = { 0x0 };
+	char *logfile_list[BUF_4096] = { 0x0 };
 	unsigned int logfile_list_len = 0;
 	int i = 0;
 	

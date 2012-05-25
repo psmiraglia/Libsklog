@@ -1113,7 +1113,7 @@ SKLOG_RETURN time_now_usec(unsigned long *usec)
 	return SKLOG_SUCCESS;
 }
 
-SKLOG_RETURN time_usec2ascii(char **ascii_time, unsigned long usec_time)
+SKLOG_RETURN time_usec2ascii(char *ascii_time, unsigned long usec_time)
 {
 	#ifdef DO_TRACE
 	DEBUG
@@ -1150,7 +1150,7 @@ SKLOG_RETURN time_usec2ascii(char **ascii_time, unsigned long usec_time)
 		return SKLOG_FAILURE;
 	}
 	
-	*ascii_time = buf;
+	memcpy(ascii_time, buf, rv);
 	
 	return SKLOG_SUCCESS;
 }

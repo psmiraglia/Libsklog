@@ -75,6 +75,24 @@ struct sklog_t_ctx {
 };
 
 struct sklog_t_storage_driver {
+	
+	SKLOG_RETURN (*store_authkey_v2)
+		(char *address, char *logfile_id, unsigned char *authkey);
+		
+    SKLOG_RETURN (*store_m0_msg_v2)
+		(char *address, char *logfile_id, unsigned char *m0,
+			unsigned int m0_msg);
+			
+    SKLOG_RETURN (*retrieve_logfiles_v2)
+		(char *uuid_list[], unsigned int *uuid_list_size);
+		
+    SKLOG_RETURN (*verify_logfile_v2)
+		(char *logfile_id);
+	
+	/* ------------ */
+	/*  deprecated  */
+	/* ------------ */
+	
     SKLOG_RETURN (*store_authkey) (char*,uuid_t,unsigned char*);
     SKLOG_RETURN (*store_m0_msg) (char*,uuid_t,unsigned char*,unsigned int);
     SKLOG_RETURN (*store_logentry) (unsigned char*,unsigned int);

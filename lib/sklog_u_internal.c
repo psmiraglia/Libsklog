@@ -34,6 +34,8 @@
     #include "storage/sklog_syslog.h"
 #elif USE_SQLITE
     #include "storage/sklog_sqlite.h"
+#elif USE_MISC
+    #include "storage/sklog_misc.h"
 #else
     #include "storage/sklog_dummy.h"
 #endif
@@ -542,9 +544,21 @@ SKLOG_RETURN __create_logentry_umberlog(SKLOG_U_Ctx *u_ctx,
 	SKLOG_DATA_TYPE type, unsigned char *data, unsigned int data_len,
 	int req_blob, char **blob, unsigned int *blob_len)
 {
+	/*
+	{
+		"sk_type": "0x00000002",
+		"sk_data": "...",
+		"sk_hash": "...",
+		"sk_hmac": "..."
+	}
+	*/
+		
+	
 	int rv = SKLOG_SUCCESS;
 	
+#ifndef DISABLE_ENCRYPTION	
 	unsigned char enc_key[SKLOG_AUTH_KEY_LEN] = { 0x0 };
+#endif
 	
 	unsigned char *enc_data = 0;
 	unsigned int enc_data_len = 0;
@@ -559,6 +573,14 @@ SKLOG_RETURN __create_logentry_umberlog(SKLOG_U_Ctx *u_ctx,
 	char session_id[UUID_STR_LEN+1] = { 0x0 };
 	
 	char *json_str = 0;
+	char data_str[BUF_4096+1] = { 0x0 };
+	char *data_b64 = 0;
+	
+	unsigned char buf[BUF_8192+1] = { 0x0 };
+	unsigned int bufl = 0;
+	
+	char logentry[BUF_8192] = { 0x0 };
+	int logentry_len = 0;
 	
 	/* check input parameters */
 	
@@ -568,6 +590,48 @@ SKLOG_RETURN __create_logentry_umberlog(SKLOG_U_Ctx *u_ctx,
 		goto check_input_error;
 	}
 	
+	/* generate data */
+	
+	if ( type == LogfileInitializationType || type == ResponseMessageType) {
+		
+		rv = b64_enc(data, data_len, &data_b64);
+		
+		if ( rv == SKLOG_FAILURE ) {
+			ERROR("b64_enc() failure");
+			goto error;
+		}
+		
+		memcpy(data_str, data_b64, strlen(data_b64));
+		free(data_b64);
+	} else {
+		memcpy(data_str, data, data_len);
+	}
+	
+	json_str = ul_format(LOG_NOTICE, "%s", data_str, NULL);
+		
+	if ( json_str == NULL ) {
+		ERROR("ul_format() failure");
+		goto error;
+	}
+	
+	memcpy(buf, json_str, strlen(json_str));
+	bufl = strlen(json_str);
+
+#ifdef DISABLE_ENCRYPTION
+
+	enc_data_len = bufl;
+	enc_data = calloc(bufl+1, sizeof(char));
+	
+	if ( enc_data == NULL ) {
+		ERROR("calloc() failure");
+		goto error;
+	}
+	
+	memset(enc_data, 0, bufl+1);
+	memcpy(enc_data, buf, bufl);
+	
+#else
+
 	/* genrate encryption key */
 	
 	rv = gen_enc_key(u_ctx, type, enc_key);
@@ -579,13 +643,20 @@ SKLOG_RETURN __create_logentry_umberlog(SKLOG_U_Ctx *u_ctx,
 	
 	/* encrypt data */
 	
+	/*
 	rv = aes256_encrypt(data, data_len, enc_key, SKLOG_ENC_KEY_LEN,
 		&enc_data, &enc_data_len);
-		
+	*/
+	
+	rv = aes256_encrypt(buf, bufl, enc_key, SKLOG_ENC_KEY_LEN,
+		&enc_data, &enc_data_len);
+	
 	if ( rv == SKLOG_FAILURE ) {
 		ERROR("aes256_encrypt() failure");
 		goto error;
 	}
+	
+#endif	
 	
 	/* calculate hash */
 	
@@ -617,13 +688,29 @@ SKLOG_RETURN __create_logentry_umberlog(SKLOG_U_Ctx *u_ctx,
 	/* compose logentry */
 	
 	uuid_unparse_lower(u_ctx->logfile_id, session_id);
+
+#ifdef DISABLE_ENCRYPTION
 	
+	enc_data_b64 = calloc(enc_data_len+1, sizeof(char));
+	
+	if ( enc_data_b64 == NULL ) {
+		ERROR("calloc() failure");
+		goto error;
+	}
+	
+	memset(enc_data_b64, 0, enc_data_len+1);
+	memcpy(enc_data_b64, enc_data, enc_data_len);
+
+#else
+
 	rv = b64_enc(enc_data, enc_data_len, &enc_data_b64);
 	
 	if ( rv == SKLOG_FAILURE ) {
 		ERROR("b64_enc() failure");
 		goto error;
 	}
+	
+#endif
 	
 	rv = b64_enc(hash, SKLOG_HASH_CHAIN_LEN, &hash_b64);
 	
@@ -638,6 +725,28 @@ SKLOG_RETURN __create_logentry_umberlog(SKLOG_U_Ctx *u_ctx,
 		ERROR("b64_enc() failure");
 		goto error;
 	}
+
+#ifdef DISABLE_ENCRYPTION
+	logentry_len = snprintf(logentry, BUF_8192,
+		"{\"sk_session\": \"%s\", \"sk_type\": \"0x%8.8x\", "
+		"\"sk_data\": %s, \"sk_hash\": \"%s\", \"sk_hmac\": \"%s\"}",
+		session_id, type, enc_data_b64, hash_b64, hmac_b64);
+#else	
+	logentry_len = snprintf(logentry, BUF_8192,
+		"{\"sk_session\": \"%s\", \"sk_type\": \"0x%8.8x\", "
+		"\"sk_data\": \"%s\", \"sk_hash\": \"%s\", \"sk_hmac\": \"%s\"}",
+		session_id, type, enc_data_b64, hash_b64, hmac_b64);
+#endif
+	
+	*blob = calloc(logentry_len+1, sizeof(char));
+	
+	if ( *blob == NULL ) {
+		ERROR("calloc() failure");
+		goto error;
+	}
+	
+	memset(*blob, 0, logentry_len+1);
+	memcpy(*blob, logentry, logentry_len);
 	
 	/* 
 	 * generate JSON string that contains SK log entry elements
@@ -647,7 +756,7 @@ SKLOG_RETURN __create_logentry_umberlog(SKLOG_U_Ctx *u_ctx,
 	 *
 	 */
 	
-	
+	/*
 	json_str = ul_format(LOG_NOTICE,
 		"%s", enc_data_b64,
 		"sklog_type", "0x%8.8x", type,
@@ -670,7 +779,11 @@ SKLOG_RETURN __create_logentry_umberlog(SKLOG_U_Ctx *u_ctx,
 	
 	*blob_len = strlen(json_str);
 	
+	memset(*blob, 0, strlen(json_str)+1);
 	memcpy(*blob, json_str, strlen(json_str));
+	*/
+	
+	
 	
 	/* free memory */
 	
@@ -685,6 +798,14 @@ SKLOG_RETURN __create_logentry_umberlog(SKLOG_U_Ctx *u_ctx,
 	
 	/* store logentry */
 	
+#ifdef USE_MISC
+	rv = u_ctx->lsdriver->store_logentry_v2(session_id, *blob);
+		
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("lsdriver->store_logentry() failure");
+		goto error;
+	}
+#else
 	rv = u_ctx->lsdriver->store_logentry(u_ctx->logfile_id, type,
 		enc_data, enc_data_len, hash, hmac);
 		
@@ -692,6 +813,7 @@ SKLOG_RETURN __create_logentry_umberlog(SKLOG_U_Ctx *u_ctx,
 		ERROR("lsdriver->store_logentry() failure");
 		goto error;
 	}
+#endif
 	
 	/* increase counter */
 	
@@ -1741,6 +1863,14 @@ SKLOG_RETURN initialize_context(SKLOG_U_Ctx *u_ctx)
 	u_ctx->lsdriver->flush_logfile =	 &sklog_sqlite_u_flush_logfile;
 	u_ctx->lsdriver->flush_logfile_v2 =	 &sklog_sqlite_u_flush_logfile_v2;
 	u_ctx->lsdriver->init_logfile =	  &sklog_sqlite_u_init_logfile;
+	#elif USE_MISC
+	u_ctx->lsdriver->store_logentry_v2 = &sklog_misc_u_store_logentry_v2;
+	u_ctx->lsdriver->flush_logfile_v2 = &sklog_misc_u_flush_logfile_v2;
+	u_ctx->lsdriver->init_logfile_v2 = &sklog_misc_u_init_logfile_v2;
+	u_ctx->lsdriver->close_logfile_v2 = &sklog_misc_u_close_logfile_v2;
+	u_ctx->lsdriver->dump_raw = &sklog_misc_u_dump_raw;
+	u_ctx->lsdriver->dump_json = &sklog_misc_u_dump_json;
+	u_ctx->lsdriver->dump_soap = &sklog_misc_u_dump_soap;
 	#else
 	u_ctx->lsdriver->store_logentry =	&sklog_dummy_u_store_logentry;
 	u_ctx->lsdriver->flush_logfile =	 &sklog_dummy_u_flush_logfile;
@@ -1815,7 +1945,7 @@ SKLOG_RETURN initialize_logging_session(SKLOG_U_Ctx *u_ctx,
 	
 	unsigned int data_len = 0;
 
-	char *timestamp = 0;
+	char timestamp[BUF_512+1] = { 0x0 };
 	const char *reason = 0;
 	
 	char data[1024] = {0};
@@ -2007,7 +2137,7 @@ SKLOG_RETURN initialize_logging_session(SKLOG_U_Ctx *u_ctx,
 failure:
 	
 	time_now_usec(&now);
-	time_usec2ascii(&timestamp, now);
+	time_usec2ascii(timestamp, now);
 	
 	strcat(data, timestamp);
 	strcat(data, " - ");
@@ -2281,6 +2411,10 @@ SKLOG_RETURN generate_m0_message(SKLOG_U_Ctx *u_ctx, unsigned char **msg,
 	unsigned char *d0 = 0;
 	unsigned int d0_len = 0;
 	
+#ifdef USE_MISC
+	char logfile_id[UUID_STR_LEN+1] = { 0x0 };
+#endif	
+	
 	/* checking input parameters */
 	
 	if ( u_ctx == NULL ) {
@@ -2372,12 +2506,23 @@ SKLOG_RETURN generate_m0_message(SKLOG_U_Ctx *u_ctx, unsigned char **msg,
 	
 	/* initialize logfile */
 	
+#ifdef USE_MISC
+	uuid_unparse_lower(u_ctx->logfile_id, logfile_id);
+	
+	rv = u_ctx->lsdriver->init_logfile_v2(logfile_id, d);
+	
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("u_ctx->lsdriver->init_logfile() failure");
+		goto error;
+	}
+#else
 	rv = u_ctx->lsdriver->init_logfile(u_ctx->logfile_id, d);
 	
 	if ( rv == SKLOG_FAILURE ) {
 		ERROR("u_ctx->lsdriver->init_logfile() failure");
 		goto error;
 	}
+#endif
 	
 	/* store the first logentry */
 	
@@ -2436,8 +2581,8 @@ SKLOG_RETURN verify_m1_message(SKLOG_U_Ctx *u_ctx, unsigned char *m1,
 	unsigned char *buf = 0;
 	
 	unsigned long now = 0;
-	char *timestamp = 0;
-	char data[1024] = { 0 };
+	char timestamp[BUF_512+1] = { 0x0 };
+	char data[BUF_2048+1] = { 0x0 };
 	const char *reason = 0;
 	
 	/* check input parameters */
@@ -2491,7 +2636,7 @@ failure:
 		goto error;
 	}
 	
-	time_usec2ascii(&timestamp, now);
+	time_usec2ascii(timestamp, now);
 	
 	strcat(data, timestamp);
 	strcat(data, " - ");
@@ -2513,7 +2658,98 @@ check_input_error:
 	return SKLOG_FAILURE;
 }
 
+SKLOG_RETURN dump_raw(SKLOG_U_Ctx *ctx, const char *filename)
+{
+	#ifdef DO_TRACE
+	DEBUG
+	#endif
+	
+	int rv = SKLOG_SUCCESS;
+	
+	char logfile_id[BUF_512+1] = { 0x0 };
+	
+	/* check input parameters */
+	
+	if ( ctx == NULL || filename == NULL ) {
+		ERROR("%s", MSG_BAD_INPUT_PARAMS);
+		return SKLOG_FAILURE;
+	}
+	
+	/* dump */
+	
+	uuid_unparse_lower(ctx->logfile_id, logfile_id);
+	
+	rv = ctx->lsdriver->dump_json(logfile_id, filename);
+	
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("lsdriver->dump_raw() failure");
+		return SKLOG_FAILURE;
+	}
+	
+	return SKLOG_SUCCESS;
+}
 
+SKLOG_RETURN dump_json(SKLOG_U_Ctx *ctx, const char *filename)
+{
+	#ifdef DO_TRACE
+	DEBUG
+	#endif
+	
+	int rv = SKLOG_SUCCESS;
+	
+	char logfile_id[BUF_512+1] = { 0x0 };
+	
+	/* check input parameters */
+	
+	if ( ctx == NULL || filename == NULL ) {
+		ERROR("%s", MSG_BAD_INPUT_PARAMS);
+		return SKLOG_FAILURE;
+	}
+	
+	/* dump */
+	
+	uuid_unparse_lower(ctx->logfile_id, logfile_id);
+	
+	rv = ctx->lsdriver->dump_json(logfile_id, filename);
+	
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("lsdriver->dump_json() failure");
+		return SKLOG_FAILURE;
+	}
+	
+	return SKLOG_SUCCESS;
+}
+
+SKLOG_RETURN dump_soap(SKLOG_U_Ctx *ctx, const char *filename)
+{
+	#ifdef DO_TRACE
+	DEBUG
+	#endif
+	
+	int rv = SKLOG_SUCCESS;
+	
+	char logfile_id[BUF_512+1] = { 0x0 };
+	
+	/* check input parameters */
+	
+	if ( ctx == NULL || filename == NULL ) {
+		ERROR("%s", MSG_BAD_INPUT_PARAMS);
+		return SKLOG_FAILURE;
+	}
+	
+	/* dump */
+	
+	uuid_unparse_lower(ctx->logfile_id, logfile_id);
+	
+	rv = ctx->lsdriver->dump_soap(logfile_id, filename);
+	
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("lsdriver->dump_soap() failure");
+		return SKLOG_FAILURE;
+	}
+	
+	return SKLOG_SUCCESS;
+}
 
 
 

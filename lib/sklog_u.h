@@ -49,5 +49,8 @@ SKLOG_RETURN SKLOG_U_Close(SKLOG_U_Ctx *u_ctx, char **le,
 	
 SKLOG_RETURN SKLOG_U_FlushLogfile(SKLOG_U_Ctx *ctx, char *logs[],
 	unsigned int *logs_size);
+	
+SKLOG_RETURN SKLOG_U_UploadLogfile(SKLOG_U_Ctx *ctx,
+	const char *filename, int mode);
 
 #endif /* SKLOG_U_H */

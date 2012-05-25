@@ -510,6 +510,10 @@ SKLOG_U_Close(SKLOG_U_Ctx *u_ctx, char **le, unsigned int *le_len)
 
     unsigned char *data_blob = 0;
     unsigned int data_blob_len = 0;
+
+#ifdef USE_MISC        
+    char logfile_id[BUF_512+1] = { 0x0 };
+#endif
     
     /* check input parameters */
     
@@ -536,6 +540,19 @@ SKLOG_U_Close(SKLOG_U_Ctx *u_ctx, char **le, unsigned int *le_len)
         ERROR("create_logentry() failure")
         goto error;
     }
+    
+#ifdef USE_MISC    
+    /* close logfile */
+    
+    uuid_unparse_lower(u_ctx->logfile_id, logfile_id);
+    
+    rv = u_ctx->lsdriver->close_logfile_v2(logfile_id, now);
+    
+    if ( rv == SKLOG_FAILURE ) {
+        ERROR("u_ctx->lsdriver->close_logfile_v2() failure")
+        goto error;
+    }
+#endif
 
     /* send all generated log-entries to T */
     
@@ -579,18 +596,9 @@ SKLOG_RETURN SKLOG_U_FlushLogfile(SKLOG_U_Ctx *ctx, char *logs[],
 	
 	/* get current logfile_id */
 	
-	/*
-	 * temporary disabled
-	 * 
-	 * uuid_unparse_lower(ctx->logfile_id, logfile_id);
-	 * 
-	 */
+	uuid_unparse_lower(ctx->logfile_id, logfile_id);
 	
-	sklog_uuid_unparse(ctx->logfile_id, logfile_id);
-	
-	NOTIFY("logfile_id = %s", logfile_id);
-	
-	getchar();
+	//~ sklog_uuid_unparse(ctx->logfile_id, logfile_id);
 	
 	rv = ctx->lsdriver->flush_logfile_v2(logfile_id, logs, logs_size);
 	
@@ -600,6 +608,57 @@ SKLOG_RETURN SKLOG_U_FlushLogfile(SKLOG_U_Ctx *ctx, char *logs[],
 	}
 	
 	return SKLOG_SUCCESS;
+}
+
+SKLOG_RETURN SKLOG_U_UploadLogfile(SKLOG_U_Ctx *ctx,
+	const char *filename, int mode)
+{
+	#ifdef DO_TRACE
+    DEBUG
+    #endif
+    
+    int rv = SKLOG_SUCCESS;
+    
+    /* check input parameters */
+    
+    if ( ctx == NULL || filename == NULL ) {
+		ERROR("%s", MSG_BAD_INPUT_PARAMS);
+		return SKLOG_FAILURE;
+	}
+	
+	/* select mode */
+	
+	switch ( mode ) {
+		
+		case DUMP_MODE_RAW:
+			rv = dump_raw(ctx, filename);
+			
+			if ( rv == SKLOG_FAILURE )
+				ERROR("dump_raw() failure");
+			
+			break;
+			
+		case DUMP_MODE_JSON:
+			rv = dump_json(ctx, filename);
+			
+			if ( rv == SKLOG_FAILURE )
+				ERROR("dump_json() failure");
+			break;
+			
+		case DUMP_MODE_SOAP:
+			rv = dump_soap(ctx, filename);
+			
+			if ( rv == SKLOG_FAILURE )
+				ERROR("dump_soap() failure");
+			break;
+			
+		default:
+			ERROR("Mode not yet implemented.");
+			rv = SKLOG_FAILURE;
+			break;
+	}
+	
+    return rv;
 }	
 
 

@@ -136,7 +136,7 @@ dnl ********************************************************************
 AC_ARG_WITH([storage],
 	AC_HELP_STRING(
 		[--with-storage[=TYPE]],
-		[Build Libsklog with storage capabilities. Supported TYPE are: sqlite, syslog, file or none. [default=sqlite]]
+		[Build Libsklog with storage capabilities. Supported TYPE are: sqlite, syslog, file, misc or none. [default=sqlite]]
 	),
 	storage="$withval",
 	storage="sqlite"
@@ -145,6 +145,7 @@ AC_ARG_WITH([storage],
 AM_CONDITIONAL([HAVE_STORAGE_SQLITE],[false])
 AM_CONDITIONAL([HAVE_STORAGE_SYSLOG],[false])
 AM_CONDITIONAL([HAVE_STORAGE_FILE],[false])
+AM_CONDITIONAL([HAVE_STORAGE_MISC],[false])
 AM_CONDITIONAL([HAVE_STORAGE_NONE],[false])
 
 case "x$storage" in
@@ -160,6 +161,11 @@ case "x$storage" in
 	"xfile")
 		AM_CONDITIONAL([HAVE_STORAGE_FILE],[true])
 		AC_DEFINE([USE_FILE],[1],[Foo Desc])
+		;;
+	"xmisc")
+		AC_CHECK_LIB([sqlite3],[main],[],[AC_MSG_ERROR([libsqlite3 is required from Libsklog],[exit -1])])
+		AM_CONDITIONAL([HAVE_STORAGE_MISC],[true])
+		AC_DEFINE([USE_MISC],[1],[Foo Desc])
 		;;
 	"xnone")
 		AM_CONDITIONAL([HAVE_STORAGE_NONE],[true])
