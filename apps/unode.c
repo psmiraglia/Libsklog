@@ -33,6 +33,9 @@ int main (void) {
     FILE *fp = 0;
     char event[BUF_2048+1] = { 0x0 };
     int seek = 0;
+    
+    char filename[BUF_512+1] = { 0x0 };
+    char logfile_id[UUID_STR_LEN+1] = { 0x0 };
 
 
 init_logging_session:
@@ -136,6 +139,10 @@ init_logging_session:
 	
 	int eol = 0;
 	
+	uuid_unparse(u_ctx->logfile_id, logfile_id);
+	
+	snprintf(filename, BUF_512, "%s/%s.json", BIN_PREFIX, logfile_id);
+	
 	while ( !feof(fp) ) {
 		
 		fgets(event, BUF_2048, fp);
@@ -153,11 +160,13 @@ init_logging_session:
 			
 			fclose(fp);
 			
+			SKLOG_U_Close(u_ctx, &le1, &le1_len);
+			
 			SKLOG_U_FlushLogfile(u_ctx, logs, &logs_size);
 			
-			SKLOG_U_UploadLogfile(u_ctx, "/home/paolo/dumpjson.dat", DUMP_MODE_JSON);
+			SKLOG_U_UploadLogfile(u_ctx, filename, DUMP_MODE_JSON);
 			
-			SKLOG_U_Close(u_ctx, &le1, &le1_len);
+			
 			SKLOG_U_FreeCtx(&u_ctx);
 			goto init_logging_session;
 		}
@@ -166,13 +175,18 @@ init_logging_session:
 	
 	fclose(fp);
 	
+	SKLOG_U_Close(u_ctx, &le1, &le1_len);
+	SKLOG_U_FlushLogfile(u_ctx, logs, &logs_size);
+	SKLOG_U_UploadLogfile(u_ctx, filename, DUMP_MODE_JSON);
+	SKLOG_U_FreeCtx(&u_ctx);
+	
 	/*
 	 *  end application
 	 *
 	 */
 
-    SKLOG_U_Close(u_ctx, &le1, &le1_len);
-    SKLOG_U_FreeCtx(&u_ctx);
+    
+    
         
     return 0;
     

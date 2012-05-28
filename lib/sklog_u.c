@@ -78,7 +78,7 @@ SKLOG_U_FreeCtx(SKLOG_U_Ctx **ctx)
 		ERROR("argument 1 must be not NULL");
 		return SKLOG_FAILURE;
 	}
-    
+	
     X509_free((*ctx)->u_cert);
     X509_free((*ctx)->t_cert);
     EVP_PKEY_free((*ctx)->u_privkey);
@@ -565,8 +565,12 @@ SKLOG_U_Close(SKLOG_U_Ctx *u_ctx, char **le, unsigned int *le_len)
 
     /* flush the current context and mark it as uninitialized */
     
+    /*
     memset(u_ctx, 0, sizeof(*u_ctx));
+    */
+    
     u_ctx->context_state = SKLOG_U_CTX_NOT_INITIALIZED;
+ 
 
     free(data_blob);
     

@@ -11,7 +11,7 @@ int main (int argc, char **argv) {
     SKLOG_V_Ctx *vctx = 0;
     SKLOG_CONNECTION *c = 0;
 
-    char rbuf[RBUF_LEN] = { 0 };
+    //~ char rbuf[RBUF_LEN] = { 0 };
     int index = 0;
 
     char inbuf[INBUF_LEN] = {0};

@@ -359,6 +359,8 @@ SKLOG_RETURN sklog_misc_u_dump_json(char *logfile_id,
 	char line[BUF_8192+1] = { 0x0 };
 	int eol = 0;
 	
+	int is_the_first = 1;
+	
 	/* check input parameters */
 	
 	if ( logfile_id == NULL || filename == NULL ) {
@@ -407,12 +409,17 @@ SKLOG_RETURN sklog_misc_u_dump_json(char *logfile_id,
 		eol = strlen(line);
 		line[eol-1] = '\0';
 		
-		fprintf(out, "%s,", line);
+		if ( is_the_first ) {
+			fprintf(out, "%s", line);
+			is_the_first = 0;
+		} else {
+			fprintf(out, ",%s", line);
+		}
 		
 		memset(line, 0, BUF_8192);
 	}
 	
-	fprintf(out, "{}]}\n");
+	fprintf(out, "]}\n");
 	
 	fclose(in);
 	fclose(out);

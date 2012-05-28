@@ -1,4 +1,7 @@
-AM_CFLAGS = -I$(srcdir)/../include
+AM_CFLAGS = \
+	-Wall -Werror -g \
+	-DBIN_PREFIX=\"@bindir@\" \
+	-I$(srcdir)/../include
 
 bin_PROGRAMS = \
 	unode \
