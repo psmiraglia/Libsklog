@@ -247,12 +247,12 @@ void msg_json(const char *source, const int lineno, const char *func,
 	json = json_loads(json_str, JSON_DECODE_ANY, &json_error);
 	
 	if ( !json ) {
-		ERROR("json_loads() failure");
+		ERROR("json_loads() failure: %s", json_error.text);
 		return;
 	}
 	
-	out_str = json_dumps(json, JSON_INDENT(2) | JSON_ENSURE_ASCII |
-		JSON_SORT_KEYS);
+	out_str = json_dumps(json, 
+		JSON_INDENT(2) | JSON_ENSURE_ASCII | JSON_PRESERVE_ORDER);
 		
 	if ( out_str == 0 ) {
 		ERROR("json_dumps() failure");

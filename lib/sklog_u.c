@@ -508,8 +508,8 @@ SKLOG_U_Close(SKLOG_U_Ctx *u_ctx, char **le, unsigned int *le_len)
     SKLOG_DATA_TYPE type = NormalCloseMessage;
     unsigned long now;
 
-    unsigned char *data_blob = 0;
-    unsigned int data_blob_len = 0;
+    unsigned char data[BUF_1024+1] = { 0x0 };
+    unsigned int data_len = 0;
 
 #ifdef USE_MISC        
     char logfile_id[BUF_512+1] = { 0x0 };
@@ -518,7 +518,7 @@ SKLOG_U_Close(SKLOG_U_Ctx *u_ctx, char **le, unsigned int *le_len)
     /* check input parameters */
     
     if ( u_ctx == NULL ) {
-		ERROR("Bad input parameter(s). Please double-check it!");
+		ERROR(MSG_BAD_INPUT_PARAMS);
 		return SKLOG_FAILURE;
 	}
 	
@@ -529,11 +529,13 @@ SKLOG_U_Close(SKLOG_U_Ctx *u_ctx, char **le, unsigned int *le_len)
         goto error;
 	}
 	
-    time_serialize(&data_blob, &data_blob_len, now);
+    time_usec2ascii((char *)data, now);
+    strcat((char *)data, " - NormalCloseMessage");
+    data_len = strlen((const char *)data);
     
     /* create closure logentry */
 
-	rv = create_logentry(u_ctx, type, data_blob, data_blob_len, 1, le,
+	rv = create_logentry(u_ctx, type, data, data_len, 1, le,
 		le_len);
 
     if ( rv == SKLOG_FAILURE ) {
@@ -563,21 +565,13 @@ SKLOG_U_Close(SKLOG_U_Ctx *u_ctx, char **le, unsigned int *le_len)
     }
     */
 
-    /* flush the current context and mark it as uninitialized */
-    
-    /*
-    memset(u_ctx, 0, sizeof(*u_ctx));
-    */
+    /*  mark current context as uninitialized */
     
     u_ctx->context_state = SKLOG_U_CTX_NOT_INITIALIZED;
  
-
-    free(data_blob);
-    
     return SKLOG_SUCCESS;
 
 error:
-    if ( data_blob > 0 ) free(data_blob);
     return SKLOG_FAILURE;
 }
 

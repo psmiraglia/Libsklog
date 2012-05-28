@@ -43,6 +43,7 @@
 #include <libconfig.h>
 #include <string.h>
 #include <unistd.h>
+#include <jansson.h>
 
 #include <netinet/in.h>
 
@@ -572,15 +573,22 @@ SKLOG_RETURN __create_logentry_umberlog(SKLOG_U_Ctx *u_ctx,
 	
 	char session_id[UUID_STR_LEN+1] = { 0x0 };
 	
-	char *json_str = 0;
+	char *ul_str = 0;
 	char data_str[BUF_4096+1] = { 0x0 };
 	char *data_b64 = 0;
 	
 	unsigned char buf[BUF_8192+1] = { 0x0 };
 	unsigned int bufl = 0;
 	
-	char logentry[BUF_8192] = { 0x0 };
+	char *logentry = 0x0;
 	int logentry_len = 0;
+	
+	json_error_t json_error;
+	json_t *root = 0;
+	json_t *umberlog_data = 0;
+	json_t *string = 0;
+	json_t *integer = 0;
+	char *json_str = 0;
 	
 	/* check input parameters */
 	
@@ -607,16 +615,31 @@ SKLOG_RETURN __create_logentry_umberlog(SKLOG_U_Ctx *u_ctx,
 		memcpy(data_str, data, data_len);
 	}
 	
-	json_str = ul_format(LOG_NOTICE, "%s", data_str, NULL);
+	ul_str = ul_format(LOG_NOTICE, "%s", data_str, NULL);
 		
-	if ( json_str == NULL ) {
+	if ( ul_str == NULL ) {
 		ERROR("ul_format() failure");
 		goto error;
 	}
 	
+	/* generate ubmerlog_data JSON object */
+	
+	umberlog_data = json_loads(ul_str, JSON_DECODE_ANY, &json_error);
+	
+	if ( umberlog_data == NULL ) {
+		ERROR("json_loads() failure: %s", json_error.text);
+		goto error;
+	}
+	
+	json_str = json_dumps(umberlog_data, JSON_COMPACT | 
+		JSON_PRESERVE_ORDER | JSON_ENSURE_ASCII);
+	
 	memcpy(buf, json_str, strlen(json_str));
 	bufl = strlen(json_str);
-
+	
+	free(json_str);
+	json_str = 0;
+	
 #ifdef DISABLE_ENCRYPTION
 
 	enc_data_len = bufl;
@@ -725,18 +748,122 @@ SKLOG_RETURN __create_logentry_umberlog(SKLOG_U_Ctx *u_ctx,
 		ERROR("b64_enc() failure");
 		goto error;
 	}
+	
+	/* compose */
+	
+	root = json_object();
+	
+	if ( root == NULL ) {
+		ERROR("json_object() failure");
+		goto error;
+	}
+	
+	/* append sk_session */
+	
+	string = json_string(session_id);
+	
+	if ( string == NULL ) {
+		ERROR("json_string() failure");
+		goto error;
+	}
+	
+	rv = json_object_set_new(root, "sk_session", string);
+	
+	if ( rv < 0 ) {
+		ERROR("json_object_set_new() failure");
+		goto error;
+	}
+	
+	/* append sk_type */
+	
+	integer = json_integer(type);
+	
+	if ( integer == NULL ) {
+		ERROR("json_integer() failure");
+		goto error;
+	}
+	
+	rv = json_object_set_new(root, "sk_type", integer);
+	
+	if ( rv < 0 ) {
+		ERROR("json_object_set_new() failure");
+		goto error;
+	}
 
 #ifdef DISABLE_ENCRYPTION
-	logentry_len = snprintf(logentry, BUF_8192,
-		"{\"sk_session\": \"%s\", \"sk_type\": \"0x%8.8x\", "
-		"\"sk_data\": %s, \"sk_hash\": \"%s\", \"sk_hmac\": \"%s\"}",
-		session_id, type, enc_data_b64, hash_b64, hmac_b64);
-#else	
-	logentry_len = snprintf(logentry, BUF_8192,
-		"{\"sk_session\": \"%s\", \"sk_type\": \"0x%8.8x\", "
-		"\"sk_data\": \"%s\", \"sk_hash\": \"%s\", \"sk_hmac\": \"%s\"}",
-		session_id, type, enc_data_b64, hash_b64, hmac_b64);
+
+	/* append sk_data */
+	
+	rv = json_object_set_new(root, "sk_data", umberlog_data);
+	
+	if ( rv < 0 ) {
+		ERROR("json_object_set_new() failure");
+		goto error;
+	}
+	
+#else
+
+	/* append sk_data */
+	
+	string = json_string(enc_data_b64);
+	
+	if ( string == NULL ) {
+		ERROR("json_string() failure");
+		goto error;
+	}
+	
+	rv = json_object_set_new(root, "sk_data", string);
+	
+	if ( rv < 0 ) {
+		ERROR("json_object_set_new() failure");
+		goto error;
+	}
+	
 #endif
+
+	/* append sk_hash */
+	
+	string = json_string(hash_b64);
+	
+	if ( string == NULL ) {
+		ERROR("json_string() failure");
+		goto error;
+	}
+	
+	rv = json_object_set_new(root, "sk_hash", string);
+	
+	if ( rv < 0 ) {
+		ERROR("json_object_set_new() failure");
+		goto error;
+	}
+	
+	/* append sk_hmac */
+	
+	string = json_string(hmac_b64);
+	
+	if ( string == NULL ) {
+		ERROR("json_string() failure");
+		goto error;
+	}
+	
+	rv = json_object_set_new(root, "sk_hmac", string);
+	
+	if ( rv < 0 ) {
+		ERROR("json_object_set_new() failure");
+		goto error;
+	}
+	
+	/* save data */
+	
+	logentry = json_dumps(root, JSON_COMPACT | JSON_PRESERVE_ORDER | 
+		JSON_ENSURE_ASCII);
+	
+	if ( logentry == NULL ) {
+		ERROR("json_dumps() failure");
+		goto error;
+	}
+	
+	logentry_len = strlen(logentry);
 	
 	*blob = calloc(logentry_len+1, sizeof(char));
 	
@@ -748,64 +875,33 @@ SKLOG_RETURN __create_logentry_umberlog(SKLOG_U_Ctx *u_ctx,
 	memset(*blob, 0, logentry_len+1);
 	memcpy(*blob, logentry, logentry_len);
 	
-	/* 
-	 * generate JSON string that contains SK log entry elements
-	 * in addiction to those specified by CEE (Common Events Expression)
-	 * 
-	 *    more references at http://cee.mitre.org
-	 *
-	 */
-	
-	/*
-	json_str = ul_format(LOG_NOTICE,
-		"%s", enc_data_b64,
-		"sklog_type", "0x%8.8x", type,
-		"sklog_hash", "%s", hash_b64,
-		"sklog_hmac", "%s", hmac_b64,
-		"sklog_session", "%s", session_id,
-		NULL);
-		
-	if ( json_str == NULL ) {
-		ERROR("ul_format() failure");
-		goto error;
-	}
-	
-	*blob = calloc(strlen(json_str)+1, sizeof(char));
-	
-	if ( *blob == NULL ) {
-		ERROR("calloc() failure");
-		goto error;
-	}
-	
-	*blob_len = strlen(json_str);
-	
-	memset(*blob, 0, strlen(json_str)+1);
-	memcpy(*blob, json_str, strlen(json_str));
-	*/
-	
-	
-	
 	/* free memory */
+
+	free(logentry);
+	logentry = 0;
 	
 	free(enc_data_b64);
 	enc_data_b64 = 0;
+	
 	free(hash_b64);
 	hash_b64 = 0;
+	
 	free(hmac_b64);
 	hmac_b64 = 0;
-	free(json_str);
-	json_str = 0;
 	
 	/* store logentry */
 	
 #ifdef USE_MISC
+
 	rv = u_ctx->lsdriver->store_logentry_v2(session_id, *blob);
 		
 	if ( rv == SKLOG_FAILURE ) {
 		ERROR("lsdriver->store_logentry() failure");
 		goto error;
 	}
+	
 #else
+
 	rv = u_ctx->lsdriver->store_logentry(u_ctx->logfile_id, type,
 		enc_data, enc_data_len, hash, hmac);
 		
@@ -813,6 +909,7 @@ SKLOG_RETURN __create_logentry_umberlog(SKLOG_U_Ctx *u_ctx,
 		ERROR("lsdriver->store_logentry() failure");
 		goto error;
 	}
+	
 #endif
 	
 	/* increase counter */
@@ -832,6 +929,9 @@ error:
 		
 	if ( json_str )
 		free(json_str);
+		
+	if ( logentry )
+		free(logentry);
 		
 	if ( enc_data )
 		free(enc_data);
