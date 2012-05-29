@@ -73,9 +73,22 @@ SKLOG_RETURN sklog_misc_u_init_logfile(uuid_t logfile_id,
 /*                      T driver callbacks                            */
 /*--------------------------------------------------------------------*/
 
+#define TAB_M0MSG_COL_ID 0
 #define TAB_M0MSG_COL_ADDRESS 1
 #define TAB_M0MSG_COL_LOGFILEID 2
 #define	TAB_M0MSG_COL_M0MSG 3
+
+#define TAB_AUTHKEY_COL_ID 0
+#define TAB_AUTHKEY_COL_IP 1
+#define TAB_AUTHKEY_COL_LOGFILEID 2
+#define TAB_AUTHKEY_COL_AUTHKEY 3
+
+#define TAB_LOGENTRY_COL_ID 0
+#define TAB_LOGENTRY_COL_LOGFILEID 1
+#define TAB_LOGENTRY_COL_TYPE 2
+#define TAB_LOGENTRY_COL_DATA 3
+#define TAB_LOGENTRY_COL_HASH 4
+#define TAB_LOGENTRY_COL_HMAC 5
 
 #define	SKLOG_T_DB VAR_PREFIX"/libsklog/db/t.db"
 

@@ -49,6 +49,7 @@ typedef enum message_type {
 	query,
 	buffer,
 	json,
+	here,
 	
 	undefined
 } MSG_TYPE;
@@ -96,6 +97,11 @@ static void msg(MSG_TYPE type, const char *source, const int lineno,
 			
 		case json:
 			snprintf(buf, MSG_BUFLEN, "[JSON]     ");
+			bufl = strlen(buf);
+			break;
+			
+		case here:
+			snprintf(buf, MSG_BUFLEN, "[I'M HERE] ");
 			bufl = strlen(buf);
 			break;
 			
@@ -264,6 +270,13 @@ void msg_json(const char *source, const int lineno, const char *func,
 	free(out_str);
 	free(json);
 	
+	return;
+}
+
+void msg_here(const char *source, const int lineno, const char *func)
+{
+	msg(here, source, lineno, func, NULL, 0);
+	getchar();
 	return;
 }	
 

@@ -26,6 +26,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <jansson.h>
+
+#include <openssl/err.h>
+#include <openssl/evp.h>
+
 
 /*--------------------------------------------------------------------*/
 /*                      U driver callbacks                            */
@@ -781,7 +786,408 @@ SKLOG_RETURN sklog_misc_t_verify_logfile_v2(char *logfile_id)
 	DEBUG
 	#endif
 	
-	TO_IMPLEMENT;
+	int rv = SKLOG_SUCCESS;
+	
+	char buf[BUF_4096+1] = { 0x0 };
+	
+	unsigned char *blob = { 0x0 };
+	unsigned int blob_len = 0;
+	
+	/* SQLite */
+	
+	sqlite3 *db = 0;
+	sqlite3_stmt *stmt = 0;
+	char query[BUF_4096+1] = { 0 };
+	int  query_len = 0;
+	const unsigned char *sql_text = 0;
+	
+	/* Jansson lib */
+	
+	json_error_t json_error;
+	json_t *log = 0;
+	json_t *umberlog_data = 0;
+	
+	int tmp_type = 0;
+	char *tmp_data = 0;
+	char *tmp_hash = 0;
+	char *tmp_hmac = 0;
+	char *tmp_session = 0;
+	
+	/* file parsing */
+	
+	char filename[BUF_512+1] = { 0x0 };
+	FILE *fp = 0;
+	
+	char c = 0;
+	int eol = 0;
+	
+	char logentry_prev[BUF_8192+1] = { 0x0 };
+	char logentry[BUF_8192+1] = { 0x0 };
+	
+	int is_the_first = 1;
+	
+	/* verification */
+	
+	unsigned char authkey[SKLOG_AUTH_KEY_LEN] = { 0x0 };
+	unsigned char authkey_temp[SKLOG_AUTH_KEY_LEN] = { 0x0 };
+	
+	unsigned char data[BUF_8192+1] = { 0x0 };
+	unsigned int data_len = 0;
+	
+	unsigned char type[BUF_512+1] = { 0x0 };
+	unsigned int type_len = 0;
+	
+	EVP_MD_CTX mdctx;
+	
+	/* previous values */
+	
+	unsigned char hash_p[SKLOG_HASH_CHAIN_LEN] = { 0x0 };
+	unsigned char hmac_p[SKLOG_HMAC_LEN] = { 0x0 };
+	
+	/* current values */
+	
+	unsigned char hash_c[SKLOG_HASH_CHAIN_LEN] = { 0x0 };
+	unsigned char hmac_c[SKLOG_HMAC_LEN] = { 0x0 };
+	
+	/* re-generated values */
+	
+	unsigned char hash_g[SKLOG_HASH_CHAIN_LEN] = { 0x0 };
+	unsigned char hmac_g[SKLOG_HMAC_LEN] = { 0x0 };
+	
+	/* ------- */
+	/*  start  */
+	/* ------- */
+	
+	/* check input parameters */
+	
+	if ( logfile_id == NULL ) {
+		ERROR(MSG_BAD_INPUT_PARAMS);
+		return SKLOG_FAILURE;
+	}
+	
+	/* -------------------- */
+	/*  get authkey from db */
+	/* -------------------- */
+	
+	query_len = snprintf(query, BUF_4096,
+		"SELECT * FROM AUTHKEY WHERE f_uuid='%s'",
+		logfile_id);
+		
+	sqlite3_open(SKLOG_T_DB, &db);
+	
+	if ( db == NULL ) {
+		ERROR("sqlite3_open() failure: %s", sqlite3_errmsg(db));
+		goto db_error;
+	}
+	
+	rv = sqlite3_prepare_v2(db, query, query_len, &stmt, NULL);
+	
+	if ( rv != SQLITE_OK ) {
+		ERROR("sqlite3_prepare_v2() failure: %s", sqlite3_errmsg(db));
+		goto db_error;
+	}
+	
+	rv = sqlite3_step(stmt);
+	
+	if ( rv == SQLITE_ROW ) {
+		
+		sql_text = sqlite3_column_text(stmt, TAB_AUTHKEY_COL_AUTHKEY);
+		
+		rv = snprintf(buf, BUF_4096, "%s", sql_text);
+		
+		if ( rv < 0 ) {
+			ERROR("snprintf() failure");
+			goto db_error;
+		}
+		
+		rv = b64_dec(buf, strlen(buf), &blob, &blob_len);
+		memset(buf, 0, BUF_4096); 
+		
+		if ( rv == SKLOG_FAILURE ) {
+			ERROR("b64_dec() failure");
+			goto db_error;
+		}
+		
+		memcpy(authkey, blob, blob_len);
+		free(blob);
+		
+	} else if (rv == SQLITE_DONE) {
+		WARNING(MSG_SQL_SELECT_EMPTY);
+		goto db_error;
+	} else {
+		ERROR("sqlite3_step() failure: %s", sqlite3_errmsg(db));
+		goto db_error;
+	}
+	
+	sqlite3_close(db);
+	db = 0;
+	
+	/* ---------------------------- */
+	/*  start verification process  */
+	/* ---------------------------- */
+	
+	/* open file */
+	
+	rv = snprintf(filename, BUF_512, "%s/%s.log", LOGFILE_PATH,
+		logfile_id);
+		
+	if ( rv < 0 ) {
+		ERROR("snprintf() failure");
+		goto error;
+	}
+	
+	fp = fopen(filename, "r");
+	
+	if ( fp == NULL ) {
+		ERROR("Unable to open file %s", filename);
+		goto error;
+	}
+	
+	while ( !feof(fp) ) {
+		
+		fgets(logentry, BUF_8192, fp);
+		
+		eol = strlen(logentry);
+		logentry[eol-1]='\0';
+		
+		c = logentry[0];
+		
+		if ( c == '#' || c == '\n' || c == '\0' ) {
+			memset(logentry, 0, BUF_8192);
+			continue;
+		}
+		
+		if ( is_the_first ) {
+			memcpy(logentry_prev, logentry, BUF_8192);
+			is_the_first = 0;
+		}
+		
+		/* ---------------- */
+		/*  parse logentry  */
+		/* ---------------- */
+		
+		memset(&json_error, 0, sizeof(json_error));
+		
+		log = json_loads(logentry, JSON_DECODE_ANY, &json_error);
+		
+		if ( log == NULL ) {
+			ERROR("json_loads() failure: %s", json_error.text);
+			goto error;
+		}
+		
+		memset(&json_error, 0, sizeof(json_error));
+		
+		rv = json_unpack_ex(log, &json_error, JSON_STRICT,
+			"{s:s, s:i, s:o, s:s, s:s}",
+			"sk_session", &tmp_session,
+			"sk_type", &tmp_type,
+			"sk_data", &umberlog_data,
+			"sk_hash", &tmp_hash,
+			"sk_hmac", &tmp_hmac
+		);
+		
+		if ( rv < 0 ) {
+			ERROR("json_unpack_ex() failure: %s", json_error.text);
+			goto error;
+		}
+		
+		if ( umberlog_data == NULL ) {
+			ERROR("json_unpack_ex() failure");
+			goto error;
+		}
+		
+		/* get type */
+		
+		type_len = sizeof(tmp_type);
+		memcpy(type, &tmp_type, type_len);
+		
+		/* get data */
+		
+		tmp_data = json_dumps(umberlog_data,
+			JSON_COMPACT | JSON_PRESERVE_ORDER | JSON_ENSURE_ASCII);
+		
+		if ( tmp_data == NULL ) {
+			ERROR("json_dumps() failure");
+			goto error;
+		}
+		
+		data_len = strlen(tmp_data);
+		memcpy(data, tmp_data, data_len); //~ snprintf((char *)data, BUF_8192, "%s", tmp_data);
+		free(tmp_data);
+		
+		/* get hash */
+		
+		memcpy(buf, tmp_hash, strlen(tmp_hash)); //~ snprintf(buf, BUF_4096, "%s", tmp_hash);
+		
+		rv = b64_dec(buf, strlen(buf), &blob, &blob_len);
+
+		if ( rv == SKLOG_FAILURE ) {
+			ERROR("b64_dec() failure");
+			goto error;
+		}
+		
+		memset(buf, 0, BUF_4096);
+		
+		memcpy(hash_c, blob, blob_len);
+		
+		free(blob);
+		blob_len = 0;
+		
+		/* get hmac */
+		
+		memcpy(buf, tmp_hmac, strlen(tmp_hmac)); //~ snprintf(buf, BUF_4096, "%s", tmp_hmac);
+		
+		rv = b64_dec(buf, strlen(buf), &blob, &blob_len);
+		
+		if ( rv == SKLOG_FAILURE ) {
+			ERROR("b64_dec() failure");
+			goto error;
+		}
+		
+		memset(buf, 0, BUF_4096);
+		
+		memcpy(hmac_c, blob, blob_len);
+		
+		free(blob);
+		blob_len = 0;
+		
+		/* ----------------- */
+		/*  regenerate hash  */
+		/* ----------------- */
+		
+		OpenSSL_add_all_digests();
+		ERR_load_crypto_strings();
+		
+		EVP_MD_CTX_init(&mdctx);
+		
+		if ( EVP_DigestInit_ex(&mdctx, EVP_sha256(), NULL) == 0 ) {
+			ERROR("EVP_DigestInit_ex() failure");
+			ERR_print_errors_fp(stderr);
+			goto openssl_error;
+		}
+	
+		if ( EVP_DigestUpdate(&mdctx, hash_p, SKLOG_HASH_CHAIN_LEN) == 0 ) {
+			ERROR("EVP_DigestUpdate() failure");
+			ERR_print_errors_fp(stderr);
+			goto openssl_error;
+		}
+		
+		if ( EVP_DigestUpdate(&mdctx, data, data_len) == 0 ) {
+			ERROR("EVP_DigestUpdate() failure");
+			ERR_print_errors_fp(stderr);
+			goto openssl_error;
+		}
+		
+		if ( EVP_DigestUpdate(&mdctx, type, type_len) == 0 ) {
+			ERROR("EVP_DigestUpdate() failure");
+			ERR_print_errors_fp(stderr);
+			goto openssl_error;
+		}
+	
+		if ( EVP_DigestFinal_ex(&mdctx, hash_g, NULL) == 0 ) {
+			ERROR("EVP_DigestFinal_ex() failure");
+			ERR_print_errors_fp(stderr);
+			goto openssl_error;
+		}
+
+		EVP_MD_CTX_cleanup(&mdctx);
+		ERR_free_strings();
+		
+		/* ----------------- */
+		/*  regenerate hmac  */
+		/* ----------------- */
+		
+		rv = hmac(hash_g, SKLOG_HASH_CHAIN_LEN, authkey,
+			SKLOG_AUTH_KEY_LEN, hmac_g, NULL);
+			
+		if ( rv == SKLOG_FAILURE ) {
+			ERROR("hmac() failure");
+			goto error;
+		}
+		
+		/* ---------------- */
+		/*  verify results  */
+		/* ---------------- */
+		
+		rv = memcmp(hash_g, hash_c, SKLOG_HASH_CHAIN_LEN);
+
+		if ( rv != 0 ) {
+			ERROR("Verification Failure: message digests are not equal!");
+			goto verification_failure;
+		}
+		
+		rv = memcmp(hmac_g, hmac_c, SKLOG_HMAC_LEN);
+		
+		if ( rv != 0 ) {
+			ERROR("Verification Failure: hmac are not equal!");
+			goto verification_failure;
+		}
+		
+		/* --------------- */
+		/*  renew authkey  */
+		/* --------------- */
+		
+		rv = sha256(authkey, SKLOG_AUTH_KEY_LEN, authkey_temp, NULL);
+		
+		if ( rv == SKLOG_FAILURE ) {
+			ERROR("sha256() failure");
+			goto error;
+		}
+		
+		memcpy(authkey, authkey_temp, SKLOG_AUTH_KEY_LEN);
+		memset(authkey_temp, 0, SKLOG_AUTH_KEY_LEN);
+		
+		/* ----------- */
+		/*  save data  */
+		/* ----------- */
+		
+		memcpy(hash_p, hash_c, SKLOG_HASH_CHAIN_LEN);
+		memcpy(hmac_p, hmac_c, SKLOG_HMAC_LEN);
+	}
+	
+	fclose(fp);
 	
 	return SKLOG_SUCCESS;
+
+db_error:
+	if ( db != NULL ) 
+		sqlite3_close(db);
+	goto error;
+
+openssl_error:
+	EVP_MD_CTX_cleanup(&mdctx);
+	ERR_free_strings();
+	goto error;
+
+verification_failure:
+	if ( fp != NULL ) 
+		fclose(fp);
+	return SKLOG_VERIFICATION_FAILURE;
+	
+error:
+	if ( fp != NULL ) 
+		fclose(fp);
+	return SKLOG_FAILURE;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

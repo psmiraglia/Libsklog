@@ -736,7 +736,7 @@ SKLOG_RETURN SKLOG_T_ManageLogfileVerify(SKLOG_T_Ctx *t_ctx,
     /* check input parameters */
     
     if ( t_ctx == NULL || logfile_id == NULL) {
-		ERROR("Bad input parameter(s). Please double-check it!");
+		ERROR(MSG_BAD_INPUT_PARAMS);
 		return SKLOG_FAILURE;
 	}
 	
@@ -1165,9 +1165,7 @@ SKLOG_RETURN SKLOG_T_RunServer(SKLOG_T_Ctx *t_ctx)
 					
 					rv = SKLOG_T_ManageLogfileVerify(t_ctx, logfile_id);
 					
-					if ( rv == SKLOG_FAILURE ) {
-						
-						WARNING("SKLOG_T_ManageLogfileUpload() failure");
+					if ( rv == SKLOG_VERIFICATION_FAILURE ) {
 						
 						/* verification failure */
 						
@@ -1182,6 +1180,11 @@ SKLOG_RETURN SKLOG_T_RunServer(SKLOG_T_Ctx *t_ctx)
 						memset(wbuf, 0, BUF_8192);
 						memcpy(wbuf, tlv, wlen);
 						free(tlv);
+						
+					} else if ( rv == SKLOG_FAILURE ) {
+						
+						ERROR("SKLOG_T_ManageLogfileVerify() failure");
+						goto child_error;
 						
 					} else {
 						

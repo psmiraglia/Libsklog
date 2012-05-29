@@ -43,6 +43,8 @@
 	
 #define MSG_NOT_IMPLEMENTED "Function not implemented"
 
+#define MSG_SQL_SELECT_EMPTY "Query returned no values"
+
 void msg_debug(const char *source, const int lineno, const char *func);
 
 void msg_error(const char *source, const int lineno, const char *func,
@@ -65,6 +67,8 @@ void msg_show_buffer(const char *source, const int lineno,
 	
 void msg_json(const char *source, const int lineno, const char *func,
 	char *json_str);
+
+void msg_here(const char *source, const int lineno, const char *func);
 
 #define DEBUG \
 	msg_debug(__FILE__, __LINE__, __func__);
@@ -89,6 +93,9 @@ void msg_json(const char *source, const int lineno, const char *func,
 	
 #define SHOW_JSON(json_str) \
 	msg_json(__FILE__, __LINE__, __func__, json_str);
+	
+#define HERE \
+	msg_here(__FILE__, __LINE__, __func__);
 
 /*
 #define SHOWBUF(bufname,buf,bufl) \
@@ -143,6 +150,8 @@ void msg_json(const char *source, const int lineno, const char *func,
 #define     SKLOG_FAILURE             !SKLOG_SUCCESS
 #define     SKLOG_TO_IMPLEMENT        SKLOG_SUCCESS
 #define     SKLOG_MANUAL              1
+
+#define		SKLOG_VERIFICATION_FAILURE	-1
 
 #define     DO_VERIFY                 1
 #define     DO_NOT_VERIFY             !DO_VERIFY

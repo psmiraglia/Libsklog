@@ -2,6 +2,7 @@
 
 int main ( void ) {
 
+
     SKLOG_T_Ctx *ctx = 0;
 
     ctx = SKLOG_T_NewCtx();
@@ -19,5 +20,6 @@ int main ( void ) {
     SKLOG_T_RunServer(ctx);
 
     SKLOG_T_FreeCtx(&ctx);
+    
     return 0;
 }
