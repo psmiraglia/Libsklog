@@ -17,8 +17,6 @@ in each source file.
    #include <sklog_t.h> // to access T API
    #include <sklog_v.h> // to access V API
 
-
-
 Global types
 ============
 
@@ -62,6 +60,94 @@ Global types
 	    int		lsock;
 	    int		csock;
 	};
+	
+.. c:type:: sklog_data_tranfer_cb
+
+	Callback type for SKLOG_V API data transfer functions.
+	
+.. code-block:: c
+	
+	typedef int (*sklog_data_tranfer_cb) 
+		(SKLOG_V_Ctx *ctx,
+		unsigned char *rbuf, size_t *rlen, size_t rlen_max,
+		unsigned char *wbuf, size_t *wlen);
+		
+.. code-block:: c
+
+	int retrieve(SKLOG_V_Ctx *ctx, unsigned char *rbuf, size_t *rlen,
+		size_t rlen_max, unsigned char *wbuf, size_t *wlen)
+	{
+		#ifdef DO_TRACE
+		DEBUG
+		#endif
+		
+		int rv = 0;
+		
+		SKLOG_CONNECTION *conn = 0;
+		
+		int nread = 0;
+		int nwrite = 0;
+		
+		/* open connection */
+		
+		conn = SKLOG_CONNECTION_New();
+		
+		if ( conn == NULL ) {
+			ERROR("SKLOG_CONNECTION_New() failure");
+			return SKLOG_FAILURE;
+		}
+	
+		rv = SKLOG_CONNECTION_Init(conn, ctx->t_address,
+			ctx->t_port, ctx->v_cert, ctx->v_privkey,
+			ctx->t_cert_file_path, DO_NOT_VERIFY);
+		            
+		if ( rv == SKLOG_FAILURE ) {
+			ERROR("SKLOG_CONNECTION_Init() failure");
+			return SKLOG_FAILURE;
+		}
+		
+		/* doit */
+		
+		SSL_load_error_strings();
+		
+		nwrite = SSL_write(conn->ssl, wbuf, *wlen);
+		
+		if ( nwrite <= 0 ) {
+			ERROR("SSL_write() failure");
+			ERR_print_errors_fp(stderr);
+			return SKLOG_FAILURE;
+		}
+		
+		nread = SSL_read(conn->ssl, rbuf, rlen_max);
+		
+		if ( nwrite <= 0 ) {
+			ERROR("SSL_read() failure");
+			ERR_print_errors_fp(stderr);
+			return SKLOG_FAILURE;
+		}
+		
+		*rlen = nread;
+		
+		ERR_free_strings();
+		
+		/* close connection */
+		
+		rv = SKLOG_CONNECTION_Destroy(conn);
+		
+		if ( rv == SKLOG_FAILURE ) {
+			ERROR("SKLOG_CONNECTION_Destroy() failure");
+			return SKLOG_FAILURE;
+		}
+		
+		rv = SKLOG_CONNECTION_Free(&conn);
+		
+		if ( rv == SKLOG_FAILURE ) {
+			ERROR("SKLOG_CONNECTION_Free() failure");
+			return SKLOG_FAILURE;
+		}
+		
+		return SKLOG_SUCCESS;
+	}
 
 SKLOG_U APIs
 ============
@@ -265,6 +351,43 @@ SKLOG_U_LogEvent()
 	
 **Return values**
 	
+	The function returns ``SKLOG_SUCCES`` in case of success, 
+	``SKLOG_FAILURE`` in case of failure.
+
+SKLOG_U_FlushLogfile()
+^^^^^^^^^^^^^^^^^^^^^^
+
+**Synopsis**
+
+	.. c:function:: SKLOG_RETURN SKLOG_U_FlushLogfile(SKLOG_U_Ctx *ctx, \
+		char *logs[], unsigned int *logs_size)
+	
+**Description**
+
+	Flush the current logging session. The function reads current
+	logfileand put its content in ``logs`` which will contains 
+	``logs_size`` elements.
+
+**Return values**
+
+	The function returns ``SKLOG_SUCCES`` in case of success, 
+	``SKLOG_FAILURE`` in case of failure.
+	
+SKLOG_U_UploadLogfile()
+^^^^^^^^^^^^^^^^^^^^^^^
+
+**Synopsis**
+	.. c:function:: SKLOG_RETURN SKLOG_U_UploadLogfile(SKLOG_U_Ctx *ctx, \
+		const char *filename, int mode)
+	
+**Description**
+
+	Generate a dump for the current logging session. The dump will be
+	written in ``filename`` file. The flag ``mode`` specifies the dump
+	format. Supported mode: ``DUMP_MODE_JSON``.
+	
+**Return values**
+
 	The function returns ``SKLOG_SUCCES`` in case of success, 
 	``SKLOG_FAILURE`` in case of failure.
 
@@ -558,6 +681,23 @@ SKLOG_V_RetrieveLogFiles()
 **Synopsis**
 	
 	.. c:function:: SKLOG_RETURN SKLOG_V_RetrieveLogFiles(SKLOG_V_Ctx *v_ctx, SKLOG_CONNECTION *c)
+
+**Description**
+	
+	TODO
+	
+**Return values**
+	
+	The function returns ``SKLOG_SUCCES`` in case of success, 
+	``SKLOG_FAILURE`` in case of failure.
+	
+SKLOG_V_RetrieveLogFiles_v2()
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**Synopsis**
+	
+	.. c:function:: SKLOG_RETURN SKLOG_V_VerifyLogFile_v2(SKLOG_V_Ctx *v_ctx, \
+		char *logfile_id, sklog_data_tranfer_cb verify_cb)
 
 **Description**
 	
