@@ -15,4 +15,5 @@ tnode_SOURCES = tnode.c
 tnode_LDADD = ../lib/libsklog.la
 
 vnode_SOURCES = vnode.c
+vnode_LDLAGS = -lreadline
 vnode_LDADD = ../lib/libsklog.la

@@ -114,10 +114,10 @@ dnl ********************************************************************
 AC_ARG_WITH([lumberjack],
 	AC_HELP_STRING(
 		[--with-lumberjack],
-		[Build Libsklog with Lumberjack project capabilities [default=no]]
+		[Build Libsklog with Lumberjack project capabilities [default=yes]]
 	),
 	lumberjack="$withval",
-	lumberjack="no"
+	lumberjack="yes"
 )
 
 if test "x$lumberjack" == "xyes"; then
@@ -136,10 +136,10 @@ dnl ********************************************************************
 AC_ARG_WITH([storage],
 	AC_HELP_STRING(
 		[--with-storage[=TYPE]],
-		[Build Libsklog with storage capabilities. Supported TYPE are: sqlite, syslog, file, misc or none. [default=sqlite]]
+		[Build Libsklog with storage capabilities. Supported TYPE are: sqlite, syslog, file, misc or none. [default=misc]]
 	),
 	storage="$withval",
-	storage="sqlite"
+	storage="misc"
 )
 
 AM_CONDITIONAL([HAVE_STORAGE_SQLITE],[false])
@@ -256,6 +256,13 @@ AC_CHECK_LIB(
 	[main],
 	[],
 	AC_MSG_ERROR([libjansson is required from Libsklog])
+)
+
+AC_CHECK_LIB(
+	[readline],
+	[main],
+	[],
+	AC_MSG_ERROR([libreadline is required from Libsklog])
 )
 
 AC_CONFIG_HEADERS([config.h])
