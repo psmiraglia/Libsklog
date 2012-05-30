@@ -15,5 +15,8 @@ tnode_SOURCES = tnode.c
 tnode_LDADD = ../lib/libsklog.la
 
 vnode_SOURCES = vnode.c
-vnode_LDLAGS = -lreadline
+vnode_LDFLAGS = -lreadline
 vnode_LDADD = ../lib/libsklog.la
+
+install-data-local:
+	cp -v $(srcdir)/rawdata.dat $(bindir)
