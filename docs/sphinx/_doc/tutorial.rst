@@ -1,6 +1,11 @@
+:tocdepth: 2
+
 ********
 Tutorial
 ********
+
+.. WARNING:: Since the library is in alpha release documentation 
+	could not fit exactly the code
 
 .. highlight:: c
 
@@ -16,178 +21,87 @@ To build application that use Libsklog it's necessary to add
 Probably to run your application you will need to set ``LD_LIBRARY_PATH`` environment variable::
 
 	LD_LIBRARY_PATH=/usr/local/lib ./my_log_app.bin
-
-Using U API
-===========
-
-To use U API it's necessary to include the following libraries
-
-.. code-block:: c
-
-	#include <stdio.h>
-	#include <sklog_u.h>
 	
-The first step is the initialization of the U context and then the 
-initialization of a new logging session
+Sample applications
+===================
+
+Libsklog library is provided with three sample application: 
+``unode``, ``tnode``, ``vnode``.
+
+``tnode``
+^^^^^^^^^
+
+**Description**
+
+	The application simulates a T service running on a server. Listening
+	IP address and binding port may be defined in
+	``$PREFIX/etc/libsklog/libsklog-t.conf`` file. Default values are
+	``127.0.0.1`` and ``5000``. During the execution a certificate password
+	is requested. Use ``123456`` password.
+
+**Usage**
+	:: 
+
+	$> cd $PREFIX/bin
+	$> ./tnode
+
+**Source**
+
+	.. literalinclude:: ../../../apps/tnode.c
+		:language: c
+		:linenos:
+		:tab-width: 4
+		
+``unode``
+^^^^^^^^^
+
+**Description**
+
+	The application simulates a flood of event log generation. The event
+	descriptions are read from file ``rawdata.dat`` which contains one
+	event per line. The number of events in ``rawdata.dat`` file, forces
+	the application to initialize three logging session.
+
+**Usage**
+
+	.. NOTE:: An already running ``tnode`` is required
 	
-.. code-block:: c
-
-	int main ( void ) {
-
-		SKLOG_RETURN rv = SKLOG_SUCCESS;
-		SKLOG_U_Ctx *ctx = 0;
+	::
 		
-		char *le1 = 0;
-		unsigned int le1_len = 0;
-		char *le2 = 0;
-		unsigned int le2_len = 0;
-		
-		...
-		
-		/* create empty context */
-		
-		ctx = SKLOG_U_NewCtx();
-		
-		if ( !ctx ) {
-		
-			/* manage error */
-			
-		}
-		
-		/* initialize new logging session */
-		
-		rv = SKLOG_U_Open(ctx, &le1, &le1_len, &le2, &le2_len)
-		
-		if ( rv == SKLOG_FAILURE ) {
-			
-			/* manage error */
-		}
+		$> cd $PREFIX/bin
+		$> ./unode
 	
-		...
+**Source**
+
+	.. literalinclude:: ../../../apps/unode.c
+		:language: c
+		:linenos:
+		:tab-width: 4
 		
-	}
+``vnode``
+^^^^^^^^^
+
+**Description**
+
+	The application simulates an external viewer V who wants to retrieve
+	and verify the logs. Such as application provides an interactive
+	shell.
 	
-After that, users are ready to log their events using ``SKLOG_U_LogEvent()`` function
+		 
+
+**Usage**
+ 	
+	::
+
+		$> cd $PREFIX/bin
+		$> ./vnode
+		Welcome to Libsklog verifier shell
+		Press H to visualize the available commands or X to quit.
+		verifier:
 	
-.. code-block:: c
+**Source**
 
-	int main ( void ) {
-
-		char data[BUFLEN+1] = { 0x0 };
-		
-		...
-		
-		/* create logentry */
-		
-		snprintf(data, BUFLEN, "This is a sample event description");
-		
-		rv = SKLOG_U_LogEvent(ctx, type, data, strlen(data), &le1, &le1_len);
-		
-		if ( rv == SKLOG_FAILURE ) {
-			
-			/* manage error */
-		}
-		
-		...
-		
-	}
-	
-To terminate the logging session users have to close it and free the
-context
-	
-.. code-block:: c
-
-	int main ( void ) {
-	
-		...
-		
-		/* close logging session */
-		
-		rv = SKLOG_U_Close(ctx, &le1, &le1_len);
-		
-		if ( rv == SKLOG_FAILURE ) {
-		
-			/* manage error */
-		
-		}
-		
-		/* free memory */
-		
-		rv = SKLOG_U_FreeCtx(&u_ctx);
-		
-		if ( rv == SKLOG_FAILURE ) {
-		
-			/* manage error */
-		
-		}
-		
-		return 0;
-	
-	}
-
-Using T API
-===========
-
-To use U API it's necessary to include the following libraries
-
-.. code-block:: c
-
-	#include <stdio.h>
-	#include <sklog_t.h>
-	
-To run a simple T application users can use the function ``SKLOG_T_RunServer()``
-
-.. code-block:: c
-
-	#include <sklog_t.h>
-	
-	int main ( void ) {
-	
-		SKLOG_RETURN rv = SKLOG_SUCCESS;
-		SKLOG_T_Ctx *ctx = 0;
-		
-		/* create empty context */
-		
-		ctx = SKLOG_T_NewCtx();
-		
-		if ( !ctx ) {
-			
-			/* manage error */
-			
-		} 
-		
-		/* initialize context */
-		
-		rv = SKLOG_T_InitCtx(ctx);
-		
-		if ( rv == SKLOG_FAILURE ) {
-			
-			/* manage error */
-			
-		}
-		
-		/* run T server */
-		
-		rv = SKLOG_T_RunServer(ctx);
-		
-		if ( rv == SKLOG_FAILURE ) {
-			
-			/* manage error */
-			
-		}
-		
-		/* free memory */
-		
-		rv = SKLOG_T_FreeCtx(&ctx);
-		
-		if ( rv == SKLOG_FAILURE ) {
-			
-			/* manage error */
-			
-		}
-		
-		return 0;
-	}
-
-Using V API
-===========
+	.. literalinclude:: ../../../apps/vnode.c
+		:language: c
+		:linenos:
+		:tab-width: 4

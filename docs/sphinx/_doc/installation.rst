@@ -2,6 +2,9 @@
 Installation
 ************
 
+.. WARNING:: Since the library is in alpha release documentation 
+	could not fit exactly the code
+
 In this section is shown the procedure to install the library and to
 configure the API environment. All steps are described assuming that the
 library installation prefix is::

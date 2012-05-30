@@ -25,9 +25,8 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script type="text/javascript" src="../_static/sidebar.js"></script>
     <link rel="top" title="Libsklog 0.1alpha documentation" href="../index.html" />
-    <link rel="prev" title="API References" href="api.html" /> 
+    <link rel="prev" title="Libsklog Python Bindings" href="python_binding.html" /> 
   </head>
   <body>
     <div class="related">
@@ -37,7 +36,7 @@
           <a href="../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="api.html" title="API References"
+          <a href="python_binding.html" title="Libsklog Python Bindings"
              accesskey="P">previous</a> |</li>
         <li><a href="../index.html">Libsklog 0.1alpha documentation</a> &raquo;</li> 
       </ul>
@@ -50,6 +49,11 @@
             
   <div class="section" id="tutorial">
 <h1>Tutorial<a class="headerlink" href="#tutorial" title="Permalink to this headline">¶</a></h1>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Since the library is in alpha release documentation
+could not fit exactly the code</p>
+</div>
 <div class="section" id="preliminaries">
 <h2>Preliminaries<a class="headerlink" href="#preliminaries" title="Permalink to this headline">¶</a></h2>
 <p>To build application that use Libsklog it&#8217;s necessary to add
@@ -63,168 +67,871 @@
 </pre></div>
 </div>
 </div>
-<div class="section" id="using-u-api">
-<h2>Using U API<a class="headerlink" href="#using-u-api" title="Permalink to this headline">¶</a></h2>
-<p>To use U API it&#8217;s necessary to include the following libraries</p>
-<div class="highlight-c"><div class="highlight"><pre><span class="cp">#include &lt;stdio.h&gt;</span>
-<span class="cp">#include &lt;sklog_u.h&gt;</span>
-</pre></div>
+<div class="section" id="sample-applications">
+<h2>Sample applications<a class="headerlink" href="#sample-applications" title="Permalink to this headline">¶</a></h2>
+<p>Libsklog library is provided with three sample application:
+<tt class="docutils literal"><span class="pre">unode</span></tt>, <tt class="docutils literal"><span class="pre">tnode</span></tt>, <tt class="docutils literal"><span class="pre">vnode</span></tt>.</p>
+<div class="section" id="tnode">
+<h3><tt class="docutils literal"><span class="pre">tnode</span></tt><a class="headerlink" href="#tnode" title="Permalink to this headline">¶</a></h3>
+<p><strong>Description</strong></p>
+<blockquote>
+<div>The application simulates a T service running on a server. Listening
+IP address and binding port may be defined in
+<tt class="docutils literal"><span class="pre">$PREFIX/etc/libsklog/libsklog-t.conf</span></tt> file. Default values are
+<tt class="docutils literal"><span class="pre">127.0.0.1</span></tt> and <tt class="docutils literal"><span class="pre">5000</span></tt>. During the execution a certificate password
+is requested. Use <tt class="docutils literal"><span class="pre">123456</span></tt> password.</div></blockquote>
+<dl class="docutils">
+<dt><strong>Usage</strong></dt>
+<dd><div class="first last highlight-c"><pre>$&gt; cd $PREFIX/bin
+$&gt; ./tnode</pre>
 </div>
-<p>The first step is the initialization of the U context and then the
-initialization of a new logging session</p>
-<div class="highlight-c"><div class="highlight"><pre><span class="kt">int</span> <span class="nf">main</span> <span class="p">(</span> <span class="kt">void</span> <span class="p">)</span> <span class="p">{</span>
-
-        <span class="n">SKLOG_RETURN</span> <span class="n">rv</span> <span class="o">=</span> <span class="n">SKLOG_SUCCESS</span><span class="p">;</span>
-        <span class="n">SKLOG_U_Ctx</span> <span class="o">*</span><span class="n">ctx</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-
-        <span class="kt">char</span> <span class="o">*</span><span class="n">le1</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-        <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">le1_len</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-        <span class="kt">char</span> <span class="o">*</span><span class="n">le2</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-        <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">le2_len</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-
-        <span class="p">...</span>
-
-        <span class="cm">/* create empty context */</span>
-
-        <span class="n">ctx</span> <span class="o">=</span> <span class="n">SKLOG_U_NewCtx</span><span class="p">();</span>
-
-        <span class="k">if</span> <span class="p">(</span> <span class="o">!</span><span class="n">ctx</span> <span class="p">)</span> <span class="p">{</span>
-
-                <span class="cm">/* manage error */</span>
-
-        <span class="p">}</span>
-
-        <span class="cm">/* initialize new logging session */</span>
-
-        <span class="n">rv</span> <span class="o">=</span> <span class="n">SKLOG_U_Open</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">le1</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">le1_len</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">le2</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">le2_len</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="p">(</span> <span class="n">rv</span> <span class="o">==</span> <span class="n">SKLOG_FAILURE</span> <span class="p">)</span> <span class="p">{</span>
-
-                <span class="cm">/* manage error */</span>
-        <span class="p">}</span>
-
-        <span class="p">...</span>
-
-<span class="p">}</span>
-</pre></div>
-</div>
-<p>After that, users are ready to log their events using <tt class="docutils literal"><span class="pre">SKLOG_U_LogEvent()</span></tt> function</p>
-<div class="highlight-c"><div class="highlight"><pre><span class="kt">int</span> <span class="nf">main</span> <span class="p">(</span> <span class="kt">void</span> <span class="p">)</span> <span class="p">{</span>
-
-        <span class="kt">char</span> <span class="n">data</span><span class="p">[</span><span class="n">BUFLEN</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span> <span class="mh">0x0</span> <span class="p">};</span>
-
-        <span class="p">...</span>
-
-        <span class="cm">/* create logentry */</span>
-
-        <span class="n">snprintf</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">BUFLEN</span><span class="p">,</span> <span class="s">&quot;This is a sample event description&quot;</span><span class="p">);</span>
-
-        <span class="n">rv</span> <span class="o">=</span> <span class="n">SKLOG_U_LogEvent</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="n">type</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">strlen</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="o">&amp;</span><span class="n">le1</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">le1_len</span><span class="p">);</span>
-
-        <span class="k">if</span> <span class="p">(</span> <span class="n">rv</span> <span class="o">==</span> <span class="n">SKLOG_FAILURE</span> <span class="p">)</span> <span class="p">{</span>
-
-                <span class="cm">/* manage error */</span>
-        <span class="p">}</span>
-
-        <span class="p">...</span>
-
-<span class="p">}</span>
-</pre></div>
-</div>
-<p>To terminate the logging session users have to close it and free the
-context</p>
-<div class="highlight-c"><div class="highlight"><pre><span class="kt">int</span> <span class="nf">main</span> <span class="p">(</span> <span class="kt">void</span> <span class="p">)</span> <span class="p">{</span>
-
-        <span class="p">...</span>
-
-        <span class="cm">/* close logging session */</span>
-
-        <span class="n">rv</span> <span class="o">=</span> <span class="n">SKLOG_U_Close</span><span class="p">(</span><span class="n">ctx</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">le1</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">le1_len</span><span class="p">);</span>
-
-        <span class="k">if</span> <span class="p">(</span> <span class="n">rv</span> <span class="o">==</span> <span class="n">SKLOG_FAILURE</span> <span class="p">)</span> <span class="p">{</span>
-
-                <span class="cm">/* manage error */</span>
-
-        <span class="p">}</span>
-
-        <span class="cm">/* free memory */</span>
-
-        <span class="n">rv</span> <span class="o">=</span> <span class="n">SKLOG_U_FreeCtx</span><span class="p">(</span><span class="o">&amp;</span><span class="n">u_ctx</span><span class="p">);</span>
-
-        <span class="k">if</span> <span class="p">(</span> <span class="n">rv</span> <span class="o">==</span> <span class="n">SKLOG_FAILURE</span> <span class="p">)</span> <span class="p">{</span>
-
-                <span class="cm">/* manage error */</span>
-
-        <span class="p">}</span>
-
-        <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-
-<span class="p">}</span>
-</pre></div>
-</div>
-</div>
-<div class="section" id="using-t-api">
-<h2>Using T API<a class="headerlink" href="#using-t-api" title="Permalink to this headline">¶</a></h2>
-<p>To use U API it&#8217;s necessary to include the following libraries</p>
-<div class="highlight-c"><div class="highlight"><pre><span class="cp">#include &lt;stdio.h&gt;</span>
-<span class="cp">#include &lt;sklog_t.h&gt;</span>
-</pre></div>
-</div>
-<p>To run a simple T application users can use the function <tt class="docutils literal"><span class="pre">SKLOG_T_RunServer()</span></tt></p>
-<div class="highlight-c"><div class="highlight"><pre><span class="cp">#include &lt;sklog_t.h&gt;</span>
+</dd>
+</dl>
+<p><strong>Source</strong></p>
+<blockquote>
+<div><div class="highlight-c"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre> 1
+ 2
+ 3
+ 4
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30</pre></div></td><td class="code"><div class="highlight"><pre><span class="cp">#include &lt;sklog_t.h&gt;</span>
 
 <span class="kt">int</span> <span class="nf">main</span> <span class="p">(</span> <span class="kt">void</span> <span class="p">)</span> <span class="p">{</span>
 
-        <span class="n">SKLOG_RETURN</span> <span class="n">rv</span> <span class="o">=</span> <span class="n">SKLOG_SUCCESS</span><span class="p">;</span>
-        <span class="n">SKLOG_T_Ctx</span> <span class="o">*</span><span class="n">ctx</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="n">SKLOG_T_Ctx</span> <span class="o">*</span><span class="n">ctx</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    
+    <span class="cm">/* create and initialize a new context*/</span>
 
-        <span class="cm">/* create empty context */</span>
+    <span class="n">ctx</span> <span class="o">=</span> <span class="n">SKLOG_T_NewCtx</span><span class="p">();</span>
 
-        <span class="n">ctx</span> <span class="o">=</span> <span class="n">SKLOG_T_NewCtx</span><span class="p">();</span>
+    <span class="k">if</span> <span class="p">(</span> <span class="n">ctx</span> <span class="o">==</span> <span class="nb">NULL</span> <span class="p">)</span> <span class="p">{</span>
+        <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span><span class="s">&quot;SKLOG_T_NewCtx() failure</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+        <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+    <span class="p">}</span> 
 
-        <span class="k">if</span> <span class="p">(</span> <span class="o">!</span><span class="n">ctx</span> <span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span> <span class="n">SKLOG_T_InitCtx</span><span class="p">(</span><span class="n">ctx</span><span class="p">)</span> <span class="o">==</span> <span class="n">SKLOG_FAILURE</span> <span class="p">)</span> <span class="p">{</span>
+        <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span><span class="s">&quot;SKLOG_T_InitCtx() failure</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+        <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+    <span class="p">}</span>
+    
+    <span class="cm">/* run sample T server application */</span>
 
-                <span class="cm">/* manage error */</span>
+    <span class="n">SKLOG_T_RunServer</span><span class="p">(</span><span class="n">ctx</span><span class="p">);</span>
+    
+    <span class="cm">/* free context */</span>
 
-        <span class="p">}</span>
-
-        <span class="cm">/* initialize context */</span>
-
-        <span class="n">rv</span> <span class="o">=</span> <span class="n">SKLOG_T_InitCtx</span><span class="p">(</span><span class="n">ctx</span><span class="p">);</span>
-
-        <span class="k">if</span> <span class="p">(</span> <span class="n">rv</span> <span class="o">==</span> <span class="n">SKLOG_FAILURE</span> <span class="p">)</span> <span class="p">{</span>
-
-                <span class="cm">/* manage error */</span>
-
-        <span class="p">}</span>
-
-        <span class="cm">/* run T server */</span>
-
-        <span class="n">rv</span> <span class="o">=</span> <span class="n">SKLOG_T_RunServer</span><span class="p">(</span><span class="n">ctx</span><span class="p">);</span>
-
-        <span class="k">if</span> <span class="p">(</span> <span class="n">rv</span> <span class="o">==</span> <span class="n">SKLOG_FAILURE</span> <span class="p">)</span> <span class="p">{</span>
-
-                <span class="cm">/* manage error */</span>
-
-        <span class="p">}</span>
-
-        <span class="cm">/* free memory */</span>
-
-        <span class="n">rv</span> <span class="o">=</span> <span class="n">SKLOG_T_FreeCtx</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ctx</span><span class="p">);</span>
-
-        <span class="k">if</span> <span class="p">(</span> <span class="n">rv</span> <span class="o">==</span> <span class="n">SKLOG_FAILURE</span> <span class="p">)</span> <span class="p">{</span>
-
-                <span class="cm">/* manage error */</span>
-
-        <span class="p">}</span>
-
-        <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="n">SKLOG_T_FreeCtx</span><span class="p">(</span><span class="o">&amp;</span><span class="n">ctx</span><span class="p">);</span>
+    
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
 <span class="p">}</span>
 </pre></div>
+</td></tr></table></div>
+</div></blockquote>
 </div>
+<div class="section" id="unode">
+<h3><tt class="docutils literal"><span class="pre">unode</span></tt><a class="headerlink" href="#unode" title="Permalink to this headline">¶</a></h3>
+<p><strong>Description</strong></p>
+<blockquote>
+<div>The application simulates a flood of event log generation. The event
+descriptions are read from file <tt class="docutils literal"><span class="pre">rawdata.dat</span></tt> which contains one
+event per line. The number of events in <tt class="docutils literal"><span class="pre">rawdata.dat</span></tt> file, forces
+the application to initialize three logging session.</div></blockquote>
+<p><strong>Usage</strong></p>
+<blockquote>
+<div><div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">An already running <tt class="docutils literal"><span class="pre">tnode</span></tt> is required</p>
 </div>
-<div class="section" id="using-v-api">
-<h2>Using V API<a class="headerlink" href="#using-v-api" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-c"><pre>$&gt; cd $PREFIX/bin
+$&gt; ./unode</pre>
+</div>
+</div></blockquote>
+<p><strong>Source</strong></p>
+<blockquote>
+<div><div class="highlight-c"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre>  1
+  2
+  3
+  4
+  5
+  6
+  7
+  8
+  9
+ 10
+ 11
+ 12
+ 13
+ 14
+ 15
+ 16
+ 17
+ 18
+ 19
+ 20
+ 21
+ 22
+ 23
+ 24
+ 25
+ 26
+ 27
+ 28
+ 29
+ 30
+ 31
+ 32
+ 33
+ 34
+ 35
+ 36
+ 37
+ 38
+ 39
+ 40
+ 41
+ 42
+ 43
+ 44
+ 45
+ 46
+ 47
+ 48
+ 49
+ 50
+ 51
+ 52
+ 53
+ 54
+ 55
+ 56
+ 57
+ 58
+ 59
+ 60
+ 61
+ 62
+ 63
+ 64
+ 65
+ 66
+ 67
+ 68
+ 69
+ 70
+ 71
+ 72
+ 73
+ 74
+ 75
+ 76
+ 77
+ 78
+ 79
+ 80
+ 81
+ 82
+ 83
+ 84
+ 85
+ 86
+ 87
+ 88
+ 89
+ 90
+ 91
+ 92
+ 93
+ 94
+ 95
+ 96
+ 97
+ 98
+ 99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+174
+175
+176
+177
+178
+179
+180
+181
+182
+183
+184
+185
+186</pre></div></td><td class="code"><div class="highlight"><pre><span class="cp">#include &lt;sklog_u.h&gt;</span>
+
+<span class="cp">#define MAX 1</span>
+<span class="cp">#define LOGFILE_SIZE 30</span>
+<span class="cp">#define LOGENTRY_LEN 1024</span>
+
+<span class="kt">int</span> <span class="nf">main</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="n">SKLOG_RETURN</span> <span class="n">rv</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    
+    <span class="kt">char</span> <span class="o">*</span><span class="n">le1</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">le1_len</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    
+    <span class="kt">char</span> <span class="o">*</span><span class="n">le2</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">le2_len</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    
+    <span class="kt">unsigned</span> <span class="kt">char</span> <span class="o">*</span><span class="n">m0</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">m0_len</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    
+    <span class="kt">unsigned</span> <span class="kt">char</span> <span class="o">*</span><span class="n">m1</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">m1_len</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    
+    <span class="kt">char</span> <span class="o">*</span><span class="n">logs</span><span class="p">[</span><span class="n">BUF_512</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span> <span class="mh">0x0</span> <span class="p">};</span>
+    <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">logs_size</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    
+    <span class="n">SKLOG_U_Ctx</span> <span class="o">*</span><span class="n">u_ctx</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    
+    <span class="n">SKLOG_CONNECTION</span> <span class="o">*</span><span class="n">c</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    
+    <span class="kt">FILE</span> <span class="o">*</span><span class="n">fp</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="kt">char</span> <span class="n">event</span><span class="p">[</span><span class="n">BUF_2048</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span> <span class="mh">0x0</span> <span class="p">};</span>
+    <span class="kt">int</span> <span class="n">seek</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    
+    <span class="kt">char</span> <span class="n">filename</span><span class="p">[</span><span class="n">BUF_512</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span> <span class="mh">0x0</span> <span class="p">};</span>
+    <span class="kt">char</span> <span class="n">logfile_id</span><span class="p">[</span><span class="n">UUID_STR_LEN</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span> <span class="mh">0x0</span> <span class="p">};</span>
+
+
+<span class="nl">init_logging_session:</span>
+    
+    <span class="cm">/* initialize context */</span>
+    
+    <span class="n">u_ctx</span> <span class="o">=</span> <span class="n">SKLOG_U_NewCtx</span><span class="p">();</span>
+    
+    <span class="k">if</span> <span class="p">(</span> <span class="n">u_ctx</span> <span class="o">==</span> <span class="nb">NULL</span> <span class="p">)</span> <span class="p">{</span>
+        <span class="n">ERROR</span><span class="p">(</span><span class="s">&quot;SKLOG_U_NewCtx() failure&quot;</span><span class="p">);</span>
+        <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+    <span class="p">}</span>
+    
+    <span class="n">rv</span> <span class="o">=</span> <span class="n">SKLOG_U_InitCtx</span><span class="p">(</span><span class="n">u_ctx</span><span class="p">);</span>
+    
+    <span class="k">if</span> <span class="p">(</span> <span class="n">rv</span> <span class="o">==</span> <span class="n">SKLOG_FAILURE</span> <span class="p">)</span> <span class="p">{</span>
+        <span class="n">ERROR</span><span class="p">(</span><span class="s">&quot;SKLOG_U_InitCtx() failure&quot;</span><span class="p">);</span>
+        <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+    <span class="p">}</span>
+    
+    <span class="cm">/*</span>
+<span class="cm">     *  initialize logging session phase</span>
+<span class="cm">     *</span>
+<span class="cm">     */</span>
+    
+    <span class="n">rv</span> <span class="o">=</span> <span class="n">SKLOG_U_Open_M0</span><span class="p">(</span><span class="n">u_ctx</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">m0</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">m0_len</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">le1</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">le1_len</span><span class="p">);</span>
+    
+    <span class="k">if</span> <span class="p">(</span> <span class="n">rv</span> <span class="o">==</span> <span class="n">SKLOG_FAILURE</span> <span class="p">)</span> <span class="p">{</span>
+        <span class="n">ERROR</span><span class="p">(</span><span class="s">&quot;SKLOG_U_Open_M0() failure&quot;</span><span class="p">);</span>
+        <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+    <span class="p">}</span>
+    
+    <span class="cm">/* setup connection */</span>
+    
+    <span class="n">c</span> <span class="o">=</span> <span class="n">SKLOG_CONNECTION_New</span><span class="p">();</span>
+    
+    <span class="k">if</span> <span class="p">(</span> <span class="n">c</span> <span class="o">==</span> <span class="nb">NULL</span> <span class="p">)</span> <span class="p">{</span>
+        <span class="n">ERROR</span><span class="p">(</span><span class="s">&quot;SKLOG_CONNECTION_New() failure&quot;</span><span class="p">);</span>
+        <span class="n">rv</span> <span class="o">=</span> <span class="n">SKLOG_FAILURE</span><span class="p">;</span>
+        <span class="k">goto</span> <span class="n">error</span><span class="p">;</span>
+    <span class="p">}</span>
+    
+    <span class="n">rv</span> <span class="o">=</span> <span class="n">SKLOG_CONNECTION_Init</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">u_ctx</span><span class="o">-&gt;</span><span class="n">t_address</span><span class="p">,</span> <span class="n">u_ctx</span><span class="o">-&gt;</span><span class="n">t_port</span><span class="p">,</span>
+        <span class="n">u_ctx</span><span class="o">-&gt;</span><span class="n">u_cert</span><span class="p">,</span> <span class="n">u_ctx</span><span class="o">-&gt;</span><span class="n">u_privkey</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+        
+    <span class="k">if</span> <span class="p">(</span> <span class="n">rv</span> <span class="o">==</span> <span class="n">SKLOG_FAILURE</span> <span class="p">)</span> <span class="p">{</span>
+        <span class="n">ERROR</span><span class="p">(</span><span class="s">&quot;SKLOG_CONNECTION_Init() failure&quot;</span><span class="p">);</span>
+        <span class="k">goto</span> <span class="n">error</span><span class="p">;</span>
+    <span class="p">}</span>
+    
+    <span class="cm">/* send m0 message */</span>
+    
+    <span class="n">rv</span> <span class="o">=</span> <span class="n">send_m0</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="n">m0</span><span class="p">,</span> <span class="n">m0_len</span><span class="p">);</span>
+    
+    <span class="k">if</span> <span class="p">(</span> <span class="n">rv</span> <span class="o">==</span> <span class="n">SKLOG_FAILURE</span> <span class="p">)</span> <span class="p">{</span>
+        <span class="n">ERROR</span><span class="p">(</span><span class="s">&quot;send_m0() failure&quot;</span><span class="p">);</span>
+        <span class="k">goto</span> <span class="n">error</span><span class="p">;</span>
+    <span class="p">}</span>
+    
+    <span class="cm">/* waiting for m1 message */</span>
+    
+    <span class="n">rv</span> <span class="o">=</span> <span class="n">receive_m1</span><span class="p">(</span><span class="n">c</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">m1</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">m1_len</span><span class="p">);</span>
+    
+    <span class="k">if</span> <span class="p">(</span> <span class="n">rv</span> <span class="o">==</span> <span class="n">SKLOG_FAILURE</span> <span class="p">)</span> <span class="p">{</span>
+        <span class="n">ERROR</span><span class="p">(</span><span class="s">&quot;receive_m1() failure&quot;</span><span class="p">);</span>
+        <span class="k">goto</span> <span class="n">error</span><span class="p">;</span>
+    <span class="p">}</span>
+    
+    <span class="cm">/* free connection */</span>
+    
+    <span class="n">rv</span> <span class="o">=</span> <span class="n">SKLOG_CONNECTION_Free</span><span class="p">(</span><span class="o">&amp;</span><span class="n">c</span><span class="p">);</span>
+    
+    <span class="k">if</span> <span class="p">(</span> <span class="n">rv</span> <span class="o">==</span> <span class="n">SKLOG_FAILURE</span> <span class="p">)</span> <span class="p">{</span>
+        <span class="n">ERROR</span><span class="p">(</span><span class="s">&quot;SKLOG_CONNECTION_Free() failure&quot;</span><span class="p">);</span>
+        <span class="k">goto</span> <span class="n">error</span><span class="p">;</span>
+    <span class="p">}</span>
+    
+    <span class="n">rv</span> <span class="o">=</span> <span class="n">SKLOG_U_Open_M1</span><span class="p">(</span><span class="n">u_ctx</span><span class="p">,</span> <span class="n">m1</span><span class="p">,</span> <span class="n">m1_len</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">le2</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">le2_len</span><span class="p">);</span>
+    
+    <span class="k">if</span> <span class="p">(</span> <span class="n">rv</span> <span class="o">==</span> <span class="n">SKLOG_FAILURE</span> <span class="p">)</span> <span class="p">{</span>
+        <span class="n">ERROR</span><span class="p">(</span><span class="s">&quot;SKLOG_U_Open_M1() failure&quot;</span><span class="p">);</span>
+        <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+    <span class="p">}</span>
+    
+    <span class="cm">/*</span>
+<span class="cm">     *  start logging</span>
+<span class="cm">     *</span>
+<span class="cm">     */</span>
+    
+    <span class="n">fp</span> <span class="o">=</span> <span class="n">fopen</span><span class="p">(</span><span class="s">&quot;rawdata.dat&quot;</span><span class="p">,</span> <span class="s">&quot;r&quot;</span><span class="p">);</span>
+    
+    <span class="k">if</span> <span class="p">(</span> <span class="n">fp</span> <span class="o">==</span> <span class="nb">NULL</span> <span class="p">)</span> <span class="p">{</span>
+        <span class="n">ERROR</span><span class="p">(</span><span class="s">&quot;Unable to open file rawdata.dat&quot;</span><span class="p">);</span>
+        <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+    <span class="p">}</span>
+    
+    <span class="n">fseek</span><span class="p">(</span><span class="n">fp</span><span class="p">,</span> <span class="n">seek</span><span class="p">,</span> <span class="n">SEEK_SET</span><span class="p">);</span>
+    
+    <span class="kt">int</span> <span class="n">eol</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    
+    <span class="n">uuid_unparse</span><span class="p">(</span><span class="n">u_ctx</span><span class="o">-&gt;</span><span class="n">logfile_id</span><span class="p">,</span> <span class="n">logfile_id</span><span class="p">);</span>
+    
+    <span class="n">snprintf</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">BUF_512</span><span class="p">,</span> <span class="s">&quot;%s/%s.json&quot;</span><span class="p">,</span> <span class="n">BIN_PREFIX</span><span class="p">,</span> <span class="n">logfile_id</span><span class="p">);</span>
+    
+    <span class="k">while</span> <span class="p">(</span> <span class="o">!</span><span class="n">feof</span><span class="p">(</span><span class="n">fp</span><span class="p">)</span> <span class="p">)</span> <span class="p">{</span>
+        
+        <span class="n">fgets</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="n">BUF_2048</span><span class="p">,</span> <span class="n">fp</span><span class="p">);</span>
+        <span class="n">eol</span> <span class="o">=</span> <span class="n">strlen</span><span class="p">(</span><span class="n">event</span><span class="p">);</span>
+        <span class="n">event</span><span class="p">[</span><span class="n">eol</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="sc">&#39;\0&#39;</span><span class="p">;</span>
+        
+        <span class="cm">/* create log entry */</span>
+        
+        <span class="n">rv</span> <span class="o">=</span> <span class="n">SKLOG_U_LogEvent</span><span class="p">(</span><span class="n">u_ctx</span><span class="p">,</span> <span class="n">Undefined</span><span class="p">,</span> <span class="n">event</span><span class="p">,</span>
+            <span class="n">strlen</span><span class="p">(</span><span class="n">event</span><span class="p">),</span> <span class="o">&amp;</span><span class="n">le1</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">le1_len</span><span class="p">);</span>
+        
+        <span class="k">if</span> <span class="p">(</span> <span class="n">rv</span> <span class="o">==</span> <span class="n">SKLOG_SESSION_TO_RENEW</span> <span class="p">)</span> <span class="p">{</span>
+            
+            <span class="n">seek</span> <span class="o">=</span> <span class="n">ftell</span><span class="p">(</span><span class="n">fp</span><span class="p">);</span>
+            
+            <span class="n">fclose</span><span class="p">(</span><span class="n">fp</span><span class="p">);</span>
+            
+            <span class="n">SKLOG_U_Close</span><span class="p">(</span><span class="n">u_ctx</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">le1</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">le1_len</span><span class="p">);</span>
+            
+            <span class="n">SKLOG_U_FlushLogfile</span><span class="p">(</span><span class="n">u_ctx</span><span class="p">,</span> <span class="n">logs</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">logs_size</span><span class="p">);</span>
+            
+            <span class="n">SKLOG_U_UploadLogfile</span><span class="p">(</span><span class="n">u_ctx</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">DUMP_MODE_JSON</span><span class="p">);</span>
+            
+            
+            <span class="n">SKLOG_U_FreeCtx</span><span class="p">(</span><span class="o">&amp;</span><span class="n">u_ctx</span><span class="p">);</span>
+            <span class="k">goto</span> <span class="n">init_logging_session</span><span class="p">;</span>
+        <span class="p">}</span>
+
+    <span class="p">}</span>
+    
+    <span class="n">fclose</span><span class="p">(</span><span class="n">fp</span><span class="p">);</span>
+    
+    <span class="n">SKLOG_U_Close</span><span class="p">(</span><span class="n">u_ctx</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">le1</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">le1_len</span><span class="p">);</span>
+    <span class="n">SKLOG_U_FlushLogfile</span><span class="p">(</span><span class="n">u_ctx</span><span class="p">,</span> <span class="n">logs</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">logs_size</span><span class="p">);</span>
+    <span class="n">SKLOG_U_UploadLogfile</span><span class="p">(</span><span class="n">u_ctx</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">DUMP_MODE_JSON</span><span class="p">);</span>
+    <span class="n">SKLOG_U_FreeCtx</span><span class="p">(</span><span class="o">&amp;</span><span class="n">u_ctx</span><span class="p">);</span>
+    
+    <span class="cm">/*</span>
+<span class="cm">     *  end application</span>
+<span class="cm">     *</span>
+<span class="cm">     */</span>
+        
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+    
+<span class="nl">error:</span>
+    <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</td></tr></table></div>
+</div></blockquote>
+</div>
+<div class="section" id="vnode">
+<h3><tt class="docutils literal"><span class="pre">vnode</span></tt><a class="headerlink" href="#vnode" title="Permalink to this headline">¶</a></h3>
+<p><strong>Description</strong></p>
+<blockquote>
+<div>The application simulates an external viewer V who wants to retrieve
+and verify the logs. Such as application provides an interactive
+shell.</div></blockquote>
+<p><strong>Usage</strong></p>
+<blockquote>
+<div><div class="highlight-c"><pre>$&gt; cd $PREFIX/bin
+$&gt; ./vnode
+Welcome to Libsklog verifier shell
+Press H to visualize the available commands or X to quit.
+verifier:</pre>
+</div>
+</div></blockquote>
+<p><strong>Source</strong></p>
+<blockquote>
+<div><div class="highlight-c"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre>  1
+  2
+  3
+  4
+  5
+  6
+  7
+  8
+  9
+ 10
+ 11
+ 12
+ 13
+ 14
+ 15
+ 16
+ 17
+ 18
+ 19
+ 20
+ 21
+ 22
+ 23
+ 24
+ 25
+ 26
+ 27
+ 28
+ 29
+ 30
+ 31
+ 32
+ 33
+ 34
+ 35
+ 36
+ 37
+ 38
+ 39
+ 40
+ 41
+ 42
+ 43
+ 44
+ 45
+ 46
+ 47
+ 48
+ 49
+ 50
+ 51
+ 52
+ 53
+ 54
+ 55
+ 56
+ 57
+ 58
+ 59
+ 60
+ 61
+ 62
+ 63
+ 64
+ 65
+ 66
+ 67
+ 68
+ 69
+ 70
+ 71
+ 72
+ 73
+ 74
+ 75
+ 76
+ 77
+ 78
+ 79
+ 80
+ 81
+ 82
+ 83
+ 84
+ 85
+ 86
+ 87
+ 88
+ 89
+ 90
+ 91
+ 92
+ 93
+ 94
+ 95
+ 96
+ 97
+ 98
+ 99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+174
+175
+176
+177
+178
+179
+180
+181
+182</pre></div></td><td class="code"><div class="highlight"><pre><span class="cp">#include &lt;stdio.h&gt;</span>
+<span class="cp">#include &lt;readline/readline.h&gt;</span>
+<span class="cp">#include &lt;readline/history.h&gt;</span>
+
+<span class="cp">#include &lt;sklog_v.h&gt;</span>
+
+<span class="cp">#define RBUF_LEN 1024</span>
+
+<span class="kt">void</span> <span class="n">help</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
+<span class="kt">void</span> <span class="n">prompt</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">cmd</span><span class="p">);</span>
+<span class="kt">void</span> <span class="n">print_result</span><span class="p">(</span><span class="n">SKLOG_V_Ctx</span> <span class="o">*</span><span class="n">vctx</span><span class="p">);</span>
+
+<span class="kt">void</span> <span class="n">show_menu</span><span class="p">(</span><span class="kt">void</span><span class="p">);</span>
+
+<span class="kt">int</span> <span class="nf">main</span> <span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">argv</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="kt">int</span> <span class="n">rv</span> <span class="o">=</span> <span class="n">SKLOG_SUCCESS</span><span class="p">;</span>
+    <span class="kt">char</span> <span class="n">cmd</span><span class="p">[</span><span class="n">BUF_512</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span> <span class="mh">0x0</span> <span class="p">};</span>
+    <span class="kt">char</span> <span class="o">*</span><span class="n">line</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="kt">int</span> <span class="n">id</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+    <span class="n">SKLOG_V_Ctx</span> <span class="o">*</span><span class="n">vctx</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    
+    <span class="cm">/* create and initialize V context */</span>
+    
+    <span class="n">vctx</span> <span class="o">=</span> <span class="n">SKLOG_V_NewCtx</span><span class="p">();</span>
+    
+    <span class="k">if</span> <span class="p">(</span> <span class="n">vctx</span> <span class="o">==</span> <span class="nb">NULL</span> <span class="p">)</span> <span class="p">{</span>
+        <span class="n">ERROR</span><span class="p">(</span><span class="s">&quot;SKLOG_V_NewCtx() failure&quot;</span><span class="p">);</span>
+        <span class="k">goto</span> <span class="n">terminate</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="n">rv</span> <span class="o">=</span> <span class="n">SKLOG_V_InitCtx</span><span class="p">(</span><span class="n">vctx</span><span class="p">);</span>
+    
+    <span class="k">if</span> <span class="p">(</span> <span class="n">rv</span> <span class="o">==</span> <span class="n">SKLOG_FAILURE</span> <span class="p">)</span> <span class="p">{</span>
+        <span class="n">ERROR</span><span class="p">(</span><span class="s">&quot;SKLOG_V_InitCtx() failure&quot;</span><span class="p">);</span>
+        <span class="k">goto</span> <span class="n">terminate</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="cm">/*</span>
+<span class="cm">     * show manifest</span>
+<span class="cm">     * </span>
+<span class="cm">     */</span>
+     
+    <span class="n">fprintf</span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span>
+        <span class="s">&quot;Welcome to Libsklog verifier shell</span><span class="se">\n</span><span class="s">&quot;</span>
+        <span class="s">&quot;Press H to visualize the available commands or X to quit.</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+
+    <span class="cm">/*</span>
+<span class="cm">     * run</span>
+<span class="cm">     * </span>
+<span class="cm">     */</span>
+     
+    <span class="k">while</span> <span class="p">(</span> <span class="mi">1</span> <span class="p">)</span> <span class="p">{</span>
+
+        <span class="cm">/* show prompt and read commands */</span>
+         
+        <span class="n">prompt</span><span class="p">(</span><span class="n">cmd</span><span class="p">);</span>
+        
+        <span class="cm">/* parse command */</span>
+        
+        <span class="k">switch</span> <span class="p">(</span> <span class="n">cmd</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="p">)</span> <span class="p">{</span>
+            <span class="k">case</span> <span class="sc">&#39;H&#39;</span>:
+            <span class="k">case</span> <span class="sc">&#39;h&#39;</span>:
+                <span class="n">help</span><span class="p">();</span>
+                <span class="k">break</span><span class="p">;</span>
+                
+            <span class="k">case</span> <span class="sc">&#39;S&#39;</span>:
+            <span class="k">case</span> <span class="sc">&#39;s&#39;</span>:
+
+                <span class="cm">/*</span>
+<span class="cm">                 * Retrieve</span>
+<span class="cm">                 * </span>
+<span class="cm">                 */</span>
+                 
+                <span class="n">rv</span> <span class="o">=</span> <span class="n">SKLOG_V_RetrieveLogFiles_v2</span><span class="p">(</span><span class="n">vctx</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">retrieve</span><span class="p">);</span>
+                
+                <span class="k">if</span> <span class="p">(</span> <span class="n">rv</span> <span class="o">==</span> <span class="n">SKLOG_FAILURE</span> <span class="p">)</span> <span class="p">{</span>
+                    <span class="n">ERROR</span><span class="p">(</span><span class="s">&quot;SKLOG_V_RetrieveLogFiles() failure&quot;</span><span class="p">);</span>
+                    <span class="k">goto</span> <span class="n">terminate</span><span class="p">;</span>
+                <span class="p">}</span>
+                
+                <span class="n">print_result</span><span class="p">(</span><span class="n">vctx</span><span class="p">);</span>
+                
+                <span class="k">break</span><span class="p">;</span>
+                
+            <span class="k">case</span> <span class="sc">&#39;V&#39;</span>:
+            <span class="k">case</span> <span class="sc">&#39;v&#39;</span>:
+
+                <span class="n">line</span> <span class="o">=</span> <span class="n">readline</span><span class="p">(</span><span class="s">&quot;select logfile id: &quot;</span><span class="p">);</span>
+                <span class="n">memcpy</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">line</span><span class="p">,</span> <span class="n">strlen</span><span class="p">(</span><span class="n">line</span><span class="p">));</span>
+                <span class="n">free</span><span class="p">(</span><span class="n">line</span><span class="p">);</span>
+                
+                <span class="k">if</span> <span class="p">(</span> <span class="n">cmd</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="sc">&#39;x&#39;</span> <span class="o">||</span> <span class="n">cmd</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="sc">&#39;X&#39;</span> <span class="p">)</span>
+                    <span class="k">break</span><span class="p">;</span>
+                    
+                <span class="k">if</span> <span class="p">(</span> <span class="n">cmd</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="sc">&#39;h&#39;</span> <span class="o">||</span> <span class="n">cmd</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="sc">&#39;H&#39;</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="n">help</span><span class="p">();</span>
+                    <span class="k">break</span><span class="p">;</span>
+                <span class="p">}</span>
+                
+                <span class="n">sscanf</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="s">&quot;%d&quot;</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">id</span><span class="p">);</span>
+
+                <span class="cm">/*</span>
+<span class="cm">                 * Verify</span>
+<span class="cm">                 * </span>
+<span class="cm">                 */</span>
+                 
+                <span class="n">rv</span> <span class="o">=</span> <span class="n">SKLOG_V_VerifyLogFile_v2</span><span class="p">(</span><span class="n">vctx</span><span class="p">,</span>
+                    <span class="n">vctx</span><span class="o">-&gt;</span><span class="n">verifiable_logfiles</span><span class="p">[</span><span class="n">id</span><span class="p">],</span> <span class="n">verify</span><span class="p">);</span>
+
+                <span class="k">if</span> <span class="p">(</span> <span class="n">rv</span> <span class="o">==</span> <span class="n">SKLOG_FAILURE</span> <span class="p">)</span> <span class="p">{</span>
+                    <span class="n">ERROR</span><span class="p">(</span><span class="s">&quot;SKLOG_V_VerifyLogFile() failure&quot;</span><span class="p">);</span>
+                    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;verification result: LOGFILE VERIFICATION FAILS!</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+                <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;verification result: LOGFILE VERIFICATION SUCCESS!</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+                <span class="p">}</span>
+                
+                <span class="k">break</span><span class="p">;</span>
+                
+            <span class="k">case</span> <span class="sc">&#39;X&#39;</span>:
+            <span class="k">case</span> <span class="sc">&#39;x&#39;</span>:
+                <span class="n">fprintf</span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="s">&quot;  Bye...</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+                <span class="k">goto</span> <span class="n">terminate</span><span class="p">;</span>
+                
+            <span class="nl">default:</span>
+                <span class="n">fprintf</span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="s">&quot;</span><span class="se">\n\n</span><span class="s">  Unknown command</span><span class="se">\n\n</span><span class="s">&quot;</span><span class="p">);</span>
+                <span class="k">break</span><span class="p">;</span>
+        <span class="p">}</span>
+        
+        
+    <span class="p">}</span>
+    
+<span class="nl">terminate:</span>
+    <span class="n">SKLOG_V_FreeCtx</span><span class="p">(</span><span class="o">&amp;</span><span class="n">vctx</span><span class="p">);</span>
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+
+
+<span class="kt">void</span> <span class="nf">prompt</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">cmd</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="kt">char</span> <span class="o">*</span><span class="n">buf</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="n">buf</span> <span class="o">=</span> <span class="n">readline</span><span class="p">(</span><span class="s">&quot;verifier: &quot;</span><span class="p">);</span>
+    
+    <span class="k">if</span> <span class="p">(</span> <span class="n">buf</span> <span class="o">!=</span> <span class="nb">NULL</span> <span class="p">)</span> <span class="p">{</span>
+        <span class="n">memcpy</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="n">buf</span><span class="p">,</span> <span class="n">strlen</span><span class="p">(</span><span class="n">buf</span><span class="p">));</span>
+        <span class="n">free</span><span class="p">(</span><span class="n">buf</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="nf">help</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">fprintf</span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span> <span class="s">&quot;  H - show this help</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+    <span class="n">fprintf</span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span> <span class="s">&quot;  S - retrieve and show verifiable logfiles</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+    <span class="n">fprintf</span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span> <span class="s">&quot;  V - verify the selected logfile</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+    <span class="n">fprintf</span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span> <span class="s">&quot;  X - terminate this shell</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+    
+    <span class="k">return</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">void</span> <span class="nf">print_result</span><span class="p">(</span><span class="n">SKLOG_V_Ctx</span> <span class="o">*</span><span class="n">vctx</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    
+    <span class="n">fprintf</span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="s">&quot;</span><span class="se">\n</span><span class="s">&quot;</span>
+        <span class="s">&quot;  Verifiable logfile at host %s</span><span class="se">\n</span><span class="s">&quot;</span>
+        <span class="s">&quot;  +------+--------------------------------------+</span><span class="se">\n</span><span class="s">&quot;</span>
+        <span class="s">&quot;  |   id | uuid                                 |</span><span class="se">\n</span><span class="s">&quot;</span>
+        <span class="s">&quot;  +------+--------------------------------------+</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span>
+        <span class="n">vctx</span><span class="o">-&gt;</span><span class="n">t_address</span><span class="p">);</span>
+
+        <span class="k">for</span> <span class="p">(</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span> <span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">vctx</span><span class="o">-&gt;</span><span class="n">verifiable_logfiles_size</span> <span class="p">;</span> <span class="n">i</span><span class="o">++</span> <span class="p">)</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span> <span class="n">strlen</span><span class="p">(</span><span class="n">vctx</span><span class="o">-&gt;</span><span class="n">verifiable_logfiles</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="p">)</span> 
+                <span class="n">fprintf</span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span><span class="s">&quot;  | %4d | %s |</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span>
+                    <span class="n">vctx</span><span class="o">-&gt;</span><span class="n">verifiable_logfiles</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
+        <span class="p">}</span>
+
+        <span class="n">fprintf</span><span class="p">(</span><span class="n">stdout</span><span class="p">,</span>
+            <span class="s">&quot;  +------+--------------------------------------+</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+    
+    <span class="k">return</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</td></tr></table></div>
+</div></blockquote>
+</div>
 </div>
 </div>
 
@@ -238,16 +945,14 @@ context</p>
   <ul>
 <li><a class="reference internal" href="#">Tutorial</a><ul>
 <li><a class="reference internal" href="#preliminaries">Preliminaries</a></li>
-<li><a class="reference internal" href="#using-u-api">Using U API</a></li>
-<li><a class="reference internal" href="#using-t-api">Using T API</a></li>
-<li><a class="reference internal" href="#using-v-api">Using V API</a></li>
+<li><a class="reference internal" href="#sample-applications">Sample applications</a></li>
 </ul>
 </li>
 </ul>
 
   <h4>Previous topic</h4>
-  <p class="topless"><a href="api.html"
-                        title="previous chapter">API References</a></p>
+  <p class="topless"><a href="python_binding.html"
+                        title="previous chapter">Libsklog Python Bindings</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="../_sources/_doc/tutorial.txt"
@@ -277,14 +982,14 @@ context</p>
           <a href="../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="api.html" title="API References"
+          <a href="python_binding.html" title="Libsklog Python Bindings"
              >previous</a> |</li>
         <li><a href="../index.html">Libsklog 0.1alpha documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
         &copy; Copyright 2012, Paolo Smiraglia.
-      Last updated on May 29, 2012.
+      Last updated on May 30, 2012.
       Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>

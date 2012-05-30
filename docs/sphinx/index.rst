@@ -6,6 +6,9 @@
 Welcome to Libsklog's documentation!
 ====================================
 
+.. WARNING:: Since the library is in alpha release documentation 
+	could not fit exactly the code
+
 This is the documentation for Libsklog |release|, last updated |today|.
 
 Introduction
@@ -32,4 +35,5 @@ Contents
    _doc/installation
    _doc/configuration
    _doc/api
+   _doc/python_binding
    _doc/tutorial

@@ -2,6 +2,9 @@
 Configuration
 *************
 
+.. WARNING:: Since the library is in alpha release documentation 
+	could not fit exactly the code
+
 In Schneier and Kelsey logging scheme, three entities are defined
 
 * U is an **untrusted** entity which produces logentries

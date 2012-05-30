@@ -25,9 +25,8 @@
     <script type="text/javascript" src="../_static/jquery.js"></script>
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
-    <script type="text/javascript" src="../_static/sidebar.js"></script>
     <link rel="top" title="Libsklog 0.1alpha documentation" href="../index.html" />
-    <link rel="next" title="Tutorial" href="tutorial.html" />
+    <link rel="next" title="Libsklog Python Bindings" href="python_binding.html" />
     <link rel="prev" title="Configuration" href="configuration.html" /> 
   </head>
   <body>
@@ -38,7 +37,7 @@
           <a href="../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="tutorial.html" title="Tutorial"
+          <a href="python_binding.html" title="Libsklog Python Bindings"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="configuration.html" title="Configuration"
@@ -54,11 +53,14 @@
             
   <div class="section" id="api-references">
 <h1>API References<a class="headerlink" href="#api-references" title="Permalink to this headline">¶</a></h1>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Since the library is in alpha release documentation
+could not fit exactly the code</p>
+</div>
 <div class="section" id="preliminaries">
 <h2>Preliminaries<a class="headerlink" href="#preliminaries" title="Permalink to this headline">¶</a></h2>
-<p>All declarations are in <tt class="docutils literal"><span class="pre">sklog_u.h</span></tt>, <tt class="docutils literal"><span class="pre">sklog_t.h</span></tt> and
-<tt class="docutils literal"><span class="pre">sklog_v.h</span></tt>, so it&#8217;s enough to include one or more of these libraries
-in each source file.</p>
+<p>To access the API users have to include one or more of these files:</p>
 <div class="highlight-c"><div class="highlight"><pre><span class="cp">#include &lt;sklog_u.h&gt; </span><span class="c1">// to access U API</span>
 <span class="cp">#include &lt;sklog_t.h&gt; </span><span class="c1">// to access T API</span>
 <span class="cp">#include &lt;sklog_v.h&gt; </span><span class="c1">// to access V API</span>
@@ -70,138 +72,27 @@ in each source file.</p>
 <dl class="type">
 <dt id="SKLOG_RETURN">
 <tt class="descname">SKLOG_RETURN</tt><a class="headerlink" href="#SKLOG_RETURN" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>TODO</p>
+</dd></dl>
 
-<div class="highlight-c"><div class="highlight"><pre><span class="cp">#define SKLOG_SUCCESS 1</span>
-<span class="cp">#define SKLOG_FAILURE !SKLOG_SUCCESS</span>
-
-<span class="k">typedef</span> <span class="kt">int</span> <span class="n">SKLOG_RETURN</span><span class="p">;</span>
-</pre></div>
-</div>
 <dl class="type">
 <dt id="SKLOG_DATA_TYPE">
 <tt class="descname">SKLOG_DATA_TYPE</tt><a class="headerlink" href="#SKLOG_DATA_TYPE" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>TODO</p>
+</dd></dl>
 
-<div class="highlight-c"><div class="highlight"><pre><span class="k">typedef</span> <span class="k">enum</span> <span class="n">sklog_data_type</span> <span class="n">SKLOG_DATA_TYPE</span><span class="p">;</span>
+<dl class="type">
+<dt id="SKLOG_DUMP_MODE">
+<tt class="descname">SKLOG_DUMP_MODE</tt><a class="headerlink" href="#SKLOG_DUMP_MODE" title="Permalink to this definition">¶</a></dt>
+<dd><p>TOTO</p>
+</dd></dl>
 
-<span class="k">enum</span> <span class="n">sklog_data_type</span> <span class="p">{</span>
-    <span class="n">LogfileInitializationType</span><span class="p">,</span>
-    <span class="n">ResponseMessageType</span><span class="p">,</span>
-    <span class="n">AbnormalCloseType</span><span class="p">,</span>
-    <span class="n">NormalCloseMessage</span><span class="p">,</span>
-    <span class="n">Undefined</span>
-<span class="p">};</span>
-</pre></div>
-</div>
 <dl class="type">
 <dt id="SKLOG_CONNECTION">
 <tt class="descname">SKLOG_CONNECTION</tt><a class="headerlink" href="#SKLOG_CONNECTION" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<div class="highlight-c"><div class="highlight"><pre><span class="k">typedef</span> <span class="k">struct</span> <span class="n">sklog_connection</span> <span class="n">SKLOG_CONNECTION</span><span class="p">;</span>
-
-<span class="k">struct</span> <span class="n">sklog_connection</span> <span class="p">{</span>
-    <span class="n">SSL</span>         <span class="o">*</span><span class="n">ssl</span><span class="p">;</span>
-    <span class="n">SSL_CTX</span>     <span class="o">*</span><span class="n">ssl_ctx</span><span class="p">;</span>
-
-    <span class="n">BIO</span>         <span class="o">*</span><span class="n">bio</span><span class="p">;</span>
-    <span class="n">BIO</span>         <span class="o">*</span><span class="n">ssl_bio</span><span class="p">;</span>
-    <span class="n">BIO</span>         <span class="o">*</span><span class="n">sock_bio</span><span class="p">;</span>
-
-    <span class="kt">int</span>         <span class="n">lsock</span><span class="p">;</span>
-    <span class="kt">int</span>         <span class="n">csock</span><span class="p">;</span>
-<span class="p">};</span>
-</pre></div>
-</div>
-<dl class="type">
-<dt id="sklog_data_tranfer_cb">
-<tt class="descname">sklog_data_tranfer_cb</tt><a class="headerlink" href="#sklog_data_tranfer_cb" title="Permalink to this definition">¶</a></dt>
-<dd><p>Callback type for SKLOG_V API data transfer functions.</p>
+<dd><p>TODO</p>
 </dd></dl>
 
-<div class="highlight-c"><div class="highlight"><pre><span class="k">typedef</span> <span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">sklog_data_tranfer_cb</span><span class="p">)</span>
-        <span class="p">(</span><span class="n">SKLOG_V_Ctx</span> <span class="o">*</span><span class="n">ctx</span><span class="p">,</span>
-        <span class="kt">unsigned</span> <span class="kt">char</span> <span class="o">*</span><span class="n">rbuf</span><span class="p">,</span> <span class="kt">size_t</span> <span class="o">*</span><span class="n">rlen</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">rlen_max</span><span class="p">,</span>
-        <span class="kt">unsigned</span> <span class="kt">char</span> <span class="o">*</span><span class="n">wbuf</span><span class="p">,</span> <span class="kt">size_t</span> <span class="o">*</span><span class="n">wlen</span><span class="p">);</span>
-</pre></div>
-</div>
-<div class="highlight-c"><div class="highlight"><pre><span class="kt">int</span> <span class="nf">retrieve</span><span class="p">(</span><span class="n">SKLOG_V_Ctx</span> <span class="o">*</span><span class="n">ctx</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">char</span> <span class="o">*</span><span class="n">rbuf</span><span class="p">,</span> <span class="kt">size_t</span> <span class="o">*</span><span class="n">rlen</span><span class="p">,</span>
-        <span class="kt">size_t</span> <span class="n">rlen_max</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">char</span> <span class="o">*</span><span class="n">wbuf</span><span class="p">,</span> <span class="kt">size_t</span> <span class="o">*</span><span class="n">wlen</span><span class="p">)</span>
-<span class="p">{</span>
-        <span class="cp">#ifdef DO_TRACE</span>
-        <span class="n">DEBUG</span>
-        <span class="cp">#endif</span>
-
-        <span class="kt">int</span> <span class="n">rv</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-
-        <span class="n">SKLOG_CONNECTION</span> <span class="o">*</span><span class="n">conn</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-
-        <span class="kt">int</span> <span class="n">nread</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-        <span class="kt">int</span> <span class="n">nwrite</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-
-        <span class="cm">/* open connection */</span>
-
-        <span class="n">conn</span> <span class="o">=</span> <span class="n">SKLOG_CONNECTION_New</span><span class="p">();</span>
-
-        <span class="k">if</span> <span class="p">(</span> <span class="n">conn</span> <span class="o">==</span> <span class="nb">NULL</span> <span class="p">)</span> <span class="p">{</span>
-                <span class="n">ERROR</span><span class="p">(</span><span class="s">&quot;SKLOG_CONNECTION_New() failure&quot;</span><span class="p">);</span>
-                <span class="k">return</span> <span class="n">SKLOG_FAILURE</span><span class="p">;</span>
-        <span class="p">}</span>
-
-        <span class="n">rv</span> <span class="o">=</span> <span class="n">SKLOG_CONNECTION_Init</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">ctx</span><span class="o">-&gt;</span><span class="n">t_address</span><span class="p">,</span>
-                <span class="n">ctx</span><span class="o">-&gt;</span><span class="n">t_port</span><span class="p">,</span> <span class="n">ctx</span><span class="o">-&gt;</span><span class="n">v_cert</span><span class="p">,</span> <span class="n">ctx</span><span class="o">-&gt;</span><span class="n">v_privkey</span><span class="p">,</span>
-                <span class="n">ctx</span><span class="o">-&gt;</span><span class="n">t_cert_file_path</span><span class="p">,</span> <span class="n">DO_NOT_VERIFY</span><span class="p">);</span>
-
-        <span class="k">if</span> <span class="p">(</span> <span class="n">rv</span> <span class="o">==</span> <span class="n">SKLOG_FAILURE</span> <span class="p">)</span> <span class="p">{</span>
-                <span class="n">ERROR</span><span class="p">(</span><span class="s">&quot;SKLOG_CONNECTION_Init() failure&quot;</span><span class="p">);</span>
-                <span class="k">return</span> <span class="n">SKLOG_FAILURE</span><span class="p">;</span>
-        <span class="p">}</span>
-
-        <span class="cm">/* doit */</span>
-
-        <span class="n">SSL_load_error_strings</span><span class="p">();</span>
-
-        <span class="n">nwrite</span> <span class="o">=</span> <span class="n">SSL_write</span><span class="p">(</span><span class="n">conn</span><span class="o">-&gt;</span><span class="n">ssl</span><span class="p">,</span> <span class="n">wbuf</span><span class="p">,</span> <span class="o">*</span><span class="n">wlen</span><span class="p">);</span>
-
-        <span class="k">if</span> <span class="p">(</span> <span class="n">nwrite</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="p">)</span> <span class="p">{</span>
-                <span class="n">ERROR</span><span class="p">(</span><span class="s">&quot;SSL_write() failure&quot;</span><span class="p">);</span>
-                <span class="n">ERR_print_errors_fp</span><span class="p">(</span><span class="n">stderr</span><span class="p">);</span>
-                <span class="k">return</span> <span class="n">SKLOG_FAILURE</span><span class="p">;</span>
-        <span class="p">}</span>
-
-        <span class="n">nread</span> <span class="o">=</span> <span class="n">SSL_read</span><span class="p">(</span><span class="n">conn</span><span class="o">-&gt;</span><span class="n">ssl</span><span class="p">,</span> <span class="n">rbuf</span><span class="p">,</span> <span class="n">rlen_max</span><span class="p">);</span>
-
-        <span class="k">if</span> <span class="p">(</span> <span class="n">nwrite</span> <span class="o">&lt;=</span> <span class="mi">0</span> <span class="p">)</span> <span class="p">{</span>
-                <span class="n">ERROR</span><span class="p">(</span><span class="s">&quot;SSL_read() failure&quot;</span><span class="p">);</span>
-                <span class="n">ERR_print_errors_fp</span><span class="p">(</span><span class="n">stderr</span><span class="p">);</span>
-                <span class="k">return</span> <span class="n">SKLOG_FAILURE</span><span class="p">;</span>
-        <span class="p">}</span>
-
-        <span class="o">*</span><span class="n">rlen</span> <span class="o">=</span> <span class="n">nread</span><span class="p">;</span>
-
-        <span class="n">ERR_free_strings</span><span class="p">();</span>
-
-        <span class="cm">/* close connection */</span>
-
-        <span class="n">rv</span> <span class="o">=</span> <span class="n">SKLOG_CONNECTION_Destroy</span><span class="p">(</span><span class="n">conn</span><span class="p">);</span>
-
-        <span class="k">if</span> <span class="p">(</span> <span class="n">rv</span> <span class="o">==</span> <span class="n">SKLOG_FAILURE</span> <span class="p">)</span> <span class="p">{</span>
-                <span class="n">ERROR</span><span class="p">(</span><span class="s">&quot;SKLOG_CONNECTION_Destroy() failure&quot;</span><span class="p">);</span>
-                <span class="k">return</span> <span class="n">SKLOG_FAILURE</span><span class="p">;</span>
-        <span class="p">}</span>
-
-        <span class="n">rv</span> <span class="o">=</span> <span class="n">SKLOG_CONNECTION_Free</span><span class="p">(</span><span class="o">&amp;</span><span class="n">conn</span><span class="p">);</span>
-
-        <span class="k">if</span> <span class="p">(</span> <span class="n">rv</span> <span class="o">==</span> <span class="n">SKLOG_FAILURE</span> <span class="p">)</span> <span class="p">{</span>
-                <span class="n">ERROR</span><span class="p">(</span><span class="s">&quot;SKLOG_CONNECTION_Free() failure&quot;</span><span class="p">);</span>
-                <span class="k">return</span> <span class="n">SKLOG_FAILURE</span><span class="p">;</span>
-        <span class="p">}</span>
-
-        <span class="k">return</span> <span class="n">SKLOG_SUCCESS</span><span class="p">;</span>
-<span class="p">}</span>
-</pre></div>
-</div>
 </div>
 <div class="section" id="sklog-u-apis">
 <h2>SKLOG_U APIs<a class="headerlink" href="#sklog-u-apis" title="Permalink to this headline">¶</a></h2>
@@ -210,73 +101,15 @@ in each source file.</p>
 <dl class="type">
 <dt id="SKLOG_U_Ctx">
 <tt class="descname">SKLOG_U_Ctx</tt><a class="headerlink" href="#SKLOG_U_Ctx" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>TODO</p>
+</dd></dl>
 
-<div class="highlight-c"><div class="highlight"><pre><span class="k">typedef</span> <span class="k">struct</span> <span class="n">sklog_u_ctx</span> <span class="n">SKLOG_U_Ctx</span><span class="p">;</span>
-
-<span class="k">struct</span> <span class="n">sklog_u_ctx</span> <span class="p">{</span>
-
-    <span class="kt">int</span> <span class="n">context_state</span><span class="p">;</span>
-    <span class="kt">int</span> <span class="n">logging_session_mgmt</span><span class="p">;</span>
-
-    <span class="cm">/* u-node informtion */</span>
-
-    <span class="kt">char</span>            <span class="n">u_id</span><span class="p">[</span><span class="n">HOST_NAME_MAX</span><span class="o">+</span><span class="mi">1</span><span class="p">];</span>
-    <span class="kt">unsigned</span> <span class="kt">int</span>    <span class="n">u_id_len</span><span class="p">;</span>
-
-    <span class="kt">int</span>             <span class="n">u_timeout</span><span class="p">;</span>
-    <span class="kt">unsigned</span> <span class="kt">long</span>       <span class="n">u_expiration</span><span class="p">;</span>
-
-    <span class="n">X509</span>            <span class="o">*</span><span class="n">u_cert</span><span class="p">;</span>
-    <span class="kt">char</span>            <span class="n">u_cert_file_path</span><span class="p">[</span><span class="n">MAX_FILE_PATH_LEN</span><span class="p">];</span>
-
-    <span class="n">EVP_PKEY</span>        <span class="o">*</span><span class="n">u_privkey</span><span class="p">;</span>
-    <span class="kt">char</span>            <span class="n">u_privkey_file_path</span><span class="p">[</span><span class="n">MAX_FILE_PATH_LEN</span><span class="p">];</span>
-
-    <span class="cm">/* t-node information */</span>
-
-    <span class="n">X509</span>            <span class="o">*</span><span class="n">t_cert</span><span class="p">;</span>
-    <span class="kt">char</span>            <span class="n">t_cert_file_path</span><span class="p">[</span><span class="n">MAX_FILE_PATH_LEN</span><span class="p">];</span>
-
-    <span class="kt">char</span>            <span class="n">t_address</span><span class="p">[</span><span class="mi">512</span><span class="p">];</span>
-    <span class="kt">short</span> <span class="kt">int</span>       <span class="n">t_port</span><span class="p">;</span>
-
-    <span class="cm">/* logging session information */</span>
-
-    <span class="kt">int</span>             <span class="n">logfile_size</span><span class="p">;</span>
-    <span class="kt">int</span>             <span class="n">logfile_counter</span><span class="p">;</span>
-    <span class="n">uuid_t</span>          <span class="n">logfile_id</span><span class="p">;</span>
-
-    <span class="kt">unsigned</span> <span class="kt">char</span>   <span class="n">session_key</span><span class="p">[</span><span class="n">SKLOG_SESSION_KEY_LEN</span><span class="p">];</span>
-    <span class="kt">unsigned</span> <span class="kt">char</span>   <span class="n">auth_key</span><span class="p">[</span><span class="n">SKLOG_AUTH_KEY_LEN</span><span class="p">];</span>
-    <span class="kt">unsigned</span> <span class="kt">char</span>   <span class="n">last_hash_chain</span><span class="p">[</span><span class="n">SKLOG_HASH_CHAIN_LEN</span><span class="p">];</span>
-
-    <span class="kt">unsigned</span> <span class="kt">char</span>   <span class="n">x0_hash</span><span class="p">[</span><span class="n">SHA256_LEN</span><span class="p">];</span>
-
-    <span class="cm">/* log-entries storage driver */</span>
-
-    <span class="n">SKLOG_U_STORAGE_DRIVER</span> <span class="o">*</span><span class="n">lsdriver</span><span class="p">;</span>
-
-<span class="p">};</span>
-</pre></div>
-</div>
 <dl class="type">
 <dt id="SKLOG_U_STORAGE_DRIVER">
 <tt class="descname">SKLOG_U_STORAGE_DRIVER</tt><a class="headerlink" href="#SKLOG_U_STORAGE_DRIVER" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>TODO</p>
+</dd></dl>
 
-<div class="highlight-c"><div class="highlight"><pre><span class="k">typedef</span> <span class="k">struct</span> <span class="n">sklog_u_storage_driver</span> <span class="n">SKLOG_U_STORAGE_DRIVER</span><span class="p">;</span>
-
-<span class="k">struct</span> <span class="n">sklog_u_storage_driver</span> <span class="p">{</span>
-
-    <span class="n">SKLOG_RETURN</span> <span class="p">(</span><span class="o">*</span><span class="n">store_logentry</span><span class="p">)</span> <span class="p">(</span><span class="n">uuid_t</span><span class="p">,</span> <span class="n">SKLOG_DATA_TYPE</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">char</span> <span class="o">*</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">char</span> <span class="o">*</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">char</span> <span class="o">*</span><span class="p">);</span>
-
-    <span class="n">SKLOG_RETURN</span> <span class="p">(</span><span class="o">*</span><span class="n">flush_logfile</span><span class="p">)</span> <span class="p">(</span><span class="n">uuid_t</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">long</span><span class="p">,</span> <span class="n">SKLOG_CONNECTION</span> <span class="o">*</span><span class="p">);</span>
-
-    <span class="n">SKLOG_RETURN</span> <span class="p">(</span><span class="o">*</span><span class="n">init_logfile</span><span class="p">)</span> <span class="p">(</span><span class="n">uuid_t</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">long</span><span class="p">);</span>
-<span class="p">};</span>
-</pre></div>
-</div>
 </div>
 <div class="section" id="functions">
 <h3>Functions<a class="headerlink" href="#functions" title="Permalink to this headline">¶</a></h3>
@@ -323,16 +156,17 @@ file <tt class="docutils literal"><span class="pre">libsklog-u.conf</span></tt>.
 <blockquote>
 <div><dl class="function">
 <dt id="SKLOG_U_Open_M0">
-<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_U_Open_M0</tt><big>(</big><a class="reference internal" href="#SKLOG_U_Ctx" title="SKLOG_U_Ctx">SKLOG_U_Ctx</a><em>&nbsp;*ctx</em>, unsigned char<em>&nbsp;**buf1</em>, unsigned int<em>&nbsp;*buf1_len</em>, char<em>&nbsp;**buf2</em>, unsigned int<em>&nbsp;*buf2_len</em><big>)</big><a class="headerlink" href="#SKLOG_U_Open_M0" title="Permalink to this definition">¶</a></dt>
+<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_U_Open_M0</tt><big>(</big><a class="reference internal" href="#SKLOG_U_Ctx" title="SKLOG_U_Ctx">SKLOG_U_Ctx</a><em>&nbsp;*ctx</em>, unsigned char<em>&nbsp;**m0</em>, unsigned int<em>&nbsp;*m0_len</em>, char<em>&nbsp;**logentry</em>, unsigned int<em>&nbsp;*logentry_len</em><big>)</big><a class="headerlink" href="#SKLOG_U_Open_M0" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </div></blockquote>
 <p><strong>Description</strong></p>
 <blockquote>
-<div>Executes the first step of the logging session initialization phase.
-<tt class="docutils literal"><span class="pre">buf1</span></tt> buffer, which is <tt class="docutils literal"><span class="pre">buf1_len</span></tt> bytes length, will contains
-the request message (M0). <tt class="docutils literal"><span class="pre">buf2</span></tt> buffer will contains the first
-logentry of a new log file and will be <tt class="docutils literal"><span class="pre">buf2_len</span></tt> bytes length.</div></blockquote>
+<div>Executes the first step of the logging session initialization
+phase. <tt class="docutils literal"><span class="pre">m0</span></tt> buffer, which is <tt class="docutils literal"><span class="pre">m0_len</span></tt> bytes length, will
+contains the request message M0 as <strong>binary blob</strong>. The
+<tt class="docutils literal"><span class="pre">logentry</span></tt> buffer will contains the first logentry (that will
+be <tt class="docutils literal"><span class="pre">logentry_len</span></tt> bytes long) of a new log file.</div></blockquote>
 <p><strong>Return values</strong></p>
 <blockquote>
 <div>The function returns <tt class="docutils literal"><span class="pre">SKLOG_SUCCES</span></tt> in case of success,
@@ -344,16 +178,17 @@ logentry of a new log file and will be <tt class="docutils literal"><span class=
 <blockquote>
 <div><dl class="function">
 <dt id="SKLOG_U_Open_M1">
-<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_U_Open_M1</tt><big>(</big><a class="reference internal" href="#SKLOG_U_Ctx" title="SKLOG_U_Ctx">SKLOG_U_Ctx</a><em>&nbsp;*ctx</em>, unsigned char<em>&nbsp;*buf1</em>, unsigned int<em>&nbsp;buf1_len</em>, char<em>&nbsp;**buf2</em>, unsigned int<em>&nbsp;*buf2_len</em><big>)</big><a class="headerlink" href="#SKLOG_U_Open_M1" title="Permalink to this definition">¶</a></dt>
+<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_U_Open_M1</tt><big>(</big><a class="reference internal" href="#SKLOG_U_Ctx" title="SKLOG_U_Ctx">SKLOG_U_Ctx</a><em>&nbsp;*ctx</em>, unsigned char<em>&nbsp;*m1</em>, unsigned int<em>&nbsp;m1_len</em>, char<em>&nbsp;**logentry</em>, unsigned int<em>&nbsp;*logentry_len</em><big>)</big><a class="headerlink" href="#SKLOG_U_Open_M1" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </div></blockquote>
 <p><strong>Description</strong></p>
 <blockquote>
 <div>Executes the second step of the logging session initialization
-phase. <tt class="docutils literal"><span class="pre">buf1</span></tt>, that is <tt class="docutils literal"><span class="pre">buf1_len</span></tt> bytes length, will contains
-the response message (M1). <tt class="docutils literal"><span class="pre">buf2</span></tt> buffer will contains the second
-logentry of a new log file and will be <tt class="docutils literal"><span class="pre">buf2_len</span></tt> bytes length.</div></blockquote>
+phase. The <tt class="docutils literal"><span class="pre">m1</span></tt> buffer, that is <tt class="docutils literal"><span class="pre">m1_len</span></tt> bytes long, will
+contains the response message M1 as <strong>binary blob</strong>. The
+<tt class="docutils literal"><span class="pre">logentry</span></tt> buffer will contains the second logentry of a new
+log file and will be <tt class="docutils literal"><span class="pre">logentry_len</span></tt> bytes long.</div></blockquote>
 <p><strong>Return values</strong></p>
 <blockquote>
 <div>The function returns <tt class="docutils literal"><span class="pre">SKLOG_SUCCES</span></tt> in case of success,
@@ -365,43 +200,40 @@ logentry of a new log file and will be <tt class="docutils literal"><span class=
 <blockquote>
 <div><dl class="function">
 <dt id="SKLOG_U_LogEvent">
-<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_U_LogEvent</tt><big>(</big><a class="reference internal" href="#SKLOG_U_Ctx" title="SKLOG_U_Ctx">SKLOG_U_Ctx</a><em>&nbsp;*u_ctx</em>, <a class="reference internal" href="#SKLOG_DATA_TYPE" title="SKLOG_DATA_TYPE">SKLOG_DATA_TYPE</a><em>&nbsp;type</em>, char<em>&nbsp;*data</em>, unsigned int<em>&nbsp;data_len</em>, char<em>&nbsp;**le</em>, unsigned int<em>&nbsp;*le_len</em><big>)</big><a class="headerlink" href="#SKLOG_U_LogEvent" title="Permalink to this definition">¶</a></dt>
+<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_U_LogEvent</tt><big>(</big><a class="reference internal" href="#SKLOG_U_Ctx" title="SKLOG_U_Ctx">SKLOG_U_Ctx</a><em>&nbsp;*u_ctx</em>, <a class="reference internal" href="#SKLOG_DATA_TYPE" title="SKLOG_DATA_TYPE">SKLOG_DATA_TYPE</a><em>&nbsp;type</em>, char<em>&nbsp;*event</em>, unsigned int<em>&nbsp;event_len</em>, char<em>&nbsp;**logentry</em>, unsigned int<em>&nbsp;*logentry_len</em><big>)</big><a class="headerlink" href="#SKLOG_U_LogEvent" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </div></blockquote>
 <p><strong>Description</strong></p>
 <blockquote>
-<div>Log an event of type <tt class="docutils literal"><span class="pre">type</span></tt> described in the buffer <tt class="docutils literal"><span class="pre">data</span></tt> of
-<tt class="docutils literal"><span class="pre">data_len</span></tt> bytes and put the generated logenrty in <tt class="docutils literal"><span class="pre">le</span></tt>
-buffer and its length in <tt class="docutils literal"><span class="pre">ls_len</span></tt>.</div></blockquote>
+<div>Log an event of type <tt class="docutils literal"><span class="pre">type</span></tt> described in the buffer <tt class="docutils literal"><span class="pre">event</span></tt> of
+<tt class="docutils literal"><span class="pre">event_len</span></tt> bytes and put the generated logenrty in the <tt class="docutils literal"><span class="pre">logentry</span></tt>
+buffer that will be <tt class="docutils literal"><span class="pre">logentry_len</span></tt> bytes long.</div></blockquote>
 <p><strong>Notes</strong></p>
 <blockquote>
-<div><p>The logentry can assume two different format. The default one is</p>
-<div class="highlight-c"><pre>[Undefined]-[/uD/HihG8/UpeoQTvX25XnmCEhhVXUSIlJ1xVaaE+rIz48ttdcazL+r/fVJ2kysT\]-[N759xRQyV2LBH5QEqWR0EGoYGlPCszzsKafBhgo+FgQ=]-[hfAKmuNyGf1I1SwnNfsIY8sTePhMTdhqx04OP42vmL8=]</pre>
-</div>
-<p>Another supported format is a json structure which is generated using
-the API provided by <tt class="docutils literal"><span class="pre">libumberlog</span></tt> library (<a class="reference external" href="https://fedorahosted.org/lumberjack/">Lumberjack Project</a>).</p>
-<div class="highlight-javascript"><pre>{
-        "msg":"/uD/HihG8/UpeoQTvX25XnmCEhhVXUSIlJ1xVaaE+rIz48ttdcazL+r/fVJ2kysT\",
-        "sklog_type":"0x4",
-        "sklog_hash":"N759xRQyV2LBH5QEqWR0EGoYGlPCszzsKafBhgo+FgQ=",
-        "sklog_hmac":"hfAKmuNyGf1I1SwnNfsIY8sTePhMTdhqx04OP42vmL8=",
-        "sklog_session":"6921523a-a010-11e1-84ef-0025b345ca14",
-        "pid":"0",
-        "facility":"kern",
-        "priority":"notice",
-        "program":"(null)",
-        "uid":"0",
-        "gid":"0",
-        "host":"",
-        "timestamp":"2012-05-17T13:07:34.981355492+0200"
-}</pre>
-</div>
-<p>To enable this format use the <tt class="docutils literal"><span class="pre">--with-lumberjack</span></tt> option when run
-<tt class="docutils literal"><span class="pre">./configure</span></tt> script.</p>
-<div class="highlight-c"><div class="highlight"><pre><span class="p">.</span><span class="o">/</span><span class="n">configure</span> <span class="o">--</span><span class="n">enable</span><span class="o">-</span><span class="n">debug</span> <span class="o">--</span><span class="n">with</span><span class="o">-</span><span class="n">lumberjack</span>
+<div><p>The generated logentry will be a JSON structure structured as follow:</p>
+<div class="highlight-c"><div class="highlight"><pre><span class="p">{</span>
+        <span class="s">&quot;sk_session&quot;</span><span class="o">:</span><span class="s">&quot;d8240caa-2d8f-4f72-9bce-7ba0972c9093&quot;</span><span class="p">,</span>
+        <span class="s">&quot;sk_type&quot;</span><span class="o">:</span><span class="mi">4</span><span class="p">,</span>
+        <span class="s">&quot;sk_data&quot;</span><span class="o">:</span><span class="p">{</span>
+                <span class="s">&quot;msg&quot;</span><span class="o">:</span><span class="s">&quot;In mollis molestie imperdiet.&quot;</span><span class="p">,</span>
+                <span class="s">&quot;pid&quot;</span><span class="o">:</span><span class="s">&quot;0&quot;</span><span class="p">,</span>
+                <span class="s">&quot;facility&quot;</span><span class="o">:</span><span class="s">&quot;kern&quot;</span><span class="p">,</span>
+                <span class="s">&quot;priority&quot;</span><span class="o">:</span><span class="s">&quot;notice&quot;</span><span class="p">,</span>
+                <span class="s">&quot;program&quot;</span><span class="o">:</span><span class="s">&quot;(null)&quot;</span><span class="p">,</span>
+                <span class="s">&quot;uid&quot;</span><span class="o">:</span><span class="s">&quot;0&quot;</span><span class="p">,</span>
+                <span class="s">&quot;gid&quot;</span><span class="o">:</span><span class="s">&quot;0&quot;</span><span class="p">,</span>
+                <span class="s">&quot;host&quot;</span><span class="o">:</span><span class="s">&quot;&quot;</span><span class="p">,</span>
+                <span class="s">&quot;timestamp&quot;</span><span class="o">:</span><span class="s">&quot;2012-05-29T11:27:42.903558075+0200&quot;</span>
+        <span class="p">},</span>
+        <span class="s">&quot;sk_hash&quot;</span><span class="o">:</span><span class="s">&quot;xBbvObUXnyTk+SGf+4yFMNvdKnutoj6l9SE5/nNBKGU=&quot;</span><span class="p">,</span>
+        <span class="s">&quot;sk_hmac&quot;</span><span class="o">:</span><span class="s">&quot;uAwkPwqvecbk7Zfw3Xhf0U1EJLL2HKMBuHvX1TrYYPk=&quot;</span>
+<span class="p">}</span>
 </pre></div>
 </div>
+<p>The <tt class="docutils literal"><span class="pre">sk_data</span></tt> object is a JSON structure generated using the
+function <tt class="docutils literal"><span class="pre">ul_format()</span></tt> provided by the library <tt class="docutils literal"><span class="pre">libubmerlog</span></tt>.
+For more details, see <a class="reference external" href="https://fedorahosted.org/lumberjack/">Lumberjack Project</a> and <a class="reference external" href="https://github.com/algernon/libumberlog">Libumberlog</a> web pages.</p>
 </div></blockquote>
 <p><strong>Return values</strong></p>
 <blockquote>
@@ -410,6 +242,10 @@ the API provided by <tt class="docutils literal"><span class="pre">libumberlog</
 </div>
 <div class="section" id="sklog-u-flushlogfile">
 <h4>SKLOG_U_FlushLogfile()<a class="headerlink" href="#sklog-u-flushlogfile" title="Permalink to this headline">¶</a></h4>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Probably will be removed in next releases</p>
+</div>
 <p><strong>Synopsis</strong></p>
 <blockquote>
 <div><dl class="function">
@@ -421,29 +257,45 @@ the API provided by <tt class="docutils literal"><span class="pre">libumberlog</
 <p><strong>Description</strong></p>
 <blockquote>
 <div>Flush the current logging session. The function reads current
-logfileand put its content in <tt class="docutils literal"><span class="pre">logs</span></tt> which will contains
+logfile and put its content in <tt class="docutils literal"><span class="pre">logs</span></tt> which will contains
 <tt class="docutils literal"><span class="pre">logs_size</span></tt> elements.</div></blockquote>
 <p><strong>Return values</strong></p>
 <blockquote>
 <div>The function returns <tt class="docutils literal"><span class="pre">SKLOG_SUCCES</span></tt> in case of success,
 <tt class="docutils literal"><span class="pre">SKLOG_FAILURE</span></tt> in case of failure.</div></blockquote>
 </div>
-<div class="section" id="sklog-u-uploadlogfile">
-<h4>SKLOG_U_UploadLogfile()<a class="headerlink" href="#sklog-u-uploadlogfile" title="Permalink to this headline">¶</a></h4>
+<div class="section" id="sklog-u-dumplogfile">
+<h4>SKLOG_U_DumpLogfile()<a class="headerlink" href="#sklog-u-dumplogfile" title="Permalink to this headline">¶</a></h4>
 <dl class="docutils">
 <dt><strong>Synopsis</strong></dt>
 <dd><dl class="first last function">
-<dt id="SKLOG_U_UploadLogfile">
-<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_U_UploadLogfile</tt><big>(</big><a class="reference internal" href="#SKLOG_U_Ctx" title="SKLOG_U_Ctx">SKLOG_U_Ctx</a><em>&nbsp;*ctx</em>, const char<em>&nbsp;*filename</em>, int<em>&nbsp;mode</em><big>)</big><a class="headerlink" href="#SKLOG_U_UploadLogfile" title="Permalink to this definition">¶</a></dt>
+<dt id="SKLOG_U_DumpLogfile">
+<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_U_DumpLogfile</tt><big>(</big><a class="reference internal" href="#SKLOG_U_Ctx" title="SKLOG_U_Ctx">SKLOG_U_Ctx</a><em>&nbsp;*ctx</em>, const char<em>&nbsp;*filename</em>, <a class="reference internal" href="#SKLOG_DUMP_MODE" title="SKLOG_DUMP_MODE">SKLOG_DUMP_MODE</a><em>&nbsp;dump_mode</em><big>)</big><a class="headerlink" href="#SKLOG_U_DumpLogfile" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd>
 </dl>
 <p><strong>Description</strong></p>
 <blockquote>
-<div>Generate a dump for the current logging session. The dump will be
-written in <tt class="docutils literal"><span class="pre">filename</span></tt> file. The flag <tt class="docutils literal"><span class="pre">mode</span></tt> specifies the dump
-format. Supported mode: <tt class="docutils literal"><span class="pre">DUMP_MODE_JSON</span></tt>.</div></blockquote>
+<div>Generate a logentry dump for the current logging session. The dump
+will be written in <tt class="docutils literal"><span class="pre">filename</span></tt> file. The flag <tt class="docutils literal"><span class="pre">dump_mode</span></tt>
+specifies the dump format. Supported mode: <tt class="docutils literal"><span class="pre">DUMP_MODE_JSON</span></tt>.</div></blockquote>
+<p><strong>Notes</strong></p>
+<blockquote>
+<div><p>Below is depicted the JSON dump structure. Each <tt class="docutils literal"><span class="pre">logentry</span></tt>
+JSON array element is structured as previously described:</p>
+<div class="highlight-c"><div class="highlight"><pre><span class="p">{</span>
+        <span class="s">&quot;session&quot;</span><span class="o">:</span><span class="s">&quot;d8240caa-2d8f-4f72-9bce-7ba0972c9093&quot;</span><span class="p">,</span>
+        <span class="s">&quot;logs&quot;</span><span class="o">:</span><span class="p">[</span>
+                <span class="p">{</span><span class="n">logentry</span><span class="p">},</span>
+                <span class="p">{</span><span class="n">logentry</span><span class="p">},</span>
+                <span class="p">{</span><span class="n">logentry</span><span class="p">},</span>
+                <span class="p">...</span>
+        <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div></blockquote>
 <p><strong>Return values</strong></p>
 <blockquote>
 <div>The function returns <tt class="docutils literal"><span class="pre">SKLOG_SUCCES</span></tt> in case of success,
@@ -455,7 +307,7 @@ format. Supported mode: <tt class="docutils literal"><span class="pre">DUMP_MODE
 <blockquote>
 <div><dl class="function">
 <dt id="SKLOG_U_Close">
-<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_U_Close</tt><big>(</big><a class="reference internal" href="#SKLOG_U_Ctx" title="SKLOG_U_Ctx">SKLOG_U_Ctx</a><em>&nbsp;*u_ctx</em>, char<em>&nbsp;**le</em>, unsigned int<em>&nbsp;*le_len</em><big>)</big><a class="headerlink" href="#SKLOG_U_Close" title="Permalink to this definition">¶</a></dt>
+<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_U_Close</tt><big>(</big><a class="reference internal" href="#SKLOG_U_Ctx" title="SKLOG_U_Ctx">SKLOG_U_Ctx</a><em>&nbsp;*u_ctx</em>, char<em>&nbsp;**logentry</em>, unsigned int<em>&nbsp;*logentry_len</em><big>)</big><a class="headerlink" href="#SKLOG_U_Close" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </div></blockquote>
@@ -463,7 +315,8 @@ format. Supported mode: <tt class="docutils literal"><span class="pre">DUMP_MODE
 <blockquote>
 <div>Terminate an already opened logging session. This phase
 generates the last logentry of the session. Such as logentry will
-be contained in <tt class="docutils literal"><span class="pre">le</span></tt> buffer that will be <tt class="docutils literal"><span class="pre">le_len</span></tt> bytes length.</div></blockquote>
+be contained in <tt class="docutils literal"><span class="pre">logentry</span></tt> buffer that will be <tt class="docutils literal"><span class="pre">logentry_len</span></tt>
+bytes long.</div></blockquote>
 <p><strong>Return values</strong></p>
 <blockquote>
 <div>The function returns <tt class="docutils literal"><span class="pre">SKLOG_SUCCES</span></tt> in case of success,
@@ -496,45 +349,15 @@ be contained in <tt class="docutils literal"><span class="pre">le</span></tt> bu
 <dl class="type">
 <dt id="SKLOG_T_Ctx">
 <tt class="descname">SKLOG_T_Ctx</tt><a class="headerlink" href="#SKLOG_T_Ctx" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>TODO</p>
+</dd></dl>
 
-<div class="highlight-c"><div class="highlight"><pre><span class="k">typedef</span> <span class="k">struct</span> <span class="n">sklog_t_ctx</span> <span class="n">SKLOG_T_Ctx</span><span class="p">;</span>
-
-<span class="k">struct</span> <span class="n">sklog_t_ctx</span> <span class="p">{</span>
-
-        <span class="kt">char</span>            <span class="n">t_id</span><span class="p">[</span><span class="n">HOST_NAME_MAX</span><span class="o">+</span><span class="mi">1</span><span class="p">];</span>
-        <span class="kt">int</span>                     <span class="n">t_id_len</span><span class="p">;</span>
-
-        <span class="kt">char</span>            <span class="n">t_address</span><span class="p">[</span><span class="n">HOST_NAME_MAX</span><span class="o">+</span><span class="mi">1</span><span class="p">];</span>
-        <span class="kt">short</span> <span class="kt">int</span>       <span class="n">t_port</span><span class="p">;</span>
-
-        <span class="n">X509</span>            <span class="o">*</span><span class="n">t_cert</span><span class="p">;</span>
-        <span class="kt">char</span>            <span class="n">t_cert_file_path</span><span class="p">[</span><span class="n">MAX_FILE_PATH_LEN</span><span class="p">];</span>
-
-        <span class="n">EVP_PKEY</span>        <span class="o">*</span><span class="n">t_privkey</span><span class="p">;</span>
-        <span class="kt">char</span>            <span class="n">t_privkey_file_path</span><span class="p">[</span><span class="n">MAX_FILE_PATH_LEN</span><span class="p">];</span>
-
-        <span class="n">SKLOG_T_STORAGE_DRIVER</span>  <span class="o">*</span><span class="n">lsdriver</span><span class="p">;</span>
-
-<span class="p">};</span>
-</pre></div>
-</div>
 <dl class="type">
 <dt id="SKLOG_T_STORAGE_DRIVER">
 <tt class="descname">SKLOG_T_STORAGE_DRIVER</tt><a class="headerlink" href="#SKLOG_T_STORAGE_DRIVER" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>TODO</p>
+</dd></dl>
 
-<div class="highlight-c"><div class="highlight"><pre><span class="k">typedef</span> <span class="k">struct</span> <span class="n">sklog_t_storage_driver</span> <span class="n">SKLOG_T_STORAGE_DRIVER</span><span class="p">;</span>
-
-<span class="k">struct</span> <span class="n">sklog_t_storage_driver</span> <span class="p">{</span>
-        <span class="n">SKLOG_RETURN</span> <span class="p">(</span><span class="o">*</span><span class="n">store_authkey</span><span class="p">)</span> <span class="p">(</span><span class="kt">char</span><span class="o">*</span><span class="p">,</span> <span class="n">uuid_t</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">char</span><span class="o">*</span><span class="p">);</span>
-        <span class="n">SKLOG_RETURN</span> <span class="p">(</span><span class="o">*</span><span class="n">store_m0_msg</span><span class="p">)</span> <span class="p">(</span><span class="kt">char</span><span class="o">*</span><span class="p">,</span> <span class="n">uuid_t</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">char</span><span class="o">*</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span><span class="p">);</span>
-        <span class="n">SKLOG_RETURN</span> <span class="p">(</span><span class="o">*</span><span class="n">store_logentry</span><span class="p">)</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">char</span><span class="o">*</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span><span class="p">);</span>
-        <span class="n">SKLOG_RETURN</span> <span class="p">(</span><span class="o">*</span><span class="n">retrieve_logfiles</span><span class="p">)</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">char</span> <span class="o">**</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="o">*</span><span class="p">);</span>
-        <span class="n">SKLOG_RETURN</span> <span class="p">(</span><span class="o">*</span><span class="n">verify_logfile</span><span class="p">)</span> <span class="p">(</span><span class="kt">unsigned</span> <span class="kt">char</span> <span class="o">*</span><span class="p">);</span>
-<span class="p">};</span>
-</pre></div>
-</div>
 </div>
 <div class="section" id="id2">
 <h3>Functions<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
@@ -562,13 +385,13 @@ structure in case of success, <tt class="docutils literal"><span class="pre">NUL
 <blockquote>
 <div><dl class="function">
 <dt id="SKLOG_T_InitCtx">
-<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_T_InitCtx</tt><big>(</big><a class="reference internal" href="#SKLOG_T_Ctx" title="SKLOG_T_Ctx">SKLOG_T_Ctx</a><em>&nbsp;*t_ctx</em><big>)</big><a class="headerlink" href="#SKLOG_T_InitCtx" title="Permalink to this definition">¶</a></dt>
+<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_T_InitCtx</tt><big>(</big><a class="reference internal" href="#SKLOG_T_Ctx" title="SKLOG_T_Ctx">SKLOG_T_Ctx</a><em>&nbsp;*ctx</em><big>)</big><a class="headerlink" href="#SKLOG_T_InitCtx" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </div></blockquote>
 <p><strong>Description</strong></p>
 <blockquote>
-<div>Initialize the T API context <tt class="docutils literal"><span class="pre">t_ctx</span></tt> by reading the configuration
+<div>Initialize the T API context <tt class="docutils literal"><span class="pre">ctx</span></tt> by reading the configuration
 file <tt class="docutils literal"><span class="pre">libsklog-t.conf</span></tt>.</div></blockquote>
 <p><strong>Return values</strong></p>
 <blockquote>
@@ -581,7 +404,7 @@ file <tt class="docutils literal"><span class="pre">libsklog-t.conf</span></tt>.
 <blockquote>
 <div><dl class="function">
 <dt id="SKLOG_T_ManageLoggingSessionInit">
-<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_T_ManageLoggingSessionInit</tt><big>(</big><a class="reference internal" href="#SKLOG_T_Ctx" title="SKLOG_T_Ctx">SKLOG_T_Ctx</a><em>&nbsp;*t_ctx</em>, unsigned char<em>&nbsp;*m0</em>, unsigned int<em>&nbsp;m0_len</em>, char<em>&nbsp;*u_address</em>, unsigned char<em>&nbsp;**m1</em>, unsigned int<em>&nbsp;*m1_len</em><big>)</big><a class="headerlink" href="#SKLOG_T_ManageLoggingSessionInit" title="Permalink to this definition">¶</a></dt>
+<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_T_ManageLoggingSessionInit</tt><big>(</big><a class="reference internal" href="#SKLOG_T_Ctx" title="SKLOG_T_Ctx">SKLOG_T_Ctx</a><em>&nbsp;*ctx</em>, unsigned char<em>&nbsp;*m0</em>, unsigned int<em>&nbsp;m0_len</em>, char<em>&nbsp;*u_address</em>, unsigned char<em>&nbsp;**m1</em>, unsigned int<em>&nbsp;*m1_len</em><big>)</big><a class="headerlink" href="#SKLOG_T_ManageLoggingSessionInit" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </div></blockquote>
@@ -589,7 +412,10 @@ file <tt class="docutils literal"><span class="pre">libsklog-t.conf</span></tt>.
 <blockquote>
 <div>Manage the logging session initialization requests coming from a
 client who has <tt class="docutils literal"><span class="pre">u_address</span></tt> IP address. The buffer <tt class="docutils literal"><span class="pre">m0</span></tt>, that
-will be <tt class="docutils literal"><span class="pre">m0_len</span></tt> bytes len, will contains the request data.</div></blockquote>
+is <tt class="docutils literal"><span class="pre">m0_len</span></tt> bytes long, contains the request data and the
+buffer <tt class="docutils literal"><span class="pre">m1</span></tt> that will be <tt class="docutils literal"><span class="pre">m1_len</span></tt> bytes long, will contains
+the response. Both the <tt class="docutils literal"><span class="pre">m0</span></tt> and <tt class="docutils literal"><span class="pre">m1</span></tt> buffers contain a
+<strong>binary blob</strong>.</div></blockquote>
 <p><strong>Return values</strong></p>
 <blockquote>
 <div>The function returns <tt class="docutils literal"><span class="pre">SKLOG_SUCCES</span></tt> in case of success,
@@ -597,11 +423,15 @@ will be <tt class="docutils literal"><span class="pre">m0_len</span></tt> bytes 
 </div>
 <div class="section" id="sklog-t-managelogfileupload">
 <h4>SKLOG_T_ManageLogfileUpload()<a class="headerlink" href="#sklog-t-managelogfileupload" title="Permalink to this headline">¶</a></h4>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Probably will be removed in next release</p>
+</div>
 <p><strong>Synopsis</strong></p>
 <blockquote>
 <div><dl class="function">
 <dt id="SKLOG_T_ManageLogfileUpload">
-<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_T_ManageLogfileUpload</tt><big>(</big><a class="reference internal" href="#SKLOG_T_Ctx" title="SKLOG_T_Ctx">SKLOG_T_Ctx</a><em>&nbsp;*t_ctx</em>, <a class="reference internal" href="#SKLOG_CONNECTION" title="SKLOG_CONNECTION">SKLOG_CONNECTION</a><em>&nbsp;*c</em><big>)</big><a class="headerlink" href="#SKLOG_T_ManageLogfileUpload" title="Permalink to this definition">¶</a></dt>
+<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_T_ManageLogfileUpload</tt><big>(</big><a class="reference internal" href="#SKLOG_T_Ctx" title="SKLOG_T_Ctx">SKLOG_T_Ctx</a><em>&nbsp;ctx</em>, <a class="reference internal" href="#SKLOG_CONNECTION" title="SKLOG_CONNECTION">SKLOG_CONNECTION</a><em>&nbsp;*c</em><big>)</big><a class="headerlink" href="#SKLOG_T_ManageLogfileUpload" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </div></blockquote>
@@ -619,7 +449,7 @@ will be <tt class="docutils literal"><span class="pre">m0_len</span></tt> bytes 
 <blockquote>
 <div><dl class="function">
 <dt id="SKLOG_T_ManageLogfileRetrieve">
-<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_T_ManageLogfileRetrieve</tt><big>(</big><a class="reference internal" href="#SKLOG_T_Ctx" title="SKLOG_T_Ctx">SKLOG_T_Ctx</a><em>&nbsp;*t_ctx</em>, char<em>&nbsp;*logfile_list[]</em>, unsigned int<em>&nbsp;*logfile_list_len</em><big>)</big><a class="headerlink" href="#SKLOG_T_ManageLogfileRetrieve" title="Permalink to this definition">¶</a></dt>
+<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_T_ManageLogfileRetrieve</tt><big>(</big><a class="reference internal" href="#SKLOG_T_Ctx" title="SKLOG_T_Ctx">SKLOG_T_Ctx</a><em>&nbsp;*ctx</em>, char<em>&nbsp;*logfile_list[]</em>, unsigned int<em>&nbsp;*logfile_list_len</em><big>)</big><a class="headerlink" href="#SKLOG_T_ManageLogfileRetrieve" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </div></blockquote>
@@ -627,7 +457,7 @@ will be <tt class="docutils literal"><span class="pre">m0_len</span></tt> bytes 
 <blockquote>
 <div>Manages the logfile retrieve requests. The array <tt class="docutils literal"><span class="pre">logfile_list</span></tt>,
 that will be composed by <tt class="docutils literal"><span class="pre">logfile_list_len</span></tt> elements,
-will contains a list of logging session ids.</div></blockquote>
+will contains a list of logging session id.</div></blockquote>
 <p><strong>Return values</strong></p>
 <blockquote>
 <div>The function returns <tt class="docutils literal"><span class="pre">SKLOG_SUCCES</span></tt> in case of success,
@@ -639,7 +469,7 @@ will contains a list of logging session ids.</div></blockquote>
 <blockquote>
 <div><dl class="function">
 <dt id="SKLOG_T_ManageLogfileVerify">
-<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_T_ManageLogfileVerify</tt><big>(</big><a class="reference internal" href="#SKLOG_T_Ctx" title="SKLOG_T_Ctx">SKLOG_T_Ctx</a><em>&nbsp;*t_ctx</em>, char<em>&nbsp;*logfile_id</em><big>)</big><a class="headerlink" href="#SKLOG_T_ManageLogfileVerify" title="Permalink to this definition">¶</a></dt>
+<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_T_ManageLogfileVerify</tt><big>(</big><a class="reference internal" href="#SKLOG_T_Ctx" title="SKLOG_T_Ctx">SKLOG_T_Ctx</a><em>&nbsp;*ctx</em>, char<em>&nbsp;*logfile_id</em><big>)</big><a class="headerlink" href="#SKLOG_T_ManageLogfileVerify" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </div></blockquote>
@@ -649,8 +479,9 @@ will contains a list of logging session ids.</div></blockquote>
 what is logfile that will be verified.</div></blockquote>
 <p><strong>Return values</strong></p>
 <blockquote>
-<div>The function returns <tt class="docutils literal"><span class="pre">SKLOG_SUCCES</span></tt> in case of success,
-<tt class="docutils literal"><span class="pre">SKLOG_FAILURE</span></tt> in case of failure.</div></blockquote>
+<div>The function returns <tt class="docutils literal"><span class="pre">SKLOG_SUCCES</span></tt> in case of verificatio success,
+<tt class="docutils literal"><span class="pre">SKLOG_VERIFICATION_FAILURE</span></tt> in case of verification failure and
+<tt class="docutils literal"><span class="pre">SKLOG_FAILURE</span></tt> in case of error.</div></blockquote>
 </div>
 <div class="section" id="sklog-t-freectx">
 <h4>SKLOG_T_FreeCtx()<a class="headerlink" href="#sklog-t-freectx" title="Permalink to this headline">¶</a></h4>
@@ -658,13 +489,13 @@ what is logfile that will be verified.</div></blockquote>
 <blockquote>
 <div><dl class="function">
 <dt id="SKLOG_T_FreeCtx">
-<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_T_FreeCtx</tt><big>(</big><a class="reference internal" href="#SKLOG_T_Ctx" title="SKLOG_T_Ctx">SKLOG_T_Ctx</a><em>&nbsp;**t_ctx</em><big>)</big><a class="headerlink" href="#SKLOG_T_FreeCtx" title="Permalink to this definition">¶</a></dt>
+<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_T_FreeCtx</tt><big>(</big><a class="reference internal" href="#SKLOG_T_Ctx" title="SKLOG_T_Ctx">SKLOG_T_Ctx</a><em>&nbsp;**ctx</em><big>)</big><a class="headerlink" href="#SKLOG_T_FreeCtx" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </div></blockquote>
 <p><strong>Description</strong></p>
 <blockquote>
-<div>Free the memory allocated for <tt class="docutils literal"><span class="pre">t_ctx</span></tt> structure.</div></blockquote>
+<div>Free the memory allocated for <tt class="docutils literal"><span class="pre">ctx</span></tt> structure.</div></blockquote>
 <p><strong>Return values</strong></p>
 <blockquote>
 <div>The function returns <tt class="docutils literal"><span class="pre">SKLOG_SUCCES</span></tt> in case of success,
@@ -676,13 +507,14 @@ what is logfile that will be verified.</div></blockquote>
 <blockquote>
 <div><dl class="function">
 <dt id="SKLOG_T_RunServer">
-<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_T_RunServer</tt><big>(</big><a class="reference internal" href="#SKLOG_T_Ctx" title="SKLOG_T_Ctx">SKLOG_T_Ctx</a><em>&nbsp;*t_ctx</em><big>)</big><a class="headerlink" href="#SKLOG_T_RunServer" title="Permalink to this definition">¶</a></dt>
+<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_T_RunServer</tt><big>(</big><a class="reference internal" href="#SKLOG_T_Ctx" title="SKLOG_T_Ctx">SKLOG_T_Ctx</a><em>&nbsp;*ctx</em><big>)</big><a class="headerlink" href="#SKLOG_T_RunServer" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </div></blockquote>
 <p><strong>Description</strong></p>
 <blockquote>
-<div>Implements a simple T application.</div></blockquote>
+<div>Implements a simple T application. <tt class="docutils literal"><span class="pre">ctx</span></tt> is an already initialized
+context.</div></blockquote>
 <p><strong>Return values</strong></p>
 <blockquote>
 <div>The function returns <tt class="docutils literal"><span class="pre">SKLOG_SUCCES</span></tt> in case of success,
@@ -692,16 +524,19 @@ what is logfile that will be verified.</div></blockquote>
 </div>
 <div class="section" id="sklog-v-apis">
 <h2>SKLOG_V APIs<a class="headerlink" href="#sklog-v-apis" title="Permalink to this headline">¶</a></h2>
-<div class="admonition warning">
-<p class="first admonition-title">Warning</p>
-<p class="last">The SKLOG_V API needs to be revised</p>
-</div>
 <div class="section" id="id3">
 <h3>Types<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
 <dl class="type">
 <dt id="SKLOG_V_Ctx">
 <tt class="descname">SKLOG_V_Ctx</tt><a class="headerlink" href="#SKLOG_V_Ctx" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
+<dd><p>TODO</p>
+</dd></dl>
+
+<dl class="type">
+<dt id="SKLOG_V_DATA_TRANSFER_CB">
+<tt class="descname">SKLOG_V_DATA_TRANSFER_CB</tt><a class="headerlink" href="#SKLOG_V_DATA_TRANSFER_CB" title="Permalink to this definition">¶</a></dt>
+<dd><p>TODO</p>
+</dd></dl>
 
 </div>
 <div class="section" id="id4">
@@ -718,7 +553,7 @@ what is logfile that will be verified.</div></blockquote>
 </div></blockquote>
 <p><strong>Description</strong></p>
 <blockquote>
-<div>TODO</div></blockquote>
+<div>Allcoates a new  <tt class="docutils literal"><span class="pre">SKLOG_V_Ctx</span></tt> structure.</div></blockquote>
 <p><strong>Return values</strong></p>
 <blockquote>
 <div>The function returns a valid pointer to a <tt class="docutils literal"><span class="pre">SKLOG_V_Ctx</span></tt>
@@ -736,7 +571,8 @@ structure in case of success, <tt class="docutils literal"><span class="pre">NUL
 </div></blockquote>
 <p><strong>Description</strong></p>
 <blockquote>
-<div>TODO</div></blockquote>
+<div>Initialize the V API context <tt class="docutils literal"><span class="pre">ctx</span></tt> using default values.
+Configuration file parsing is <strong>not yet implemented</strong>.</div></blockquote>
 <p><strong>Return values</strong></p>
 <blockquote>
 <div>The function returns <tt class="docutils literal"><span class="pre">SKLOG_SUCCES</span></tt> in case of success,
@@ -754,7 +590,7 @@ structure in case of success, <tt class="docutils literal"><span class="pre">NUL
 </div></blockquote>
 <p><strong>Description</strong></p>
 <blockquote>
-<div>TODO</div></blockquote>
+<div>Free the memory allocated for <tt class="docutils literal"><span class="pre">ctx</span></tt> structure.</div></blockquote>
 <p><strong>Return values</strong></p>
 <blockquote>
 <div>The function returns <tt class="docutils literal"><span class="pre">SKLOG_SUCCES</span></tt> in case of success,
@@ -762,6 +598,10 @@ structure in case of success, <tt class="docutils literal"><span class="pre">NUL
 </div>
 <div class="section" id="sklog-v-retrievelogfiles">
 <h4>SKLOG_V_RetrieveLogFiles()<a class="headerlink" href="#sklog-v-retrievelogfiles" title="Permalink to this headline">¶</a></h4>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Deprecated</p>
+</div>
 <p><strong>Synopsis</strong></p>
 <blockquote>
 <div><dl class="function">
@@ -771,8 +611,6 @@ structure in case of success, <tt class="docutils literal"><span class="pre">NUL
 
 </div></blockquote>
 <p><strong>Description</strong></p>
-<blockquote>
-<div>TODO</div></blockquote>
 <p><strong>Return values</strong></p>
 <blockquote>
 <div>The function returns <tt class="docutils literal"><span class="pre">SKLOG_SUCCES</span></tt> in case of success,
@@ -783,14 +621,19 @@ structure in case of success, <tt class="docutils literal"><span class="pre">NUL
 <p><strong>Synopsis</strong></p>
 <blockquote>
 <div><dl class="function">
-<dt id="SKLOG_V_VerifyLogFile_v2">
-<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_V_VerifyLogFile_v2</tt><big>(</big><a class="reference internal" href="#SKLOG_V_Ctx" title="SKLOG_V_Ctx">SKLOG_V_Ctx</a><em>&nbsp;*v_ctx</em>, char<em>&nbsp;*logfile_id</em>, <a class="reference internal" href="#sklog_data_tranfer_cb" title="sklog_data_tranfer_cb">sklog_data_tranfer_cb</a><em>&nbsp;verify_cb</em><big>)</big><a class="headerlink" href="#SKLOG_V_VerifyLogFile_v2" title="Permalink to this definition">¶</a></dt>
+<dt id="SKLOG_V_RetrieveLogFiles_v2">
+<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_V_RetrieveLogFiles_v2</tt><big>(</big><a class="reference internal" href="#SKLOG_V_Ctx" title="SKLOG_V_Ctx">SKLOG_V_Ctx</a><em>&nbsp;*ctx</em>, <a class="reference internal" href="#SKLOG_V_DATA_TRANSFER_CB" title="SKLOG_V_DATA_TRANSFER_CB">SKLOG_V_DATA_TRANSFER_CB</a><em>&nbsp;data_transfer_cb</em><big>)</big><a class="headerlink" href="#SKLOG_V_RetrieveLogFiles_v2" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </div></blockquote>
 <p><strong>Description</strong></p>
 <blockquote>
-<div>TODO</div></blockquote>
+<div><p>Sends logfile retrieve requests to T. The request result is
+stored in <tt class="docutils literal"><span class="pre">ctx-&gt;verifiable_logfiles[]</span></tt> array that will contain
+<tt class="docutils literal"><span class="pre">ctx-&gt;verifiable_logfiles_size</span></tt> elements.</p>
+<p>For data transfering, users have to define a
+<tt class="docutils literal"><span class="pre">SKLOG_V_DATA_TRANSFER_CB</span></tt> callback (<strong>EXPERIMENTAL</strong>).</p>
+</div></blockquote>
 <p><strong>Return values</strong></p>
 <blockquote>
 <div>The function returns <tt class="docutils literal"><span class="pre">SKLOG_SUCCES</span></tt> in case of success,
@@ -798,6 +641,10 @@ structure in case of success, <tt class="docutils literal"><span class="pre">NUL
 </div>
 <div class="section" id="sklog-v-verifylogfile">
 <h4>SKLOG_V_VerifyLogFile()<a class="headerlink" href="#sklog-v-verifylogfile" title="Permalink to this headline">¶</a></h4>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Deprecated</p>
+</div>
 <p><strong>Synopsis</strong></p>
 <blockquote>
 <div><dl class="function">
@@ -807,8 +654,6 @@ structure in case of success, <tt class="docutils literal"><span class="pre">NUL
 
 </div></blockquote>
 <p><strong>Description</strong></p>
-<blockquote>
-<div>TODO</div></blockquote>
 <p><strong>Return values</strong></p>
 <blockquote>
 <div>The function returns <tt class="docutils literal"><span class="pre">SKLOG_SUCCES</span></tt> in case of success,
@@ -816,6 +661,10 @@ structure in case of success, <tt class="docutils literal"><span class="pre">NUL
 </div>
 <div class="section" id="sklog-v-verifylogfile-uuid">
 <h4>SKLOG_V_VerifyLogFile_uuid()<a class="headerlink" href="#sklog-v-verifylogfile-uuid" title="Permalink to this headline">¶</a></h4>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">Deprecated</p>
+</div>
 <p><strong>Synopsis</strong></p>
 <blockquote>
 <div><dl class="function">
@@ -825,8 +674,28 @@ structure in case of success, <tt class="docutils literal"><span class="pre">NUL
 
 </div></blockquote>
 <p><strong>Description</strong></p>
+<p><strong>Return values</strong></p>
 <blockquote>
-<div>TODO</div></blockquote>
+<div>The function returns <tt class="docutils literal"><span class="pre">SKLOG_SUCCES</span></tt> in case of success,
+<tt class="docutils literal"><span class="pre">SKLOG_FAILURE</span></tt> in case of failure.</div></blockquote>
+</div>
+<div class="section" id="sklog-v-verifylogfile-v2">
+<h4>SKLOG_V_VerifyLogFile_v2()<a class="headerlink" href="#sklog-v-verifylogfile-v2" title="Permalink to this headline">¶</a></h4>
+<p><strong>Synopsis</strong></p>
+<blockquote>
+<div><dl class="function">
+<dt id="SKLOG_V_VerifyLogFile_v2">
+<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_V_VerifyLogFile_v2</tt><big>(</big><a class="reference internal" href="#SKLOG_V_Ctx" title="SKLOG_V_Ctx">SKLOG_V_Ctx</a><em>&nbsp;*ctx</em>, char<em>&nbsp;*logfile_id</em>, <a class="reference internal" href="#SKLOG_V_DATA_TRANSFER_CB" title="SKLOG_V_DATA_TRANSFER_CB">SKLOG_V_DATA_TRANSFER_CB</a><em>&nbsp;verify_cb</em><big>)</big><a class="headerlink" href="#SKLOG_V_VerifyLogFile_v2" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div></blockquote>
+<p><strong>Description</strong></p>
+<blockquote>
+<div><p>Sends logfile verification request to T. The logfile is specified by
+<tt class="docutils literal"><span class="pre">logfile_id</span></tt>.</p>
+<p>For data transfering, users have to define a
+<tt class="docutils literal"><span class="pre">SKLOG_V_DATA_TRANSFER_CB</span></tt> callback (<strong>EXPERIMENTAL</strong>).</p>
+</div></blockquote>
 <p><strong>Return values</strong></p>
 <blockquote>
 <div>The function returns <tt class="docutils literal"><span class="pre">SKLOG_SUCCES</span></tt> in case of success,
@@ -849,47 +718,17 @@ structure in case of success, <tt class="docutils literal"><span class="pre">NUL
 <li><a class="reference internal" href="#global-types">Global types</a></li>
 <li><a class="reference internal" href="#sklog-u-apis">SKLOG_U APIs</a><ul>
 <li><a class="reference internal" href="#types">Types</a></li>
-<li><a class="reference internal" href="#functions">Functions</a><ul>
-<li><a class="reference internal" href="#sklog-u-newctx">SKLOG_U_NewCtx()</a></li>
-<li><a class="reference internal" href="#sklog-u-initctx">SKLOG_U_InitCtx()</a></li>
-<li><a class="reference internal" href="#sklog-u-open-m0">SKLOG_U_Open_M0()</a></li>
-<li><a class="reference internal" href="#sklog-u-open-m1">SKLOG_U_Open_M1()</a></li>
-<li><a class="reference internal" href="#sklog-u-logevent">SKLOG_U_LogEvent()</a></li>
-<li><a class="reference internal" href="#sklog-u-flushlogfile">SKLOG_U_FlushLogfile()</a></li>
-<li><a class="reference internal" href="#sklog-u-uploadlogfile">SKLOG_U_UploadLogfile()</a></li>
-<li><a class="reference internal" href="#sklog-u-close">SKLOG_U_Close()</a></li>
-<li><a class="reference internal" href="#sklog-u-freectx">SKLOG_U_FreeCtx()</a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#functions">Functions</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#sklog-t-apis">SKLOG_T APIs</a><ul>
 <li><a class="reference internal" href="#id1">Types</a></li>
-<li><a class="reference internal" href="#id2">Functions</a><ul>
-<li><a class="reference internal" href="#sklog-t-newctx">SKLOG_T_NewCtx()</a></li>
-<li><a class="reference internal" href="#sklog-t-initctx">SKLOG_T_InitCtx()</a></li>
-<li><a class="reference internal" href="#sklog-t-manageloggingsessioninit">SKLOG_T_ManageLoggingSessionInit()</a></li>
-<li><a class="reference internal" href="#sklog-t-managelogfileupload">SKLOG_T_ManageLogfileUpload()</a></li>
-<li><a class="reference internal" href="#sklog-t-managelogfileretrieve">SKLOG_T_ManageLogfileRetrieve()</a></li>
-<li><a class="reference internal" href="#sklog-t-managelogfileverify">SKLOG_T_ManageLogfileVerify()</a></li>
-<li><a class="reference internal" href="#sklog-t-freectx">SKLOG_T_FreeCtx()</a></li>
-<li><a class="reference internal" href="#sklog-t-runserver">SKLOG_T_RunServer()</a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#id2">Functions</a></li>
 </ul>
 </li>
 <li><a class="reference internal" href="#sklog-v-apis">SKLOG_V APIs</a><ul>
 <li><a class="reference internal" href="#id3">Types</a></li>
-<li><a class="reference internal" href="#id4">Functions</a><ul>
-<li><a class="reference internal" href="#sklog-v-newctx">SKLOG_V_NewCtx()</a></li>
-<li><a class="reference internal" href="#sklog-v-initctx">SKLOG_V_InitCtx()</a></li>
-<li><a class="reference internal" href="#sklog-v-freectx">SKLOG_V_FreeCtx()</a></li>
-<li><a class="reference internal" href="#sklog-v-retrievelogfiles">SKLOG_V_RetrieveLogFiles()</a></li>
-<li><a class="reference internal" href="#sklog-v-retrievelogfiles-v2">SKLOG_V_RetrieveLogFiles_v2()</a></li>
-<li><a class="reference internal" href="#sklog-v-verifylogfile">SKLOG_V_VerifyLogFile()</a></li>
-<li><a class="reference internal" href="#sklog-v-verifylogfile-uuid">SKLOG_V_VerifyLogFile_uuid()</a></li>
-</ul>
-</li>
+<li><a class="reference internal" href="#id4">Functions</a></li>
 </ul>
 </li>
 </ul>
@@ -900,8 +739,8 @@ structure in case of success, <tt class="docutils literal"><span class="pre">NUL
   <p class="topless"><a href="configuration.html"
                         title="previous chapter">Configuration</a></p>
   <h4>Next topic</h4>
-  <p class="topless"><a href="tutorial.html"
-                        title="next chapter">Tutorial</a></p>
+  <p class="topless"><a href="python_binding.html"
+                        title="next chapter">Libsklog Python Bindings</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="../_sources/_doc/api.txt"
@@ -931,7 +770,7 @@ structure in case of success, <tt class="docutils literal"><span class="pre">NUL
           <a href="../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="tutorial.html" title="Tutorial"
+          <a href="python_binding.html" title="Libsklog Python Bindings"
              >next</a> |</li>
         <li class="right" >
           <a href="configuration.html" title="Configuration"
@@ -941,7 +780,7 @@ structure in case of success, <tt class="docutils literal"><span class="pre">NUL
     </div>
     <div class="footer">
         &copy; Copyright 2012, Paolo Smiraglia.
-      Last updated on May 29, 2012.
+      Last updated on May 30, 2012.
       Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>

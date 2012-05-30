@@ -1,17 +1,18 @@
+:tocdepth: 3
+
 **************
 API References
 **************
+
+.. WARNING:: Since the library is in alpha release documentation 
+	could not fit exactly the code
 
 .. highlight:: c
 
 Preliminaries
 =============
 
-All declarations are in ``sklog_u.h``, ``sklog_t.h`` and 
-``sklog_v.h``, so it's enough to include one or more of these libraries
-in each source file.
-
-::
+To access the API users have to include one or more of these files::
 
    #include <sklog_u.h> // to access U API
    #include <sklog_t.h> // to access T API
@@ -22,133 +23,20 @@ Global types
 
 .. c:type:: SKLOG_RETURN
 
-.. code-block:: c
-
-	#define SKLOG_SUCCESS 1
-	#define SKLOG_FAILURE !SKLOG_SUCCESS
-	
-	typedef int SKLOG_RETURN;
+	TODO
 
 .. c:type:: SKLOG_DATA_TYPE
 
-.. code-block:: c
-
-	typedef enum sklog_data_type SKLOG_DATA_TYPE;
+	TODO
 	
-	enum sklog_data_type {
-	    LogfileInitializationType,
-	    ResponseMessageType,
-	    AbnormalCloseType,
-	    NormalCloseMessage,
-	    Undefined
-	};
+.. c:type:: SKLOG_DUMP_MODE
+
+	TOTO
 	
 .. c:type:: SKLOG_CONNECTION
 
-.. code-block:: c
-
-	typedef struct sklog_connection SKLOG_CONNECTION;
+	TODO
 	
-	struct sklog_connection {
-	    SSL		*ssl;
-	    SSL_CTX	*ssl_ctx;
-	
-	    BIO		*bio;
-	    BIO		*ssl_bio;
-	    BIO		*sock_bio;
-	
-	    int		lsock;
-	    int		csock;
-	};
-	
-.. c:type:: sklog_data_tranfer_cb
-
-	Callback type for SKLOG_V API data transfer functions.
-	
-.. code-block:: c
-	
-	typedef int (*sklog_data_tranfer_cb) 
-		(SKLOG_V_Ctx *ctx,
-		unsigned char *rbuf, size_t *rlen, size_t rlen_max,
-		unsigned char *wbuf, size_t *wlen);
-		
-.. code-block:: c
-
-	int retrieve(SKLOG_V_Ctx *ctx, unsigned char *rbuf, size_t *rlen,
-		size_t rlen_max, unsigned char *wbuf, size_t *wlen)
-	{
-		#ifdef DO_TRACE
-		DEBUG
-		#endif
-		
-		int rv = 0;
-		
-		SKLOG_CONNECTION *conn = 0;
-		
-		int nread = 0;
-		int nwrite = 0;
-		
-		/* open connection */
-		
-		conn = SKLOG_CONNECTION_New();
-		
-		if ( conn == NULL ) {
-			ERROR("SKLOG_CONNECTION_New() failure");
-			return SKLOG_FAILURE;
-		}
-	
-		rv = SKLOG_CONNECTION_Init(conn, ctx->t_address,
-			ctx->t_port, ctx->v_cert, ctx->v_privkey,
-			ctx->t_cert_file_path, DO_NOT_VERIFY);
-		            
-		if ( rv == SKLOG_FAILURE ) {
-			ERROR("SKLOG_CONNECTION_Init() failure");
-			return SKLOG_FAILURE;
-		}
-		
-		/* doit */
-		
-		SSL_load_error_strings();
-		
-		nwrite = SSL_write(conn->ssl, wbuf, *wlen);
-		
-		if ( nwrite <= 0 ) {
-			ERROR("SSL_write() failure");
-			ERR_print_errors_fp(stderr);
-			return SKLOG_FAILURE;
-		}
-		
-		nread = SSL_read(conn->ssl, rbuf, rlen_max);
-		
-		if ( nwrite <= 0 ) {
-			ERROR("SSL_read() failure");
-			ERR_print_errors_fp(stderr);
-			return SKLOG_FAILURE;
-		}
-		
-		*rlen = nread;
-		
-		ERR_free_strings();
-		
-		/* close connection */
-		
-		rv = SKLOG_CONNECTION_Destroy(conn);
-		
-		if ( rv == SKLOG_FAILURE ) {
-			ERROR("SKLOG_CONNECTION_Destroy() failure");
-			return SKLOG_FAILURE;
-		}
-		
-		rv = SKLOG_CONNECTION_Free(&conn);
-		
-		if ( rv == SKLOG_FAILURE ) {
-			ERROR("SKLOG_CONNECTION_Free() failure");
-			return SKLOG_FAILURE;
-		}
-		
-		return SKLOG_SUCCESS;
-	}
-
 SKLOG_U APIs
 ============
 
@@ -157,69 +45,11 @@ Types
 
 .. c:type:: SKLOG_U_Ctx
 
-.. code-block:: c
-
-	typedef struct sklog_u_ctx SKLOG_U_Ctx;
-
-	struct sklog_u_ctx {
-	
-	    int context_state;
-	    int logging_session_mgmt;
-	
-	    /* u-node informtion */
-	    
-	    char            u_id[HOST_NAME_MAX+1];
-	    unsigned int    u_id_len;
-	
-	    int             u_timeout;
-	    unsigned long	u_expiration;
-	
-	    X509            *u_cert;
-	    char            u_cert_file_path[MAX_FILE_PATH_LEN];
-	    
-	    EVP_PKEY        *u_privkey;
-	    char            u_privkey_file_path[MAX_FILE_PATH_LEN];
-	
-	    /* t-node information */
-	    
-	    X509            *t_cert;
-	    char            t_cert_file_path[MAX_FILE_PATH_LEN];
-	
-	    char            t_address[512];
-	    short int       t_port;
-	
-	    /* logging session information */
-	    
-	    int             logfile_size;
-	    int             logfile_counter;
-	    uuid_t          logfile_id;
-	
-	    unsigned char   session_key[SKLOG_SESSION_KEY_LEN];
-	    unsigned char   auth_key[SKLOG_AUTH_KEY_LEN];
-	    unsigned char   last_hash_chain[SKLOG_HASH_CHAIN_LEN];
-	
-	    unsigned char   x0_hash[SHA256_LEN];
-	
-	    /* log-entries storage driver */
-	    
-	    SKLOG_U_STORAGE_DRIVER *lsdriver;
-	
-	};
+	TODO
 
 .. c:type:: SKLOG_U_STORAGE_DRIVER
 
-.. code-block:: c
-
-	typedef struct sklog_u_storage_driver SKLOG_U_STORAGE_DRIVER;
-	
-	struct sklog_u_storage_driver {
-	
-	    SKLOG_RETURN (*store_logentry) (uuid_t, SKLOG_DATA_TYPE, unsigned char *, unsigned int, unsigned char *, unsigned char *);
-			
-	    SKLOG_RETURN (*flush_logfile) (uuid_t, unsigned long, SKLOG_CONNECTION *);
-			
-	    SKLOG_RETURN (*init_logfile) (uuid_t, unsigned long);
-	};
+	TODO
 
 Functions
 ---------
@@ -263,15 +93,16 @@ SKLOG_U_Open_M0()
 **Synopsis**
 
 	.. c:function:: SKLOG_RETURN SKLOG_U_Open_M0(SKLOG_U_Ctx *ctx, \
-		unsigned char **buf1, unsigned int *buf1_len, char **buf2, \
-		unsigned int *buf2_len)
+		unsigned char **m0, unsigned int *m0_len, char **logentry, \
+		unsigned int *logentry_len)
 
 **Description**
 	
-	Executes the first step of the logging session initialization phase.
-	``buf1`` buffer, which is ``buf1_len`` bytes length, will contains
-	the request message (M0). ``buf2`` buffer will contains the first
-	logentry of a new log file and will be ``buf2_len`` bytes length. 
+	Executes the first step of the logging session initialization 
+	phase. ``m0`` buffer, which is ``m0_len`` bytes length, will 
+	contains the request message M0 as **binary blob**. The 
+	``logentry`` buffer will contains the first logentry (that will 
+	be ``logentry_len`` bytes long) of a new log file.
 	
 	
 **Return values**
@@ -285,16 +116,16 @@ SKLOG_U_Open_M1()
 **Synopsis**
 
 	.. c:function:: SKLOG_RETURN SKLOG_U_Open_M1(SKLOG_U_Ctx *ctx, \
-		unsigned char *buf1,	unsigned int buf1_len, char **buf2, \
-		unsigned int *buf2_len)
+		unsigned char *m1, unsigned int m1_len, char **logentry, \
+		unsigned int *logentry_len)
 
 **Description**
 	
-	Executes the second step of the logging session initialization
-	phase. ``buf1``, that is ``buf1_len`` bytes length, will contains
-	the response message (M1). ``buf2`` buffer will contains the second
-	logentry of a new log file and will be ``buf2_len`` bytes length.
-	
+	Executes the second step of the logging session initialization 
+	phase. The ``m1`` buffer, that is ``m1_len`` bytes long, will 
+	contains the response message M1 as **binary blob**. The 
+	``logentry`` buffer will contains the second logentry of a new 
+	log file and will be ``logentry_len`` bytes long.
 	
 **Return values**
 	
@@ -307,48 +138,44 @@ SKLOG_U_LogEvent()
 **Synopsis**
 
 	.. c:function:: SKLOG_RETURN SKLOG_U_LogEvent(SKLOG_U_Ctx *u_ctx, \
-		SKLOG_DATA_TYPE type, char *data, unsigned int data_len, \
-		char **le, unsigned int *le_len)
+		SKLOG_DATA_TYPE type, char *event, unsigned int event_len, \
+		char **logentry, unsigned int *logentry_len)
 	
 **Description**
 	
-	Log an event of type ``type`` described in the buffer ``data`` of 
-	``data_len`` bytes and put the generated logenrty in ``le`` 
-	buffer and its length in ``ls_len``.
+	Log an event of type ``type`` described in the buffer ``event`` of 
+	``event_len`` bytes and put the generated logenrty in the ``logentry`` 
+	buffer that will be ``logentry_len`` bytes long.
 	
 **Notes**
-
-	The logentry can assume two different format. The default one is ::
 	
-		[Undefined]-[/uD/HihG8/UpeoQTvX25XnmCEhhVXUSIlJ1xVaaE+rIz48ttdcazL+r/fVJ2kysT\]-[N759xRQyV2LBH5QEqWR0EGoYGlPCszzsKafBhgo+FgQ=]-[hfAKmuNyGf1I1SwnNfsIY8sTePhMTdhqx04OP42vmL8=]
+	The generated logentry will be a JSON structure structured as follow::
 	
-	
-	Another supported format is a json structure which is generated using
-	the API provided by ``libumberlog`` library (`Lumberjack Project`_).
-	
-	.. code-block:: javascript
-		
 		{
-			"msg":"/uD/HihG8/UpeoQTvX25XnmCEhhVXUSIlJ1xVaaE+rIz48ttdcazL+r/fVJ2kysT\",
-			"sklog_type":"0x4",
-			"sklog_hash":"N759xRQyV2LBH5QEqWR0EGoYGlPCszzsKafBhgo+FgQ=",
-			"sklog_hmac":"hfAKmuNyGf1I1SwnNfsIY8sTePhMTdhqx04OP42vmL8=",
-			"sklog_session":"6921523a-a010-11e1-84ef-0025b345ca14",
-			"pid":"0",
-			"facility":"kern",
-			"priority":"notice",
-			"program":"(null)",
-			"uid":"0",
-			"gid":"0",
-			"host":"",
-			"timestamp":"2012-05-17T13:07:34.981355492+0200"
+			"sk_session":"d8240caa-2d8f-4f72-9bce-7ba0972c9093",
+			"sk_type":4,
+			"sk_data":{
+				"msg":"In mollis molestie imperdiet.",
+				"pid":"0",
+				"facility":"kern",
+				"priority":"notice",
+				"program":"(null)",
+				"uid":"0",
+				"gid":"0",
+				"host":"",
+				"timestamp":"2012-05-29T11:27:42.903558075+0200"
+			},
+			"sk_hash":"xBbvObUXnyTk+SGf+4yFMNvdKnutoj6l9SE5/nNBKGU=",
+			"sk_hmac":"uAwkPwqvecbk7Zfw3Xhf0U1EJLL2HKMBuHvX1TrYYPk="
 		}
 	
-	To enable this format use the ``--with-lumberjack`` option when run
-	``./configure`` script. ::
-		
-		./configure --enable-debug --with-lumberjack
+	The ``sk_data`` object is a JSON structure generated using the 
+	function ``ul_format()`` provided by the library ``libubmerlog``.
+	For more details, see `Lumberjack Project`_ and Libumberlog_ web pages.
 	
+.. _`Lumberjack Project`: https://fedorahosted.org/lumberjack/
+.. _Libumberlog: https://github.com/algernon/libumberlog
+
 **Return values**
 	
 	The function returns ``SKLOG_SUCCES`` in case of success, 
@@ -356,6 +183,8 @@ SKLOG_U_LogEvent()
 
 SKLOG_U_FlushLogfile()
 ^^^^^^^^^^^^^^^^^^^^^^
+
+.. WARNING:: Probably will be removed in next releases
 
 **Synopsis**
 
@@ -365,7 +194,7 @@ SKLOG_U_FlushLogfile()
 **Description**
 
 	Flush the current logging session. The function reads current
-	logfileand put its content in ``logs`` which will contains 
+	logfile and put its content in ``logs`` which will contains 
 	``logs_size`` elements.
 
 **Return values**
@@ -373,18 +202,33 @@ SKLOG_U_FlushLogfile()
 	The function returns ``SKLOG_SUCCES`` in case of success, 
 	``SKLOG_FAILURE`` in case of failure.
 	
-SKLOG_U_UploadLogfile()
+SKLOG_U_DumpLogfile()
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 **Synopsis**
-	.. c:function:: SKLOG_RETURN SKLOG_U_UploadLogfile(SKLOG_U_Ctx *ctx, \
-		const char *filename, int mode)
+	.. c:function:: SKLOG_RETURN SKLOG_U_DumpLogfile(SKLOG_U_Ctx *ctx, \
+		const char *filename, SKLOG_DUMP_MODE dump_mode)
 	
 **Description**
 
-	Generate a dump for the current logging session. The dump will be
-	written in ``filename`` file. The flag ``mode`` specifies the dump
-	format. Supported mode: ``DUMP_MODE_JSON``.
+	Generate a logentry dump for the current logging session. The dump
+	will be	written in ``filename`` file. The flag ``dump_mode``
+	specifies the dump format. Supported mode: ``DUMP_MODE_JSON``.
+	
+**Notes**
+	
+	Below is depicted the JSON dump structure. Each ``logentry`` 
+	JSON array element is structured as previously described::
+		
+		{
+			"session":"d8240caa-2d8f-4f72-9bce-7ba0972c9093",
+			"logs":[
+				{logentry},
+				{logentry},
+				{logentry},
+				...
+			]
+		}
 	
 **Return values**
 
@@ -396,13 +240,15 @@ SKLOG_U_Close()
 
 **Synopsis**
 
-	.. c:function:: SKLOG_RETURN SKLOG_U_Close(SKLOG_U_Ctx *u_ctx, char **le, unsigned int *le_len)
+	.. c:function:: SKLOG_RETURN SKLOG_U_Close(SKLOG_U_Ctx *u_ctx, \
+		char **logentry, unsigned int *logentry_len)
 
 **Description**
 	
 	Terminate an already opened logging session. This phase 
 	generates the last logentry of the session. Such as logentry will
-	be contained in ``le`` buffer that will be ``le_len`` bytes length.
+	be contained in ``logentry`` buffer that will be ``logentry_len``
+	bytes long.
 	
 **Return values**
 	
@@ -433,42 +279,11 @@ Types
 
 .. c:type:: SKLOG_T_Ctx
 
-.. code-block:: c
-
-	typedef struct sklog_t_ctx SKLOG_T_Ctx;
-	
-	struct sklog_t_ctx {
-	
-		char		t_id[HOST_NAME_MAX+1];
-		int			t_id_len;
-		
-		char		t_address[HOST_NAME_MAX+1];
-		short int	t_port;
-		
-		X509		*t_cert;
-		char		t_cert_file_path[MAX_FILE_PATH_LEN];
-		
-		EVP_PKEY	*t_privkey;
-		char		t_privkey_file_path[MAX_FILE_PATH_LEN];
-		
-		SKLOG_T_STORAGE_DRIVER	*lsdriver;
-		
-	};
-	
+	TODO
 	
 .. c:type:: SKLOG_T_STORAGE_DRIVER
 
-.. code-block:: c
-
-	typedef struct sklog_t_storage_driver SKLOG_T_STORAGE_DRIVER;
-	
-	struct sklog_t_storage_driver {
-		SKLOG_RETURN (*store_authkey) (char*, uuid_t, unsigned char*);
-		SKLOG_RETURN (*store_m0_msg) (char*, uuid_t, unsigned char*, unsigned int);
-		SKLOG_RETURN (*store_logentry) (unsigned char*, unsigned int);
-		SKLOG_RETURN (*retrieve_logfiles) (unsigned char **, unsigned int *);
-		SKLOG_RETURN (*verify_logfile) (unsigned char *);
-	};
+	TODO
 
 Functions
 ---------
@@ -494,11 +309,11 @@ SKLOG_T_InitCtx()
 
 **Synopsis**
 
-	.. c:function:: SKLOG_RETURN SKLOG_T_InitCtx(SKLOG_T_Ctx *t_ctx)
+	.. c:function:: SKLOG_RETURN SKLOG_T_InitCtx(SKLOG_T_Ctx *ctx)
 
 **Description**
 
-	Initialize the T API context ``t_ctx`` by reading the configuration
+	Initialize the T API context ``ctx`` by reading the configuration
 	file ``libsklog-t.conf``.
 	
 **Return values**
@@ -511,15 +326,18 @@ SKLOG_T_ManageLoggingSessionInit()
 
 **Synopsis**
 
-	.. c:function:: SKLOG_RETURN SKLOG_T_ManageLoggingSessionInit(SKLOG_T_Ctx *t_ctx, \
+	.. c:function:: SKLOG_RETURN SKLOG_T_ManageLoggingSessionInit(SKLOG_T_Ctx *ctx, \
 		unsigned char *m0, unsigned int m0_len, char *u_address, \
 		unsigned char **m1, unsigned int *m1_len)
 	
 **Description**
 	
-	Manage the logging session initialization requests coming from a
-	client who has ``u_address`` IP address. The buffer ``m0``, that
-	will be ``m0_len`` bytes len, will contains the request data.
+	Manage the logging session initialization requests coming from a 
+	client who has ``u_address`` IP address. The buffer ``m0``, that 
+	is ``m0_len`` bytes long, contains the request data and the 
+	buffer ``m1`` that will be ``m1_len`` bytes long, will contains 
+	the response. Both the ``m0`` and ``m1`` buffers contain a 
+	**binary blob**.
 	
 **Return values**	
 	
@@ -529,9 +347,11 @@ SKLOG_T_ManageLoggingSessionInit()
 SKLOG_T_ManageLogfileUpload()
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+.. WARNING:: Probably will be removed in next release
+
 **Synopsis**
 	
-	.. c:function:: SKLOG_RETURN SKLOG_T_ManageLogfileUpload(SKLOG_T_Ctx *t_ctx, \
+	.. c:function:: SKLOG_RETURN SKLOG_T_ManageLogfileUpload(SKLOG_T_Ctx ctx, \
 		SKLOG_CONNECTION *c)
 	
 **Description**
@@ -549,14 +369,14 @@ SKLOG_T_ManageLogfileRetrieve()
 **Synopsis**
 
 	.. c:function:: SKLOG_RETURN \
-		SKLOG_T_ManageLogfileRetrieve(SKLOG_T_Ctx *t_ctx, \
+		SKLOG_T_ManageLogfileRetrieve(SKLOG_T_Ctx *ctx, \
 		char *logfile_list[], unsigned int *logfile_list_len)
 
 **Description**
 	
 	Manages the logfile retrieve requests. The array ``logfile_list``,
 	that will be composed by ``logfile_list_len`` elements, 
-	will contains a list of logging session ids.
+	will contains a list of logging session id.
 	
 **Return values**
 	
@@ -569,7 +389,7 @@ SKLOG_T_ManageLogfileVerify()
 **Synopsis**
 
 	.. c:function:: SKLOG_RETURN \
-		SKLOG_T_ManageLogfileVerify(SKLOG_T_Ctx *t_ctx, \
+		SKLOG_T_ManageLogfileVerify(SKLOG_T_Ctx *ctx, \
 		char *logfile_id)
 	
 **Description**
@@ -579,19 +399,20 @@ SKLOG_T_ManageLogfileVerify()
 	
 **Return values**
 	
-	The function returns ``SKLOG_SUCCES`` in case of success, 
-	``SKLOG_FAILURE`` in case of failure.
+	The function returns ``SKLOG_SUCCES`` in case of verificatio success, 
+	``SKLOG_VERIFICATION_FAILURE`` in case of verification failure and
+	``SKLOG_FAILURE`` in case of error.
 
 SKLOG_T_FreeCtx()
 ^^^^^^^^^^^^^^^^^
 
 **Synopsis**
 
-	.. c:function:: SKLOG_RETURN SKLOG_T_FreeCtx(SKLOG_T_Ctx **t_ctx)
+	.. c:function:: SKLOG_RETURN SKLOG_T_FreeCtx(SKLOG_T_Ctx **ctx)
 
 **Description**
 
-	Free the memory allocated for ``t_ctx`` structure.
+	Free the memory allocated for ``ctx`` structure.
 	
 **Return values**
 	
@@ -603,11 +424,12 @@ SKLOG_T_RunServer()
 
 **Synopsis**
 
-	.. c:function:: SKLOG_RETURN SKLOG_T_RunServer(SKLOG_T_Ctx *t_ctx)
+	.. c:function:: SKLOG_RETURN SKLOG_T_RunServer(SKLOG_T_Ctx *ctx)
 
 **Description**
 	
-	Implements a simple T application.
+	Implements a simple T application. ``ctx`` is an already initialized
+	context.
 	
 **Return values**
 	
@@ -617,12 +439,16 @@ SKLOG_T_RunServer()
 SKLOG_V APIs
 ============
 
-.. WARNING:: The SKLOG_V API needs to be revised
-
 Types
 -----
 
 .. c:type:: SKLOG_V_Ctx
+
+	TODO
+	
+.. c:type:: SKLOG_V_DATA_TRANSFER_CB
+
+	TODO
 
 Functions
 ---------
@@ -636,7 +462,7 @@ SKLOG_V_NewCtx()
 
 **Description**
 	
-	TODO
+	Allcoates a new  ``SKLOG_V_Ctx`` structure.
 	
 **Return values**
 	
@@ -652,7 +478,8 @@ SKLOG_V_InitCtx()
 
 **Description**
 	
-	TODO
+	Initialize the V API context ``ctx`` using default values.
+	Configuration file parsing is **not yet implemented**.
 	
 **Return values**
 	
@@ -668,7 +495,7 @@ SKLOG_V_FreeCtx()
 
 **Description**
 	
-	TODO
+	Free the memory allocated for ``ctx`` structure.
 	
 **Return values**
 	
@@ -678,14 +505,16 @@ SKLOG_V_FreeCtx()
 SKLOG_V_RetrieveLogFiles()
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+.. WARNING:: Deprecated
+
 **Synopsis**
 	
-	.. c:function:: SKLOG_RETURN SKLOG_V_RetrieveLogFiles(SKLOG_V_Ctx *v_ctx, SKLOG_CONNECTION *c)
+	.. c:function:: SKLOG_RETURN \
+		SKLOG_V_RetrieveLogFiles(SKLOG_V_Ctx *v_ctx, \
+		SKLOG_CONNECTION *c)
 
 **Description**
-	
-	TODO
-	
+
 **Return values**
 	
 	The function returns ``SKLOG_SUCCES`` in case of success, 
@@ -696,12 +525,18 @@ SKLOG_V_RetrieveLogFiles_v2()
 
 **Synopsis**
 	
-	.. c:function:: SKLOG_RETURN SKLOG_V_VerifyLogFile_v2(SKLOG_V_Ctx *v_ctx, \
-		char *logfile_id, sklog_data_tranfer_cb verify_cb)
-
+	.. c:function:: SKLOG_RETURN \
+		SKLOG_V_RetrieveLogFiles_v2(SKLOG_V_Ctx *ctx, \
+		SKLOG_V_DATA_TRANSFER_CB data_transfer_cb)
+		
 **Description**
 	
-	TODO
+	Sends logfile retrieve requests to T. The request result is 
+	stored in ``ctx->verifiable_logfiles[]`` array that will contain 
+	``ctx->verifiable_logfiles_size`` elements.
+	
+	For data transfering, users have to define a 
+	``SKLOG_V_DATA_TRANSFER_CB`` callback (**EXPERIMENTAL**).
 	
 **Return values**
 	
@@ -711,13 +546,13 @@ SKLOG_V_RetrieveLogFiles_v2()
 SKLOG_V_VerifyLogFile()
 ^^^^^^^^^^^^^^^^^^^^^^^
 
+.. WARNING:: Deprecated
+
 **Synopsis**
 	
 	.. c:function:: SKLOG_RETURN SKLOG_V_VerifyLogFile(SKLOG_V_Ctx *v_ctx, SKLOG_CONNECTION *c, unsigned int logfile_id)
 
 **Description**
-	
-	TODO
 	
 **Return values**
 	
@@ -727,17 +562,37 @@ SKLOG_V_VerifyLogFile()
 SKLOG_V_VerifyLogFile_uuid()
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+.. WARNING:: Deprecated
+
 **Synopsis**
 	
 	.. c:function:: SKLOG_RETURN SKLOG_V_VerifyLogFile_uuid(SKLOG_V_Ctx *v_ctx, SKLOG_CONNECTION *c, char *logfile_id)
 
 **Description**
 	
-	TODO
-	
 **Return values**
 	
 	The function returns ``SKLOG_SUCCES`` in case of success, 
 	``SKLOG_FAILURE`` in case of failure.
 
-.. _`Lumberjack Project`: https://fedorahosted.org/lumberjack/
+SKLOG_V_VerifyLogFile_v2()
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**Synopsis**
+
+	.. c:function:: SKLOG_RETURN \
+		SKLOG_V_VerifyLogFile_v2(SKLOG_V_Ctx *ctx, char *logfile_id, \
+		SKLOG_V_DATA_TRANSFER_CB verify_cb)
+		
+**Description**
+	
+	Sends logfile verification request to T. The logfile is specified by
+	``logfile_id``.
+	
+	For data transfering, users have to define a 
+	``SKLOG_V_DATA_TRANSFER_CB`` callback (**EXPERIMENTAL**).
+	
+**Return values**
+	
+	The function returns ``SKLOG_SUCCES`` in case of success, 
+	``SKLOG_FAILURE`` in case of failure.

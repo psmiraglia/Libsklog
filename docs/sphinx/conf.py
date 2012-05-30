@@ -97,9 +97,9 @@ html_theme = 'default'
 # further.  For a list of options available for each theme, see the
 # documentation.
 html_theme_options = {
-	"collapsiblesidebar": "true",
-	"fontsize": "90%",
-	"sidebarwidth": 350 
+	#~ "collapsiblesidebar": "true",
+	"fontsize": "100%",
+	#~ "sidebarwidth": 350 
 }
 
 # Add any paths that contain custom themes here, relative to this directory.

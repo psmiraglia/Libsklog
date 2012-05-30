@@ -1,6 +1,3 @@
-// #include <time.h>
-// #include <unistd.h>
-
 #include <sklog_u.h>
 
 #define MAX 1
@@ -9,60 +6,57 @@
 
 int main (void) {
 
-    SKLOG_RETURN rv = 0;
-
-    char *le1 = 0;
-    unsigned int le1_len = 0;
-    
-    char *le2 = 0;
-    unsigned int le2_len = 0;
-    
-    unsigned char *m0 = 0;
-    unsigned int m0_len = 0;
-    
-    unsigned char *m1 = 0;
-    unsigned int m1_len = 0;
-    
-    char *logs[BUF_512] = { 0x0 };
-    unsigned int logs_size = 0;
-
-    SKLOG_U_Ctx *u_ctx = 0;
-    
-    SKLOG_CONNECTION *c = 0;
-    
-    FILE *fp = 0;
-    char event[BUF_2048+1] = { 0x0 };
-    int seek = 0;
-    
-    char filename[BUF_512+1] = { 0x0 };
-    char logfile_id[UUID_STR_LEN+1] = { 0x0 };
+	SKLOG_RETURN rv = 0;
+	
+	char *le1 = 0;
+	unsigned int le1_len = 0;
+	
+	char *le2 = 0;
+	unsigned int le2_len = 0;
+	
+	unsigned char *m0 = 0;
+	unsigned int m0_len = 0;
+	
+	unsigned char *m1 = 0;
+	unsigned int m1_len = 0;
+	
+	char *logs[BUF_512] = { 0x0 };
+	unsigned int logs_size = 0;
+	
+	SKLOG_U_Ctx *u_ctx = 0;
+	
+	SKLOG_CONNECTION *c = 0;
+	
+	FILE *fp = 0;
+	char event[BUF_2048+1] = { 0x0 };
+	int seek = 0;
+	
+	char filename[BUF_512+1] = { 0x0 };
+	char logfile_id[UUID_STR_LEN+1] = { 0x0 };
 
 
 init_logging_session:
-    
-    /* initialize context */
-    
-    u_ctx = SKLOG_U_NewCtx();
-    
-    if ( u_ctx == NULL ) {
+	
+	/* initialize context */
+	
+	u_ctx = SKLOG_U_NewCtx();
+	
+	if ( u_ctx == NULL ) {
 		ERROR("SKLOG_U_NewCtx() failure");
 		return 1;
 	}
-    
-    rv = SKLOG_U_InitCtx(u_ctx);
-    
-    if ( rv == SKLOG_FAILURE ) {
+	
+	rv = SKLOG_U_InitCtx(u_ctx);
+	
+	if ( rv == SKLOG_FAILURE ) {
 		ERROR("SKLOG_U_InitCtx() failure");
 		return 1;
 	}
-
-
 	
 	/*
 	 *  initialize logging session phase
 	 *
 	 */
-
 	
 	rv = SKLOG_U_Open_M0(u_ctx, &m0, &m0_len, &le1, &le1_len);
 	
@@ -70,8 +64,8 @@ init_logging_session:
 		ERROR("SKLOG_U_Open_M0() failure");
 		return 1;
 	}
-    
-    /* setup connection */
+	
+	/* setup connection */
 	
 	c = SKLOG_CONNECTION_New();
 	
@@ -117,8 +111,8 @@ init_logging_session:
 	}
 	
 	rv = SKLOG_U_Open_M1(u_ctx, m1, m1_len, &le2, &le2_len);
-    
-    if ( rv == SKLOG_FAILURE ) {
+	
+	if ( rv == SKLOG_FAILURE ) {
 		ERROR("SKLOG_U_Open_M1() failure");
 		return 1;
 	}
@@ -184,12 +178,9 @@ init_logging_session:
 	 *  end application
 	 *
 	 */
-
-    
-    
-        
-    return 0;
-    
+		
+	return 0;
+	
 error:
 	return 1;
 }

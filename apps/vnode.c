@@ -43,7 +43,7 @@ int main (int argc, char **argv) {
 	 */
 	 
     fprintf(stdout,
-		"Welcome to Libsklog verifier shell!\n"
+		"Welcome to Libsklog verifier shell\n"
 		"Press H to visualize the available commands or X to quit.\n");
 
 	/*
