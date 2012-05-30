@@ -40,7 +40,8 @@ SKLOG_U_NewCtx(void)
     return ctx;
 }
 
-SKLOG_RETURN SKLOG_U_InitCtx(SKLOG_U_Ctx *ctx)
+SKLOG_RETURN
+SKLOG_U_InitCtx(SKLOG_U_Ctx *ctx)
 {
 	#ifdef DO_TRACE
     DEBUG
@@ -89,9 +90,10 @@ SKLOG_U_FreeCtx(SKLOG_U_Ctx **ctx)
     return SKLOG_SUCCESS;
 }
 
-SKLOG_RETURN SKLOG_U_LogEvent(SKLOG_U_Ctx *ctx, SKLOG_DATA_TYPE type,
-	char *data, unsigned int data_len, char **logentry,
-	unsigned int *logentry_len)
+SKLOG_RETURN
+SKLOG_U_LogEvent(SKLOG_U_Ctx *ctx, SKLOG_DATA_TYPE type, char *data,
+				 unsigned int data_len, char **logentry,
+				 unsigned int *logentry_len)
 {
 	#ifdef DO_TRACE
     DEBUG
@@ -155,7 +157,7 @@ error:
 
 /**
 SKLOG_RETURN
-SKLOG_U_LogEvent(SKLOG_U_Ctx        *u_ctx,
+SKLOG_U_LogEvent(SKLOG_U_Ctx        *ctx,
                  SKLOG_DATA_TYPE    type,
                  char               *data,
                  unsigned int       data_len,
@@ -176,27 +178,27 @@ SKLOG_U_LogEvent(SKLOG_U_Ctx        *u_ctx,
     memcpy(data_blob,data,data_len);
 
     //~ check the state of the logging session
-    if ( u_ctx->context_state == SKLOG_U_CTX_NOT_INITIALIZED ) {
-        if ( initialize_context(u_ctx) == SKLOG_FAILURE ) {
+    if ( ctx->context_state == SKLOG_U_CTX_NOT_INITIALIZED ) {
+        if ( initialize_context(ctx) == SKLOG_FAILURE ) {
             ERROR("context initialization process fails")
             goto error;
         }
-        if ( initialize_logging_session(u_ctx,0,0,0,0,0) == SKLOG_FAILURE ) {
+        if ( initialize_logging_session(ctx,0,0,0,0,0) == SKLOG_FAILURE ) {
             ERROR("loggin session initialization process fails")
             goto error;
         }
     }
     
     //~ write logentry
-    if ( create_logentry(u_ctx,type,data_blob,
+    if ( create_logentry(ctx,type,data_blob,
                          data_len,1,le,le_len) == SKLOG_FAILURE ) {
         ERROR("create_logentry() failure")
         goto error;
     }
 
-    if ( u_ctx->logging_session_mgmt != SKLOG_MANUAL ) {
+    if ( ctx->logging_session_mgmt != SKLOG_MANUAL ) {
         //~ check if the logging session needs to be renewed
-        if ( u_ctx->logfile_counter == u_ctx->logfile_size -1 ) {
+        if ( ctx->logfile_counter == ctx->logfile_size -1 ) {
     
             WARNING("The logging session has to be renewed!!!")
     
@@ -211,21 +213,21 @@ SKLOG_U_LogEvent(SKLOG_U_Ctx        *u_ctx,
 			
             time_serialize(&data_blob, &data_blob_len, now);
     
-            if ( create_logentry(u_ctx,type,data_blob,
+            if ( create_logentry(ctx,type,data_blob,
                                  data_blob_len,0,0,0) == SKLOG_FAILURE ) {
                 ERROR("create_logentry() failure")
                 goto error;
             }
     
             //~ send all generated log-entries to T
-            if ( flush_logfile_execute(u_ctx, now) == SKLOG_FAILURE ) {
+            if ( flush_logfile_execute(ctx, now) == SKLOG_FAILURE ) {
                 ERROR("flush_logfile_execute() failure")
                 goto error;
             }
     
             //~ flush the current context and mark it as uninitialized
-            memset(u_ctx,0,sizeof(*u_ctx));
-            u_ctx->context_state = SKLOG_U_CTX_NOT_INITIALIZED;
+            memset(ctx,0,sizeof(*ctx));
+            ctx->context_state = SKLOG_U_CTX_NOT_INITIALIZED;
         }
     }
 
@@ -239,8 +241,8 @@ error:
 */
 
 SKLOG_RETURN
-SKLOG_U_Open(SKLOG_U_Ctx *u_ctx, char **le1, unsigned int *le1_len,
-	char **le2, unsigned int *le2_len)
+SKLOG_U_Open(SKLOG_U_Ctx *ctx, char **le1, unsigned int *le1_len,
+			 char **le2, unsigned int *le2_len)
 {
     #ifdef DO_TRACE
     DEBUG
@@ -267,25 +269,25 @@ SKLOG_U_Open(SKLOG_U_Ctx *u_ctx, char **le1, unsigned int *le1_len,
 
 	/* checking input parameters */
 	
-	if ( u_ctx == NULL ) {
+	if ( ctx == NULL ) {
 		ERROR("Argument 1 must be not null");
 		goto check_input_error;
 	}
 	
 	/* initialize context */
 	
-	rv = initialize_context(u_ctx);
+	rv = initialize_context(ctx);
 	
 	if ( rv == SKLOG_FAILURE ) {
 		ERROR("context initialization process fails")
         goto error;
 	}
 	
-	u_ctx->logging_session_mgmt = SKLOG_MANUAL;
+	ctx->logging_session_mgmt = SKLOG_MANUAL;
 	
 	/* generate m0 */
 	
-	rv = generate_m0_message(u_ctx, &m0, &m0_len, le1, le1_len);
+	rv = generate_m0_message(ctx, &m0, &m0_len, le1, le1_len);
 		
 	if ( rv == SKLOG_FAILURE ) {
 		ERROR("generate_m0_message() failure");
@@ -302,8 +304,8 @@ SKLOG_U_Open(SKLOG_U_Ctx *u_ctx, char **le1, unsigned int *le1_len,
 		goto error;
 	}
 	
-	rv = SKLOG_CONNECTION_Init(c, u_ctx->t_address, u_ctx->t_port,
-		u_ctx->u_cert, u_ctx->u_privkey, 0, 0);
+	rv = SKLOG_CONNECTION_Init(c, ctx->t_address, ctx->t_port,
+		ctx->u_cert, ctx->u_privkey, 0, 0);
 		
 	if ( rv == SKLOG_FAILURE ) {
 		ERROR("SKLOG_CONNECTION_Init() failure");
@@ -347,7 +349,7 @@ SKLOG_U_Open(SKLOG_U_Ctx *u_ctx, char **le1, unsigned int *le1_len,
 	
 	/* check m1 message */
 	
-	rv = verify_m1_message(u_ctx, m1, m1_len, le2, le2_len);
+	rv = verify_m1_message(ctx, m1, m1_len, le2, le2_len);
 	
 	if ( rv == SKLOG_FAILURE ) {
 		ERROR("verify_m1_message() failure");
@@ -383,8 +385,9 @@ check_input_error:
  * 
  */
  
-SKLOG_RETURN SKLOG_U_Open_M0(SKLOG_U_Ctx *ctx, unsigned char **buf1,
-	unsigned int *buf1l, char **buf2, unsigned int *buf2l)
+SKLOG_RETURN
+SKLOG_U_Open_M0(SKLOG_U_Ctx *ctx, unsigned char **buf1,
+				unsigned int *buf1l, char **buf2, unsigned int *buf2l)
 {
 	#ifdef DO_TRACE
     DEBUG
@@ -454,8 +457,9 @@ check_input_error:
  * 
  */
  	
-SKLOG_RETURN SKLOG_U_Open_M1(SKLOG_U_Ctx *ctx, unsigned char *buf1,
-	unsigned int buf1l, char **buf2, unsigned int *buf2l)
+SKLOG_RETURN
+SKLOG_U_Open_M1(SKLOG_U_Ctx *ctx, unsigned char *buf1,
+				unsigned int buf1l, char **buf2, unsigned int *buf2l)
 {
 	#ifdef DO_TRACE
     DEBUG
@@ -497,7 +501,7 @@ check_input_error:
 }	
 	
 SKLOG_RETURN
-SKLOG_U_Close(SKLOG_U_Ctx *u_ctx, char **le, unsigned int *le_len)
+SKLOG_U_Close(SKLOG_U_Ctx *ctx, char **le, unsigned int *le_len)
 {
     #ifdef DO_TRACE
     DEBUG
@@ -517,7 +521,7 @@ SKLOG_U_Close(SKLOG_U_Ctx *u_ctx, char **le, unsigned int *le_len)
     
     /* check input parameters */
     
-    if ( u_ctx == NULL ) {
+    if ( ctx == NULL ) {
 		ERROR(MSG_BAD_INPUT_PARAMS);
 		return SKLOG_FAILURE;
 	}
@@ -535,7 +539,7 @@ SKLOG_U_Close(SKLOG_U_Ctx *u_ctx, char **le, unsigned int *le_len)
     
     /* create closure logentry */
 
-	rv = create_logentry(u_ctx, type, data, data_len, 1, le,
+	rv = create_logentry(ctx, type, data, data_len, 1, le,
 		le_len);
 
     if ( rv == SKLOG_FAILURE ) {
@@ -546,12 +550,12 @@ SKLOG_U_Close(SKLOG_U_Ctx *u_ctx, char **le, unsigned int *le_len)
 #ifdef USE_MISC    
     /* close logfile */
     
-    uuid_unparse_lower(u_ctx->logfile_id, logfile_id);
+    uuid_unparse_lower(ctx->logfile_id, logfile_id);
     
-    rv = u_ctx->lsdriver->close_logfile_v2(logfile_id, now);
+    rv = ctx->lsdriver->close_logfile_v2(logfile_id, now);
     
     if ( rv == SKLOG_FAILURE ) {
-        ERROR("u_ctx->lsdriver->close_logfile_v2() failure")
+        ERROR("ctx->lsdriver->close_logfile_v2() failure")
         goto error;
     }
 #endif
@@ -559,7 +563,7 @@ SKLOG_U_Close(SKLOG_U_Ctx *u_ctx, char **le, unsigned int *le_len)
     /* send all generated log-entries to T */
     
     /**
-    if ( flush_logfile_execute(u_ctx, now) == SKLOG_FAILURE ) {
+    if ( flush_logfile_execute(ctx, now) == SKLOG_FAILURE ) {
         ERROR("flush_logfile_execute() failure")
         goto error;
     }
@@ -567,7 +571,7 @@ SKLOG_U_Close(SKLOG_U_Ctx *u_ctx, char **le, unsigned int *le_len)
 
     /*  mark current context as uninitialized */
     
-    u_ctx->context_state = SKLOG_U_CTX_NOT_INITIALIZED;
+    ctx->context_state = SKLOG_U_CTX_NOT_INITIALIZED;
  
     return SKLOG_SUCCESS;
 
@@ -575,8 +579,9 @@ error:
     return SKLOG_FAILURE;
 }
 
-SKLOG_RETURN SKLOG_U_FlushLogfile(SKLOG_U_Ctx *ctx, char *logs[],
-	unsigned int *logs_size)
+SKLOG_RETURN
+SKLOG_U_FlushLogfile(SKLOG_U_Ctx *ctx, char *logs[],
+					 unsigned int *logs_size)
 {
 	#ifdef DO_TRACE
     DEBUG
@@ -608,8 +613,8 @@ SKLOG_RETURN SKLOG_U_FlushLogfile(SKLOG_U_Ctx *ctx, char *logs[],
 	return SKLOG_SUCCESS;
 }
 
-SKLOG_RETURN SKLOG_U_UploadLogfile(SKLOG_U_Ctx *ctx,
-	const char *filename, int mode)
+SKLOG_RETURN
+SKLOG_U_UploadLogfile(SKLOG_U_Ctx *ctx,	const char *filename, int mode)
 {
 	#ifdef DO_TRACE
     DEBUG
@@ -658,30 +663,3 @@ SKLOG_RETURN SKLOG_U_UploadLogfile(SKLOG_U_Ctx *ctx,
 	
     return rv;
 }	
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

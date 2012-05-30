@@ -60,8 +60,9 @@
  * 
  */
  
-SKLOG_RETURN gen_enc_key(SKLOG_U_Ctx *ctx, SKLOG_DATA_TYPE type,
-	unsigned char *enc_key)
+SKLOG_RETURN
+gen_enc_key(SKLOG_U_Ctx *ctx, SKLOG_DATA_TYPE type,
+			unsigned char *enc_key)
 {
 	#ifdef DO_TRACE
 	DEBUG
@@ -133,8 +134,10 @@ error:
  * 
  */
  
-SKLOG_RETURN gen_hash_chain(SKLOG_U_Ctx *ctx, unsigned char *data_enc,
-	unsigned int data_enc_size, SKLOG_DATA_TYPE type, unsigned char *y)
+SKLOG_RETURN
+gen_hash_chain(SKLOG_U_Ctx *ctx, unsigned char *data_enc,
+			   unsigned int data_enc_size, SKLOG_DATA_TYPE type,
+			   unsigned char *y)
 {
 	#ifdef DO_TRACE
 	DEBUG
@@ -212,8 +215,9 @@ error:
  * 
  */
  
-SKLOG_RETURN gen_hmac(SKLOG_U_Ctx *ctx, unsigned char *hash_chain,
-	unsigned char *hmac)
+SKLOG_RETURN
+gen_hmac(SKLOG_U_Ctx *ctx, unsigned char *hash_chain,
+		 unsigned char *hmac)
 {
 	#ifdef DO_TRACE
 	DEBUG
@@ -269,7 +273,8 @@ error:
  * 
  */
  
-SKLOG_RETURN renew_auth_key(SKLOG_U_Ctx *ctx)
+SKLOG_RETURN
+renew_auth_key(SKLOG_U_Ctx *ctx)
 {
 	#ifdef DO_TRACE
 	DEBUG
@@ -333,9 +338,10 @@ error:
  * 
  */
 
-SKLOG_RETURN __create_logentry(SKLOG_U_Ctx *u_ctx,
-	SKLOG_DATA_TYPE type, unsigned char *data, unsigned int data_len,
-	int req_blob, char **blob, unsigned int *blob_len)
+SKLOG_RETURN
+__create_logentry(SKLOG_U_Ctx *ctx,	SKLOG_DATA_TYPE type,
+				  unsigned char *data, unsigned int data_len,
+				  int req_blob, char **blob, unsigned int *blob_len)
 {
 	unsigned char enc_key[SKLOG_ENC_KEY_LEN] = {0};
 
@@ -346,7 +352,7 @@ SKLOG_RETURN __create_logentry(SKLOG_U_Ctx *u_ctx,
 	
 	unsigned char hmac[SKLOG_HMAC_LEN] = {0};
 
-	if ( u_ctx == NULL ) {
+	if ( ctx == NULL ) {
 		ERROR("argument 1 must be not null")
 		goto error;
 	}
@@ -355,7 +361,7 @@ SKLOG_RETURN __create_logentry(SKLOG_U_Ctx *u_ctx,
 		WARNING("Data to log is NULL. It's all ok?")
 
 	//~ generate encryption key
-	if ( gen_enc_key(u_ctx,type,enc_key) == SKLOG_FAILURE ) {
+	if ( gen_enc_key(ctx,type,enc_key) == SKLOG_FAILURE ) {
 		ERROR("gen_enc_key() failure")
 		goto error;
 	}
@@ -399,7 +405,7 @@ SKLOG_RETURN __create_logentry(SKLOG_U_Ctx *u_ctx,
 		case LogfileInitializationType:
 			sha256(data_enc,data_enc_len,md,&md_len);
 			//~ generate hash-chain element
-			if ( gen_hash_chain(u_ctx,md,md_len,type,hash_chain) == SKLOG_FAILURE ) {
+			if ( gen_hash_chain(ctx,md,md_len,type,hash_chain) == SKLOG_FAILURE ) {
 				ERROR("gen_hash_chain() failure")
 				goto error;
 			}
@@ -412,7 +418,7 @@ SKLOG_RETURN __create_logentry(SKLOG_U_Ctx *u_ctx,
 		case AbnormalCloseType:
 		case NormalCloseMessage:
 		case Undefined:
-			if ( gen_hash_chain(u_ctx,data_enc,data_enc_len,type,hash_chain) == SKLOG_FAILURE ) {
+			if ( gen_hash_chain(ctx,data_enc,data_enc_len,type,hash_chain) == SKLOG_FAILURE ) {
 				ERROR("gen_hash_chain() failure")
 				goto error;
 			}
@@ -428,20 +434,20 @@ SKLOG_RETURN __create_logentry(SKLOG_U_Ctx *u_ctx,
 	 * message is addressed
 	 *
 	//~ generate hash-chain element
-	if ( gen_hash_chain(u_ctx,data_enc,data_enc_len,type,hash_chain) == SKLOG_FAILURE ) {
+	if ( gen_hash_chain(ctx,data_enc,data_enc_len,type,hash_chain) == SKLOG_FAILURE ) {
 		ERROR("gen_hash_chain() failure")
 		goto error;
 	}
 	*/
 
 	//~ generate digest of hash-chain using the auth_key A
-	if ( gen_hmac(u_ctx,hash_chain,hmac) == SKLOG_FAILURE ) {
+	if ( gen_hmac(ctx,hash_chain,hmac) == SKLOG_FAILURE ) {
 		ERROR("gen_hmac() failure")
 		goto error;
 	}
 
 	//~ re-generate auth_key
-	if ( renew_auth_key(u_ctx) == SKLOG_FAILURE ) {
+	if ( renew_auth_key(ctx) == SKLOG_FAILURE ) {
 		ERROR("renew_auth_key() failure")
 		goto error;
 	}
@@ -516,8 +522,8 @@ SKLOG_RETURN __create_logentry(SKLOG_U_Ctx *u_ctx,
 	
 
 	//~ store log entry
-	if ( u_ctx->lsdriver->store_logentry
-			(u_ctx->logfile_id,type,data_enc,data_enc_len,hash_chain,hmac)
+	if ( ctx->lsdriver->store_logentry
+			(ctx->logfile_id,type,data_enc,data_enc_len,hash_chain,hmac)
 				== SKLOG_FAILURE ) {
 		ERROR("store_logentry() failure")
 		goto error;
@@ -532,7 +538,7 @@ SKLOG_RETURN __create_logentry(SKLOG_U_Ctx *u_ctx,
 	*/
 
 	//~ increase logentry counter
-	u_ctx->logfile_counter += 1;
+	ctx->logfile_counter += 1;
 
 	return SKLOG_SUCCESS;
 
@@ -541,9 +547,11 @@ error:
 	return SKLOG_FAILURE;
 }	
 
-SKLOG_RETURN __create_logentry_umberlog(SKLOG_U_Ctx *u_ctx,
-	SKLOG_DATA_TYPE type, unsigned char *data, unsigned int data_len,
-	int req_blob, char **blob, unsigned int *blob_len)
+SKLOG_RETURN
+__create_logentry_umberlog(SKLOG_U_Ctx *ctx, SKLOG_DATA_TYPE type,
+						   unsigned char *data, unsigned int data_len,
+						   int req_blob, char **blob,
+						   unsigned int *blob_len)
 {
 	/*
 	{
@@ -592,7 +600,7 @@ SKLOG_RETURN __create_logentry_umberlog(SKLOG_U_Ctx *u_ctx,
 	
 	/* check input parameters */
 	
-	if ( u_ctx == NULL || data == NULL ) {
+	if ( ctx == NULL || data == NULL ) {
 		ERROR("Bad input parameter(s). Please double-check it!");
 		rv = SKLOG_FAILURE;
 		goto check_input_error;
@@ -657,7 +665,7 @@ SKLOG_RETURN __create_logentry_umberlog(SKLOG_U_Ctx *u_ctx,
 
 	/* genrate encryption key */
 	
-	rv = gen_enc_key(u_ctx, type, enc_key);
+	rv = gen_enc_key(ctx, type, enc_key);
 	
 	if ( rv == SKLOG_FAILURE ) {
 		ERROR("gen_enc_key() failure");
@@ -683,7 +691,7 @@ SKLOG_RETURN __create_logentry_umberlog(SKLOG_U_Ctx *u_ctx,
 	
 	/* calculate hash */
 	
-	rv = gen_hash_chain(u_ctx, enc_data, enc_data_len, type, hash);
+	rv = gen_hash_chain(ctx, enc_data, enc_data_len, type, hash);
 	
 	if ( rv == SKLOG_FAILURE ) {
 		ERROR("gen_hash_chain() failure");
@@ -692,7 +700,7 @@ SKLOG_RETURN __create_logentry_umberlog(SKLOG_U_Ctx *u_ctx,
 	
 	/* calculate hmac */
 	
-	rv = gen_hmac(u_ctx, hash, hmac);
+	rv = gen_hmac(ctx, hash, hmac);
 	
 	if ( rv == SKLOG_FAILURE ) {
 		ERROR("gen_hmac() failure");
@@ -701,7 +709,7 @@ SKLOG_RETURN __create_logentry_umberlog(SKLOG_U_Ctx *u_ctx,
 	
 	/* renew authkey */
 	
-	rv = renew_auth_key(u_ctx);
+	rv = renew_auth_key(ctx);
 	
 	if ( rv == SKLOG_FAILURE ) {
 		ERROR("renew_auth_key() failure");
@@ -710,7 +718,7 @@ SKLOG_RETURN __create_logentry_umberlog(SKLOG_U_Ctx *u_ctx,
 	
 	/* compose logentry */
 	
-	uuid_unparse_lower(u_ctx->logfile_id, session_id);
+	uuid_unparse_lower(ctx->logfile_id, session_id);
 
 #ifdef DISABLE_ENCRYPTION
 	
@@ -893,7 +901,7 @@ SKLOG_RETURN __create_logentry_umberlog(SKLOG_U_Ctx *u_ctx,
 	
 #ifdef USE_MISC
 
-	rv = u_ctx->lsdriver->store_logentry_v2(session_id, *blob);
+	rv = ctx->lsdriver->store_logentry_v2(session_id, *blob);
 		
 	if ( rv == SKLOG_FAILURE ) {
 		ERROR("lsdriver->store_logentry() failure");
@@ -902,7 +910,7 @@ SKLOG_RETURN __create_logentry_umberlog(SKLOG_U_Ctx *u_ctx,
 	
 #else
 
-	rv = u_ctx->lsdriver->store_logentry(u_ctx->logfile_id, type,
+	rv = ctx->lsdriver->store_logentry(ctx->logfile_id, type,
 		enc_data, enc_data_len, hash, hmac);
 		
 	if ( rv == SKLOG_FAILURE ) {
@@ -914,7 +922,7 @@ SKLOG_RETURN __create_logentry_umberlog(SKLOG_U_Ctx *u_ctx,
 	
 	/* increase counter */
 	
-	u_ctx->logfile_counter += 1;
+	ctx->logfile_counter += 1;
 	
 error:
 
@@ -941,9 +949,10 @@ check_input_error:
 	return rv;
 }
 
-SKLOG_RETURN create_logentry(SKLOG_U_Ctx *u_ctx, SKLOG_DATA_TYPE type,
-	unsigned char *data, unsigned int data_len, int req_blob, 
-	char **blob, unsigned int *blob_len)
+SKLOG_RETURN
+create_logentry(SKLOG_U_Ctx *ctx, SKLOG_DATA_TYPE type,
+				unsigned char *data, unsigned int data_len,
+				int req_blob, char **blob, unsigned int *blob_len)
 {
 	#ifdef DO_TRACE
 	DEBUG
@@ -952,10 +961,10 @@ SKLOG_RETURN create_logentry(SKLOG_U_Ctx *u_ctx, SKLOG_DATA_TYPE type,
 	int rv = 0;
 	
 	#ifdef UMBERLOG
-		rv = __create_logentry_umberlog(u_ctx, type, data, data_len,
+		rv = __create_logentry_umberlog(ctx, type, data, data_len,
 			req_blob, blob, blob_len);
 	#else
-		rv = __create_logentry(u_ctx, type, data, data_len, req_blob,
+		rv = __create_logentry(ctx, type, data, data_len, req_blob,
 			blob, blob_len);
 	#endif
 	
@@ -971,9 +980,11 @@ SKLOG_RETURN create_logentry(SKLOG_U_Ctx *u_ctx, SKLOG_DATA_TYPE type,
  * 
  */
 
-SKLOG_RETURN parse_u_config_file(char *t_cert_path, char *t_address, 
-	int *t_port, char *u_cert_path, char *u_id, char *u_privkey_path,
-	unsigned int *u_timeout, unsigned int *logfile_max_size)
+SKLOG_RETURN
+parse_u_config_file(char *t_cert_path, char *t_address, int *t_port,
+					char *u_cert_path, char *u_id, char *u_privkey_path,
+					unsigned int *u_timeout,
+					unsigned int *logfile_max_size)
 {
 	#ifdef DO_TRACE
 	DEBUG
@@ -1074,8 +1085,9 @@ SKLOG_RETURN parse_u_config_file(char *t_cert_path, char *t_address,
  * 
  */
 
-SKLOG_RETURN gen_x0(SKLOG_U_Ctx *u_ctx, SKLOG_PROTOCOL_STEP p,
-	unsigned long d, unsigned char **x0, unsigned int *x0_len)
+SKLOG_RETURN
+gen_x0(SKLOG_U_Ctx *ctx, SKLOG_PROTOCOL_STEP p,	unsigned long d,
+	   unsigned char **x0, unsigned int *x0_len)
 {
 	#ifdef DO_TRACE
 	DEBUG
@@ -1103,7 +1115,7 @@ SKLOG_RETURN gen_x0(SKLOG_U_Ctx *u_ctx, SKLOG_PROTOCOL_STEP p,
 	SHOWBUF("buffer", dbuf, dbuf_len);
 
 	//~ serialize U's x509 certificate
-	cert_size = i2d_X509(u_ctx->u_cert,NULL);
+	cert_size = i2d_X509(ctx->u_cert,NULL);
 
 	if ( cert_size < 0 ) {
 		ERR_print_errors_fp(stderr);
@@ -1114,12 +1126,12 @@ SKLOG_RETURN gen_x0(SKLOG_U_Ctx *u_ctx, SKLOG_PROTOCOL_STEP p,
 	cert_tmp = cert;
 
 	/*
-	 * NOTE:i2d_X509() encodes the certificate u_ctx->u_cert in DER
+	 * NOTE:i2d_X509() encodes the certificate ctx->u_cert in DER
 	 * format and store it in the buffer *cert_tmp. After the encode
 	 * process cert_tmp pointer IS INCREMENTED!!! Damned OpenSSL!
 	 */
 
-	if ( i2d_X509(u_ctx->u_cert,&cert_tmp) < 0 ) {
+	if ( i2d_X509(ctx->u_cert,&cert_tmp) < 0 ) {
 		ERR_print_errors_fp(stderr);
 		goto error;
 	}
@@ -1161,7 +1173,7 @@ SKLOG_RETURN gen_x0(SKLOG_U_Ctx *u_ctx, SKLOG_PROTOCOL_STEP p,
 	memcpy(buffer+ds,tlv,len); free(tlv); ds += len;
 
 	//~ TLV-ize auth_key
-	tlv_create_message(A0_KEY,SKLOG_AUTH_KEY_LEN,u_ctx->auth_key,&tlv,&len);
+	tlv_create_message(A0_KEY,SKLOG_AUTH_KEY_LEN,ctx->auth_key,&tlv,&len);
 	memcpy(buffer+ds,tlv,len); free(tlv); ds += len;
 
 	OPENSSL_free(cert);
@@ -1188,10 +1200,10 @@ error:
  * 
  */
  
-SKLOG_RETURN gen_e_k0(SKLOG_U_Ctx *u_ctx, unsigned char *x0,
-	unsigned int x0_len, unsigned char *x0_sign,
-	unsigned int x0_sign_len, unsigned char **e_k0,
-	unsigned int *e_k0_len)
+SKLOG_RETURN
+gen_e_k0(SKLOG_U_Ctx *ctx, unsigned char *x0, unsigned int x0_len,
+		 unsigned char *x0_sign, unsigned int x0_sign_len,
+		 unsigned char **e_k0, unsigned int *e_k0_len)
 {
 	#ifdef DO_TRACE
 	DEBUG
@@ -1236,7 +1248,7 @@ SKLOG_RETURN gen_e_k0(SKLOG_U_Ctx *u_ctx, unsigned char *x0,
 	memcpy(buffer+ds,tlv,len); free(tlv); ds += len;
 	
 
-	if ( aes256_encrypt(buffer,ds,u_ctx->session_key,
+	if ( aes256_encrypt(buffer,ds,ctx->session_key,
 			SKLOG_SESSION_KEY_LEN,e_k0,e_k0_len) == SKLOG_FAILURE ) {
 		ERROR("encrypt_aes256() failure");
 		goto error;
@@ -1253,10 +1265,10 @@ error:
  * 
  */
 
-SKLOG_RETURN gen_m0(SKLOG_U_Ctx *u_ctx, SKLOG_PROTOCOL_STEP p,
-	unsigned char *pke_t_k0, unsigned int pke_t_k0_len,
-	unsigned char *e_k0, unsigned int e_k0_len, unsigned char **m0,
-	unsigned int *m0_len)
+SKLOG_RETURN
+gen_m0(SKLOG_U_Ctx *ctx, SKLOG_PROTOCOL_STEP p, unsigned char *pke_t_k0,
+	   unsigned int pke_t_k0_len, unsigned char *e_k0,
+	   unsigned int e_k0_len, unsigned char **m0, unsigned int *m0_len)
 {
 	#ifdef DO_TRACE
 	DEBUG
@@ -1297,7 +1309,7 @@ SKLOG_RETURN gen_m0(SKLOG_U_Ctx *u_ctx, SKLOG_PROTOCOL_STEP p,
 
 	//~ TLV-ize logfile_id
 
-	memcpy(value,u_ctx->logfile_id,UUID_LEN);
+	memcpy(value,ctx->logfile_id,UUID_LEN);
 	if ( tlv_create_message(ID_LOG,UUID_LEN,value,&tlv,&len) == SKLOG_FAILURE )
 		goto error;
 	memcpy(buffer+ds,tlv,len); ds += len; free(tlv);
@@ -1330,9 +1342,10 @@ error:
  * 
  */
 
-SKLOG_RETURN gen_d0(SKLOG_U_Ctx *u_ctx, unsigned long d,
-	unsigned long d_timeout, unsigned char *m0, unsigned int m0_len,
-	unsigned char **d0, unsigned int *d0_len)
+SKLOG_RETURN
+gen_d0(SKLOG_U_Ctx *ctx, unsigned long d, unsigned long d_timeout,
+	   unsigned char *m0, unsigned int m0_len, unsigned char **d0,
+	   unsigned int *d0_len)
 {
 	#ifdef DO_TRACE
 	DEBUG
@@ -1389,7 +1402,7 @@ SKLOG_RETURN gen_d0(SKLOG_U_Ctx *u_ctx, unsigned long d,
 
 	//~ TLV-ize log_id
 
-	memcpy(value,&u_ctx->logfile_id,SKLOG_LOG_ID_LEN);
+	memcpy(value,&ctx->logfile_id,SKLOG_LOG_ID_LEN);
 	if ( tlv_create_message(ID_LOG,SKLOG_LOG_ID_LEN,value,&tlv,&len) == SKLOG_FAILURE) {
 		ERROR("tlv_create() failure")
 		goto error;
@@ -1423,8 +1436,8 @@ error:
  * 
  */
 
-SKLOG_RETURN send_m0(SKLOG_CONNECTION *c, unsigned char *m0, 
-	unsigned int m0_len)
+SKLOG_RETURN
+send_m0(SKLOG_CONNECTION *c, unsigned char *m0, unsigned int m0_len)
 {
 	#ifdef DO_TRACE
 	DEBUG
@@ -1481,8 +1494,9 @@ error:
  * 
  */
 
-SKLOG_RETURN receive_m1(SKLOG_CONNECTION *c, unsigned char **m1, 
-	unsigned int *m1_len)
+SKLOG_RETURN
+receive_m1(SKLOG_CONNECTION *c, unsigned char **m1,
+		   unsigned int *m1_len)
 {
 	#ifdef DO_TRACE
 	DEBUG
@@ -1545,10 +1559,11 @@ error:
  * 
  */
 
-SKLOG_RETURN parse_m1(unsigned char *m1, unsigned int m1_len, 
-	SKLOG_PROTOCOL_STEP *p, unsigned char *t_id,
-	unsigned char **pke_u_k1, unsigned int *pke_u_k1_len, 
-	unsigned char **e_k1, unsigned int *e_k1_len)
+SKLOG_RETURN
+parse_m1(unsigned char *m1, unsigned int m1_len, SKLOG_PROTOCOL_STEP *p,
+		 unsigned char *t_id, unsigned char **pke_u_k1,
+		 unsigned int *pke_u_k1_len, unsigned char **e_k1,
+		 unsigned int *e_k1_len)
 {
 	#ifdef DO_TRACE
 	DEBUG
@@ -1622,9 +1637,10 @@ error:
  * 
  */
 
-SKLOG_RETURN parse_e_k1_content(unsigned char *in, unsigned int in_len,
-	unsigned char **x1, unsigned int *x1_len, unsigned char **x1_sign,
-	unsigned int *x1_sign_len)
+SKLOG_RETURN
+parse_e_k1_content(unsigned char *in, unsigned int in_len, 
+				   unsigned char **x1, unsigned int *x1_len,
+				   unsigned char **x1_sign, unsigned int *x1_sign_len)
 {
 	#ifdef DO_TRACE
 	DEBUG
@@ -1683,8 +1699,8 @@ error:
  * 
  */
 
-SKLOG_RETURN verify_m1(SKLOG_U_Ctx *ctx, unsigned char *m1, 
-	unsigned int m1_len)
+SKLOG_RETURN
+verify_m1(SKLOG_U_Ctx *ctx, unsigned char *m1, unsigned int m1_len)
 {
 	#ifdef DO_TRACE
 	DEBUG
@@ -1785,7 +1801,8 @@ error:
  * 
  */
 
-SKLOG_RETURN verify_timeout_expiration(unsigned long d_timeout)
+SKLOG_RETURN
+verify_timeout_expiration(unsigned long d_timeout)
 {
 	#ifdef DO_TRACE
 	DEBUG
@@ -1811,7 +1828,8 @@ SKLOG_RETURN verify_timeout_expiration(unsigned long d_timeout)
  * 
  */
 
-SKLOG_RETURN initialize_context(SKLOG_U_Ctx *u_ctx)
+SKLOG_RETURN
+initialize_context(SKLOG_U_Ctx *ctx)
 {
 	#ifdef DO_TRACE
 	DEBUG
@@ -1839,7 +1857,7 @@ SKLOG_RETURN initialize_context(SKLOG_U_Ctx *u_ctx)
 	OpenSSL_add_all_algorithms();
 	ERR_load_crypto_strings();
 
-	if ( u_ctx == NULL ) {
+	if ( ctx == NULL ) {
 		ERROR("argument 1 must be not NULL")
 		goto error;
 	}
@@ -1851,24 +1869,24 @@ SKLOG_RETURN initialize_context(SKLOG_U_Ctx *u_ctx)
 		u_privkey, &u_timeout, &logfile_size);
 
 	//~ set u_id
-	memset(u_ctx->u_id,0,HOST_NAME_MAX+1);
-	memcpy(u_ctx->u_id,u_id,strlen(u_id)+1);
+	memset(ctx->u_id,0,HOST_NAME_MAX+1);
+	memcpy(ctx->u_id,u_id,strlen(u_id)+1);
 
 	//~ set u_id_len
-	u_ctx->u_id_len = strlen(u_id);
+	ctx->u_id_len = strlen(u_id);
 
 	//~ set u_timeout
-	u_ctx->u_timeout = u_timeout;
+	ctx->u_timeout = u_timeout;
 
 	//~ set u_cert
-	memset(u_ctx->u_cert_file_path,0,MAX_FILE_PATH_LEN);
-	memcpy(u_ctx->u_cert_file_path,u_cert,strlen(u_cert)+1);
+	memset(ctx->u_cert_file_path,0,MAX_FILE_PATH_LEN);
+	memcpy(ctx->u_cert_file_path,u_cert,strlen(u_cert)+1);
 
-	u_ctx->u_cert = X509_new();
+	ctx->u_cert = X509_new();
 
 	fp = fopen(u_cert,"r");
 	if ( fp != NULL ) {
-		if ( !PEM_read_X509(fp,&u_ctx->u_cert,NULL,NULL) ) {
+		if ( !PEM_read_X509(fp,&ctx->u_cert,NULL,NULL) ) {
 			ERR_print_errors_fp(stderr);
 			goto error;
 		}
@@ -1879,14 +1897,14 @@ SKLOG_RETURN initialize_context(SKLOG_U_Ctx *u_ctx)
 	}
 
 	//~ set u_privkey
-	memset(u_ctx->u_privkey_file_path,0,MAX_FILE_PATH_LEN);
-	memcpy(u_ctx->u_privkey_file_path,u_privkey,strlen(u_privkey)+1);
+	memset(ctx->u_privkey_file_path,0,MAX_FILE_PATH_LEN);
+	memcpy(ctx->u_privkey_file_path,u_privkey,strlen(u_privkey)+1);
 
-	u_ctx->u_privkey = EVP_PKEY_new();
+	ctx->u_privkey = EVP_PKEY_new();
 	
 	fp = fopen(u_privkey,"r");
 	if ( fp != NULL ) {
-		if ( !PEM_read_PrivateKey(fp,&u_ctx->u_privkey,NULL,RSA_DEFAULT_PASSPHRASE) ) {
+		if ( !PEM_read_PrivateKey(fp,&ctx->u_privkey,NULL,RSA_DEFAULT_PASSPHRASE) ) {
 			ERR_print_errors_fp(stderr);
 			goto error;
 		}
@@ -1897,10 +1915,10 @@ SKLOG_RETURN initialize_context(SKLOG_U_Ctx *u_ctx)
 	}
 	
 	//~ set t_cert
-	u_ctx->t_cert = X509_new();
+	ctx->t_cert = X509_new();
 
 	if ( (fp = fopen(t_cert,"r")) != NULL ) {
-		if ( !PEM_read_X509(fp,&u_ctx->t_cert,NULL,NULL) ) {
+		if ( !PEM_read_X509(fp,&ctx->t_cert,NULL,NULL) ) {
 			ERR_print_errors_fp(stderr);
 			goto error;
 		}
@@ -1911,86 +1929,86 @@ SKLOG_RETURN initialize_context(SKLOG_U_Ctx *u_ctx)
 	}
 
 	//~ set t_cert_path
-	memset(u_ctx->t_cert_file_path,0,MAX_FILE_PATH_LEN);
-	memcpy(u_ctx->t_cert_file_path,t_cert,strlen(t_cert)+1);
+	memset(ctx->t_cert_file_path,0,MAX_FILE_PATH_LEN);
+	memcpy(ctx->t_cert_file_path,t_cert,strlen(t_cert)+1);
 
 	//~ set t_address
-	memset(u_ctx->t_address,0,512);
-	memcpy(u_ctx->t_address,t_address,strlen(t_address)+1);
+	memset(ctx->t_address,0,512);
+	memcpy(ctx->t_address,t_address,strlen(t_address)+1);
 
 	//~ set t_port
-	u_ctx->t_port = t_port;
+	ctx->t_port = t_port;
 
 	//~ set logfile_size
-	u_ctx->logfile_size = logfile_size;
+	ctx->logfile_size = logfile_size;
 
 	//~ set logfile_counter
-	u_ctx->logfile_counter = 0;
+	ctx->logfile_counter = 0;
 
 	//~ set logfile_id
-	uuid_generate(u_ctx->logfile_id);
+	uuid_generate(ctx->logfile_id);
 
 	//~ set session_key
-	RAND_bytes(u_ctx->session_key,SKLOG_SESSION_KEY_LEN);
+	RAND_bytes(ctx->session_key,SKLOG_SESSION_KEY_LEN);
 
 	//~ set auth_key
-	RAND_bytes(u_ctx->auth_key,SKLOG_AUTH_KEY_LEN);
+	RAND_bytes(ctx->auth_key,SKLOG_AUTH_KEY_LEN);
 
 	//~ init last_hash_chain
-	memset(u_ctx->last_hash_chain,0,SKLOG_HASH_CHAIN_LEN);
+	memset(ctx->last_hash_chain,0,SKLOG_HASH_CHAIN_LEN);
 
 	//~ init x0_hash
-	memset(u_ctx->x0_hash,0,SKLOG_HASH_CHAIN_LEN);
+	memset(ctx->x0_hash,0,SKLOG_HASH_CHAIN_LEN);
 
 	// init storage callbacks
-	u_ctx->lsdriver = calloc(1,sizeof(SKLOG_U_STORAGE_DRIVER));
+	ctx->lsdriver = calloc(1,sizeof(SKLOG_U_STORAGE_DRIVER));
 
-	if ( u_ctx->lsdriver == NULL ) {
+	if ( ctx->lsdriver == NULL ) {
 		ERROR("calloc() failure");
 		goto error;
 	}
 
 	#ifdef USE_FILE
-	u_ctx->lsdriver->store_logentry =	&sklog_file_u_store_logentry;
-	u_ctx->lsdriver->flush_logfile =	 &sklog_file_u_flush_logfile;
-	u_ctx->lsdriver->init_logfile =	  &sklog_file_u_init_logfile;
+	ctx->lsdriver->store_logentry =	&sklog_file_u_store_logentry;
+	ctx->lsdriver->flush_logfile =	 &sklog_file_u_flush_logfile;
+	ctx->lsdriver->init_logfile =	  &sklog_file_u_init_logfile;
 	#elif USE_SYSLOG
-	u_ctx->lsdriver->store_logentry =	&sklog_syslog_u_store_logentry;
-	u_ctx->lsdriver->flush_logfile =	 &sklog_syslog_u_flush_logfile;
-	u_ctx->lsdriver->init_logfile =	  &sklog_syslog_u_init_logfile;
+	ctx->lsdriver->store_logentry =	&sklog_syslog_u_store_logentry;
+	ctx->lsdriver->flush_logfile =	 &sklog_syslog_u_flush_logfile;
+	ctx->lsdriver->init_logfile =	  &sklog_syslog_u_init_logfile;
 	#elif USE_SQLITE
-	u_ctx->lsdriver->store_logentry =	&sklog_sqlite_u_store_logentry;
-	u_ctx->lsdriver->flush_logfile =	 &sklog_sqlite_u_flush_logfile;
-	u_ctx->lsdriver->flush_logfile_v2 =	 &sklog_sqlite_u_flush_logfile_v2;
-	u_ctx->lsdriver->init_logfile =	  &sklog_sqlite_u_init_logfile;
+	ctx->lsdriver->store_logentry =	&sklog_sqlite_u_store_logentry;
+	ctx->lsdriver->flush_logfile =	 &sklog_sqlite_u_flush_logfile;
+	ctx->lsdriver->flush_logfile_v2 =	 &sklog_sqlite_u_flush_logfile_v2;
+	ctx->lsdriver->init_logfile =	  &sklog_sqlite_u_init_logfile;
 	#elif USE_MISC
-	u_ctx->lsdriver->store_logentry_v2 = &sklog_misc_u_store_logentry_v2;
-	u_ctx->lsdriver->flush_logfile_v2 = &sklog_misc_u_flush_logfile_v2;
-	u_ctx->lsdriver->init_logfile_v2 = &sklog_misc_u_init_logfile_v2;
-	u_ctx->lsdriver->close_logfile_v2 = &sklog_misc_u_close_logfile_v2;
-	u_ctx->lsdriver->dump_raw = &sklog_misc_u_dump_raw;
-	u_ctx->lsdriver->dump_json = &sklog_misc_u_dump_json;
-	u_ctx->lsdriver->dump_soap = &sklog_misc_u_dump_soap;
+	ctx->lsdriver->store_logentry_v2 = &sklog_misc_u_store_logentry_v2;
+	ctx->lsdriver->flush_logfile_v2 = &sklog_misc_u_flush_logfile_v2;
+	ctx->lsdriver->init_logfile_v2 = &sklog_misc_u_init_logfile_v2;
+	ctx->lsdriver->close_logfile_v2 = &sklog_misc_u_close_logfile_v2;
+	ctx->lsdriver->dump_raw = &sklog_misc_u_dump_raw;
+	ctx->lsdriver->dump_json = &sklog_misc_u_dump_json;
+	ctx->lsdriver->dump_soap = &sklog_misc_u_dump_soap;
 	#else
-	u_ctx->lsdriver->store_logentry =	&sklog_dummy_u_store_logentry;
-	u_ctx->lsdriver->flush_logfile =	 &sklog_dummy_u_flush_logfile;
-	u_ctx->lsdriver->init_logfile =	  &sklog_dummy_u_init_logfile;
+	ctx->lsdriver->store_logentry =	&sklog_dummy_u_store_logentry;
+	ctx->lsdriver->flush_logfile =	 &sklog_dummy_u_flush_logfile;
+	ctx->lsdriver->init_logfile =	  &sklog_dummy_u_init_logfile;
 	#endif
 
 	//~ set context_state
-	u_ctx->context_state = SKLOG_U_CTX_INITIALIZED;
-	u_ctx->logging_session_mgmt = 0;
+	ctx->context_state = SKLOG_U_CTX_INITIALIZED;
+	ctx->logging_session_mgmt = 0;
 
 	ERR_free_strings();
 	return SKLOG_SUCCESS;
 
 error:
 	if ( fp > 0 ) fclose(fp);
-	if ( u_ctx->u_cert > 0 ) X509_free(u_ctx->u_cert);
-	if ( u_ctx->t_cert > 0 ) X509_free(u_ctx->t_cert);
-	if ( u_ctx->u_privkey > 0 ) EVP_PKEY_free(u_ctx->u_privkey);
+	if ( ctx->u_cert > 0 ) X509_free(ctx->u_cert);
+	if ( ctx->t_cert > 0 ) X509_free(ctx->t_cert);
+	if ( ctx->u_privkey > 0 ) EVP_PKEY_free(ctx->u_privkey);
 
-	memset(u_ctx,0,sizeof(u_ctx));
+	memset(ctx,0,sizeof(ctx));
 
 	ERR_free_strings();
 	return SKLOG_FAILURE;
@@ -2001,9 +2019,10 @@ error:
  * 
  */
 
-SKLOG_RETURN initialize_logging_session(SKLOG_U_Ctx *u_ctx,
-	int req_blob, char **le1, unsigned int *le1_len, char **le2,
-	unsigned int *le2_len)
+SKLOG_RETURN
+initialize_logging_session(SKLOG_U_Ctx *ctx, int req_blob, char **le1,
+						   unsigned int *le1_len, char **le2,
+						   unsigned int *le2_len)
 {
 	#ifdef DO_TRACE
 	DEBUG
@@ -2065,16 +2084,16 @@ SKLOG_RETURN initialize_logging_session(SKLOG_U_Ctx *u_ctx,
 	//~ set timeout
 
 	d_timeout = d;
-	d_timeout += u_ctx->u_timeout * 10E6;
+	d_timeout += ctx->u_timeout * 10E6;
 
 	//~ generate x0
-	if ( gen_x0(u_ctx, p , d, &x0, &x0_len) == SKLOG_FAILURE ) {
+	if ( gen_x0(ctx, p , d, &x0, &x0_len) == SKLOG_FAILURE ) {
 		ERROR("gen_x0() failure")
 		goto error;
 	}
 
 	//~ encrypt k0 using T's public key
-	if ( pke_encrypt(u_ctx->t_cert,u_ctx->session_key,
+	if ( pke_encrypt(ctx->t_cert,ctx->session_key,
 					 SKLOG_SESSION_KEY_LEN,&pke_t_k0,
 					 &pke_t_k0_len) == SKLOG_FAILURE ) {
 		ERROR("pke_encrypt() failure");
@@ -2082,28 +2101,28 @@ SKLOG_RETURN initialize_logging_session(SKLOG_U_Ctx *u_ctx,
 	}
 
 	//~ sign x0 using U's private key 
-	if ( sign_message(x0,x0_len,u_ctx->u_privkey,
+	if ( sign_message(x0,x0_len,ctx->u_privkey,
 					  &x0_sign,&x0_sign_len) == SKLOG_FAILURE ) {
 		ERROR("sign_message() failure")
 		goto error;
 	}
 
 	//~ encrypt (XO,sign_u_x0) using k0 key
-	if ( gen_e_k0(u_ctx,x0,x0_len,x0_sign,x0_sign_len,
+	if ( gen_e_k0(ctx,x0,x0_len,x0_sign,x0_sign_len,
 				  &e_k0,&e_k0_len) == SKLOG_FAILURE ) {
 		ERROR("gen_e_k0() failure")
 		goto error;
 	}
 
 	//~ generate M0
-	if ( gen_m0(u_ctx,p,pke_t_k0,pke_t_k0_len,e_k0,e_k0_len,
+	if ( gen_m0(ctx,p,pke_t_k0,pke_t_k0_len,e_k0,e_k0_len,
 				&m0,&m0_len) == SKLOG_FAILURE ) {
 		ERROR("gen_m0() failure")
 		goto error;
 	}
 
 	//~ generate d0
-	if ( gen_d0(u_ctx, d, d_timeout, m0, m0_len,
+	if ( gen_d0(ctx, d, d_timeout, m0, m0_len,
 				&d0,&d0_len) == SKLOG_FAILURE ) {
 		ERROR("gen_d0() failure")
 		goto error;
@@ -2125,7 +2144,7 @@ SKLOG_RETURN initialize_logging_session(SKLOG_U_Ctx *u_ctx,
 		goto error;
 	}
 	
-	retval = EVP_DigestFinal_ex(&mdctx,u_ctx->x0_hash,NULL);
+	retval = EVP_DigestFinal_ex(&mdctx,ctx->x0_hash,NULL);
 
 	if ( retval == 0 ) {
 		ERR_print_errors_fp(stderr);
@@ -2137,21 +2156,21 @@ SKLOG_RETURN initialize_logging_session(SKLOG_U_Ctx *u_ctx,
 	SKLOG_free(&x0);
 
 	//~ initialize logfile
-	if ( u_ctx->lsdriver->init_logfile(u_ctx->logfile_id, d)
+	if ( ctx->lsdriver->init_logfile(ctx->logfile_id, d)
 													== SKLOG_FAILURE ) {
-		ERROR("u_ctx->lsdriver->init_logfile() failure");
+		ERROR("ctx->lsdriver->init_logfile() failure");
 		goto error;
 	}
 
 	//~ create firts log entry
 	if ( req_blob ) { 
-		if ( create_logentry(u_ctx,LogfileInitializationType,
+		if ( create_logentry(ctx,LogfileInitializationType,
 							 d0,d0_len,1,le1,le1_len) == SKLOG_FAILURE ) {
 			ERROR("create_logentry() failure")
 			goto error;
 		}
 	} else {
-		if ( create_logentry(u_ctx,LogfileInitializationType,
+		if ( create_logentry(ctx,LogfileInitializationType,
 							 d0,d0_len,0,0,0) == SKLOG_FAILURE ) {
 			ERROR("create_logentry() failure")
 			goto error;
@@ -2168,13 +2187,13 @@ SKLOG_RETURN initialize_logging_session(SKLOG_U_Ctx *u_ctx,
 		goto error;
 	}
 
-	//~ retval = setup_ssl_connection(conn,u_ctx->t_address,u_ctx->t_port,
-				//~ //~ u_ctx->u_cert_file_path,u_ctx->u_privkey_file_path,
-				//~ u_ctx->u_cert,u_ctx->u_privkey,
-				//~ u_ctx->t_cert_file_path,DO_NOT_VERIFY);
+	//~ retval = setup_ssl_connection(conn,ctx->t_address,ctx->t_port,
+				//~ //~ ctx->u_cert_file_path,ctx->u_privkey_file_path,
+				//~ ctx->u_cert,ctx->u_privkey,
+				//~ ctx->t_cert_file_path,DO_NOT_VERIFY);
 				
-	retval = SKLOG_CONNECTION_Init(conn, u_ctx->t_address, u_ctx->t_port,
-		u_ctx->u_cert, u_ctx->u_privkey, u_ctx->t_cert_file_path,
+	retval = SKLOG_CONNECTION_Init(conn, ctx->t_address, ctx->t_port,
+		ctx->u_cert, ctx->u_privkey, ctx->t_cert_file_path,
 		DO_NOT_VERIFY);
 
 	if ( retval == SKLOG_FAILURE ) {
@@ -2209,7 +2228,7 @@ SKLOG_RETURN initialize_logging_session(SKLOG_U_Ctx *u_ctx,
 	}
 
 	//~ verify M1
-	if ( verify_m1(u_ctx,m1,m1_len) == SKLOG_FAILURE ) {
+	if ( verify_m1(ctx,m1,m1_len) == SKLOG_FAILURE ) {
 		ERROR("verify_m1() failure")
 		reason = "M1 verification failure";
 		goto failure;
@@ -2217,13 +2236,13 @@ SKLOG_RETURN initialize_logging_session(SKLOG_U_Ctx *u_ctx,
 
 	//~ create log entry
 	if ( req_blob ) {
-		if ( create_logentry(u_ctx,ResponseMessageType,
+		if ( create_logentry(ctx,ResponseMessageType,
 							 m1,m1_len,1,le2,le2_len) == SKLOG_FAILURE ) {
 			ERROR("create_logentry() failure")
 			goto error;
 		}
 	} else {
-		if ( create_logentry(u_ctx,ResponseMessageType,
+		if ( create_logentry(ctx,ResponseMessageType,
 							 m1,m1_len,0,0,0) == SKLOG_FAILURE ) {
 			ERROR("create_logentry() failure")
 			goto error;
@@ -2244,14 +2263,14 @@ failure:
 	strcat(data, reason);
 
 	if ( req_blob ) {
-		if ( create_logentry(u_ctx,AbnormalCloseType,
+		if ( create_logentry(ctx,AbnormalCloseType,
 							 (unsigned char *)data,
 							 strlen(data),1,le2,le2_len) == SKLOG_FAILURE ) {
 			ERROR("create_logentry() failure")
 			goto error;
 		}
 	} else {
-		if ( create_logentry(u_ctx,AbnormalCloseType,
+		if ( create_logentry(ctx,AbnormalCloseType,
 							 (unsigned char *)data,
 							 strlen(data),0,0,0) == SKLOG_FAILURE ) {
 			ERROR("create_logentry() failure")
@@ -2281,7 +2300,8 @@ error:
  * 
  */
 
-SKLOG_RETURN flush_logfile_init(SKLOG_CONNECTION *c)
+SKLOG_RETURN
+flush_logfile_init(SKLOG_CONNECTION *c)
 {
 	#ifdef DO_TRACE
 	DEBUG
@@ -2362,7 +2382,8 @@ error:
  * 
  */
  
-SKLOG_RETURN flush_logfile_terminate(SKLOG_CONNECTION *c)
+SKLOG_RETURN
+flush_logfile_terminate(SKLOG_CONNECTION *c)
 {
 	unsigned char wbuf[SKLOG_SMALL_BUFFER_LEN] = { 0 };
 	unsigned int wlen = 0;
@@ -2408,8 +2429,8 @@ error:
  * 
  */
  
-SKLOG_RETURN flush_logfile_execute(SKLOG_U_Ctx *u_ctx,
-	unsigned long now)
+SKLOG_RETURN
+flush_logfile_execute(SKLOG_U_Ctx *ctx, unsigned long now)
 {
 	#ifdef DO_TRACE
 	DEBUG
@@ -2428,12 +2449,12 @@ SKLOG_RETURN flush_logfile_execute(SKLOG_U_Ctx *u_ctx,
 		goto error;
 	}
 
-	//~ retval = setup_ssl_connection(conn,u_ctx->t_address,u_ctx->t_port,
-								  //~ u_ctx->u_cert,u_ctx->u_privkey,
-								  //~ u_ctx->t_cert_file_path,DO_NOT_VERIFY);
-	retval = SKLOG_CONNECTION_Init(conn, u_ctx->t_address,
-		u_ctx->t_port, u_ctx->u_cert, u_ctx->u_privkey,
-		u_ctx->t_cert_file_path, DO_NOT_VERIFY);
+	//~ retval = setup_ssl_connection(conn,ctx->t_address,ctx->t_port,
+								  //~ ctx->u_cert,ctx->u_privkey,
+								  //~ ctx->t_cert_file_path,DO_NOT_VERIFY);
+	retval = SKLOG_CONNECTION_Init(conn, ctx->t_address,
+		ctx->t_port, ctx->u_cert, ctx->u_privkey,
+		ctx->t_cert_file_path, DO_NOT_VERIFY);
 
 	if ( retval == SKLOG_FAILURE ) {
 		ERROR("setup_ssl_connection() failure");
@@ -2447,8 +2468,8 @@ SKLOG_RETURN flush_logfile_execute(SKLOG_U_Ctx *u_ctx,
 	}
 
 	//~ flush logfile
-	if ( u_ctx->lsdriver->flush_logfile(u_ctx->logfile_id, now, conn) == SKLOG_FAILURE ) {
-		ERROR("u_ctx->lsdriver->flush_logfile() failure");
+	if ( ctx->lsdriver->flush_logfile(ctx->logfile_id, now, conn) == SKLOG_FAILURE ) {
+		ERROR("ctx->lsdriver->flush_logfile() failure");
 		goto error;
 	}
 
@@ -2476,8 +2497,10 @@ error:
  * 
  */
 
-SKLOG_RETURN generate_m0_message(SKLOG_U_Ctx *u_ctx, unsigned char **msg,
-	unsigned int *msg_len, char **le, unsigned int *le_len)
+SKLOG_RETURN
+generate_m0_message(SKLOG_U_Ctx *ctx, unsigned char **msg,
+					unsigned int *msg_len, char **le,
+					unsigned int *le_len)
 {
 	#ifdef DO_TRACE
 	DEBUG;
@@ -2517,7 +2540,7 @@ SKLOG_RETURN generate_m0_message(SKLOG_U_Ctx *u_ctx, unsigned char **msg,
 	
 	/* checking input parameters */
 	
-	if ( u_ctx == NULL ) {
+	if ( ctx == NULL ) {
 		ERROR("Argument 1 must be not null");
 		goto check_input_error;
 	}
@@ -2532,13 +2555,13 @@ SKLOG_RETURN generate_m0_message(SKLOG_U_Ctx *u_ctx, unsigned char **msg,
 	}
 	
 	d_timeout = d;
-	d_timeout += (u_ctx->u_timeout * 10E6 );
+	d_timeout += (ctx->u_timeout * 10E6 );
 	
-	u_ctx->u_expiration = d_timeout;
+	ctx->u_expiration = d_timeout;
 	
 	/* generate x0 blob */
 	
-	rv = gen_x0(u_ctx, p, d, &x0, &x0_len);
+	rv = gen_x0(ctx, p, d, &x0, &x0_len);
 	if ( rv == SKLOG_FAILURE ) {
 		ERROR("gen_x0() failure");
 		goto error;
@@ -2553,11 +2576,11 @@ SKLOG_RETURN generate_m0_message(SKLOG_U_Ctx *u_ctx, unsigned char **msg,
 		goto error;
 	}
 	
-	memcpy(u_ctx->x0_hash, x0_md, SHA256_LEN);
+	memcpy(ctx->x0_hash, x0_md, SHA256_LEN);
 	
 	/* sign x0 blob using U privkey */
 	
-	rv = sign_message(x0, x0_len, u_ctx->u_privkey, &x0_sign,
+	rv = sign_message(x0, x0_len, ctx->u_privkey, &x0_sign,
 		&x0_sign_len);
 	
 	if ( rv == SKLOG_FAILURE ) {
@@ -2567,7 +2590,7 @@ SKLOG_RETURN generate_m0_message(SKLOG_U_Ctx *u_ctx, unsigned char **msg,
 	
 	/* encrypt [x0|x0_sign] blob using k0 key */
 	
-	rv = gen_e_k0(u_ctx, x0, x0_len, x0_sign, x0_sign_len, &e_k0,
+	rv = gen_e_k0(ctx, x0, x0_len, x0_sign, x0_sign_len, &e_k0,
 		&e_k0_len);
 		
 	if ( rv == SKLOG_FAILURE ) {
@@ -2577,7 +2600,7 @@ SKLOG_RETURN generate_m0_message(SKLOG_U_Ctx *u_ctx, unsigned char **msg,
 	
 	/* encrypt k0 using T pubkey */
 	
-	rv = pke_encrypt(u_ctx->t_cert, u_ctx->session_key,
+	rv = pke_encrypt(ctx->t_cert, ctx->session_key,
 		SKLOG_SESSION_KEY_LEN, &pke_t_k0, &pke_t_k0_len);
 		
 	if ( rv == SKLOG_FAILURE ) {
@@ -2587,7 +2610,7 @@ SKLOG_RETURN generate_m0_message(SKLOG_U_Ctx *u_ctx, unsigned char **msg,
 	
 	/* compose m0 message */
 	
-	rv = gen_m0(u_ctx, p, pke_t_k0, pke_t_k0_len, e_k0, e_k0_len, &m0,
+	rv = gen_m0(ctx, p, pke_t_k0, pke_t_k0_len, e_k0, e_k0_len, &m0,
 		&m0_len);
 		
 	if ( rv == SKLOG_FAILURE ) {
@@ -2597,7 +2620,7 @@ SKLOG_RETURN generate_m0_message(SKLOG_U_Ctx *u_ctx, unsigned char **msg,
 	
 	/* generate d0 blob */
 	
-	rv = gen_d0(u_ctx, d, d_timeout, m0, m0_len, &d0, &d0_len);
+	rv = gen_d0(ctx, d, d_timeout, m0, m0_len, &d0, &d0_len);
 	
 	if ( rv == SKLOG_FAILURE ) {
 		ERROR("gen_d0() failure");
@@ -2607,26 +2630,26 @@ SKLOG_RETURN generate_m0_message(SKLOG_U_Ctx *u_ctx, unsigned char **msg,
 	/* initialize logfile */
 	
 #ifdef USE_MISC
-	uuid_unparse_lower(u_ctx->logfile_id, logfile_id);
+	uuid_unparse_lower(ctx->logfile_id, logfile_id);
 	
-	rv = u_ctx->lsdriver->init_logfile_v2(logfile_id, d);
+	rv = ctx->lsdriver->init_logfile_v2(logfile_id, d);
 	
 	if ( rv == SKLOG_FAILURE ) {
-		ERROR("u_ctx->lsdriver->init_logfile() failure");
+		ERROR("ctx->lsdriver->init_logfile() failure");
 		goto error;
 	}
 #else
-	rv = u_ctx->lsdriver->init_logfile(u_ctx->logfile_id, d);
+	rv = ctx->lsdriver->init_logfile(ctx->logfile_id, d);
 	
 	if ( rv == SKLOG_FAILURE ) {
-		ERROR("u_ctx->lsdriver->init_logfile() failure");
+		ERROR("ctx->lsdriver->init_logfile() failure");
 		goto error;
 	}
 #endif
 	
 	/* store the first logentry */
 	
-	rv = create_logentry(u_ctx, LogfileInitializationType, d0, d0_len,
+	rv = create_logentry(ctx, LogfileInitializationType, d0, d0_len,
 		1, le,le_len);
 		
 	if ( rv == SKLOG_FAILURE ) {
@@ -2669,8 +2692,9 @@ check_input_error:
  * 
  */
 
-SKLOG_RETURN verify_m1_message(SKLOG_U_Ctx *u_ctx, unsigned char *m1,
-	unsigned int m1_len, char **le,	unsigned int *le_len)
+SKLOG_RETURN
+verify_m1_message(SKLOG_U_Ctx *ctx, unsigned char *m1,
+				  unsigned int m1_len, char **le, unsigned int *le_len)
 {
 	#ifdef DO_TARCE
 	DEBUG;
@@ -2687,14 +2711,14 @@ SKLOG_RETURN verify_m1_message(SKLOG_U_Ctx *u_ctx, unsigned char *m1,
 	
 	/* check input parameters */
 	
-	if ( u_ctx == NULL || m1 == NULL ) {
+	if ( ctx == NULL || m1 == NULL ) {
 		ERROR("Bad input parameter(s). Please, double-check!");
 		goto check_input_error;
 	}
 	
 	/* verify timeout expiration */
 	
-	if ( verify_timeout_expiration(u_ctx->u_expiration) == SKLOG_FAILURE ) {
+	if ( verify_timeout_expiration(ctx->u_expiration) == SKLOG_FAILURE ) {
 		NOTIFY("Timeout expiration");
 		reason = "Timeout Expiration";
 		goto failure;
@@ -2702,7 +2726,7 @@ SKLOG_RETURN verify_m1_message(SKLOG_U_Ctx *u_ctx, unsigned char *m1,
 	
 	/* verify m1 message */
 	
-	rv = verify_m1(u_ctx, m1, m1_len);
+	rv = verify_m1(ctx, m1, m1_len);
 	
 	if ( rv == SKLOG_FAILURE ) {
 		ERROR("verify_m1() failure");
@@ -2712,7 +2736,7 @@ SKLOG_RETURN verify_m1_message(SKLOG_U_Ctx *u_ctx, unsigned char *m1,
 	
 	/* create logentry */
 	
-	rv = create_logentry(u_ctx, ResponseMessageType, m1, m1_len,
+	rv = create_logentry(ctx, ResponseMessageType, m1, m1_len,
 		1, le, le_len);
 		
 	if ( rv == SKLOG_FAILURE ) {
@@ -2744,7 +2768,7 @@ failure:
 	
 	/* create logentry */
 	
-	rv = create_logentry(u_ctx, AbnormalCloseType, 
+	rv = create_logentry(ctx, AbnormalCloseType, 
 		(unsigned char *)data, strlen(data), 1, le, le_len);
 		
 	if ( rv == SKLOG_FAILURE ) {
@@ -2758,7 +2782,8 @@ check_input_error:
 	return SKLOG_FAILURE;
 }
 
-SKLOG_RETURN dump_raw(SKLOG_U_Ctx *ctx, const char *filename)
+SKLOG_RETURN
+dump_raw(SKLOG_U_Ctx *ctx, const char *filename)
 {
 	#ifdef DO_TRACE
 	DEBUG
@@ -2789,7 +2814,8 @@ SKLOG_RETURN dump_raw(SKLOG_U_Ctx *ctx, const char *filename)
 	return SKLOG_SUCCESS;
 }
 
-SKLOG_RETURN dump_json(SKLOG_U_Ctx *ctx, const char *filename)
+SKLOG_RETURN
+dump_json(SKLOG_U_Ctx *ctx, const char *filename)
 {
 	#ifdef DO_TRACE
 	DEBUG
@@ -2820,7 +2846,8 @@ SKLOG_RETURN dump_json(SKLOG_U_Ctx *ctx, const char *filename)
 	return SKLOG_SUCCESS;
 }
 
-SKLOG_RETURN dump_soap(SKLOG_U_Ctx *ctx, const char *filename)
+SKLOG_RETURN
+dump_soap(SKLOG_U_Ctx *ctx, const char *filename)
 {
 	#ifdef DO_TRACE
 	DEBUG
@@ -2850,29 +2877,3 @@ SKLOG_RETURN dump_soap(SKLOG_U_Ctx *ctx, const char *filename)
 	
 	return SKLOG_SUCCESS;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

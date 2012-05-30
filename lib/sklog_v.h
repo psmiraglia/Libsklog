@@ -70,36 +70,45 @@ typedef int (*sklog_data_tranfer_cb) (SKLOG_V_Ctx *ctx,
 	unsigned char *rbuf, size_t *rlen, size_t rlen_max,
 	unsigned char *wbuf, size_t *wlen);
 	
-int retrieve(SKLOG_V_Ctx *ctx, unsigned char *rbuf, size_t *rlen,
-	size_t rlen_max, unsigned char *wbuf, size_t *wlen);
+int
+retrieve(SKLOG_V_Ctx *ctx, unsigned char *rbuf, size_t *rlen,
+		 size_t rlen_max, unsigned char *wbuf, size_t *wlen);
 	
-int verify(SKLOG_V_Ctx *ctx, unsigned char *rbuf, size_t *rlen,
-	size_t rlen_max, unsigned char *wbuf, size_t *wlen);
+int
+verify(SKLOG_V_Ctx *ctx, unsigned char *rbuf, size_t *rlen,
+	   size_t rlen_max, unsigned char *wbuf, size_t *wlen);
 	
 /*--------------------------------------------------------------------*/
 /*--------------------------------------------------------------------*/
 
-SKLOG_V_Ctx *SKLOG_V_NewCtx(void);
+SKLOG_V_Ctx *
+SKLOG_V_NewCtx(void);
 
-SKLOG_RETURN SKLOG_V_InitCtx(SKLOG_V_Ctx *ctx);
+SKLOG_RETURN
+SKLOG_V_InitCtx(SKLOG_V_Ctx *ctx);
 
-SKLOG_RETURN SKLOG_V_FreeCtx(SKLOG_V_Ctx **ctx);
+SKLOG_RETURN
+SKLOG_V_FreeCtx(SKLOG_V_Ctx **ctx);
 
-SKLOG_RETURN SKLOG_V_RetrieveLogFiles(SKLOG_V_Ctx *v_ctx,
-	SKLOG_CONNECTION *c);
+SKLOG_RETURN
+SKLOG_V_RetrieveLogFiles(SKLOG_V_Ctx *ctx, SKLOG_CONNECTION *c);
 
-SKLOG_RETURN SKLOG_V_RetrieveLogFiles_v2(SKLOG_V_Ctx *v_ctx,
-	sklog_data_tranfer_cb data_transfer_cb);
+SKLOG_RETURN
+SKLOG_V_RetrieveLogFiles_v2(SKLOG_V_Ctx *ctx,
+							sklog_data_tranfer_cb data_transfer_cb);
 		
-SKLOG_RETURN SKLOG_V_VerifyLogFile_v2(SKLOG_V_Ctx *v_ctx,
-	char *logfile_id, sklog_data_tranfer_cb verify_cb);	
+SKLOG_RETURN
+SKLOG_V_VerifyLogFile_v2(SKLOG_V_Ctx *ctx, char *logfile_id,
+						 sklog_data_tranfer_cb verify_cb);	
 
 /* deprecated */
 
-SKLOG_RETURN SKLOG_V_VerifyLogFile(SKLOG_V_Ctx *v_ctx,
- SKLOG_CONNECTION *c, unsigned int logfile_id);
+SKLOG_RETURN
+SKLOG_V_VerifyLogFile(SKLOG_V_Ctx *ctx, SKLOG_CONNECTION *c,
+					  unsigned int logfile_id);
 
-SKLOG_RETURN SKLOG_V_VerifyLogFile_uuid(SKLOG_V_Ctx *v_ctx,
-	SKLOG_CONNECTION *c, char *logfile_id);
+SKLOG_RETURN
+SKLOG_V_VerifyLogFile_uuid(SKLOG_V_Ctx *ctx, SKLOG_CONNECTION *c,
+						   char *logfile_id);
 
 #endif /* SKLOG_V_H */

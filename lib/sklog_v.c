@@ -39,7 +39,8 @@
  * 
  */
  
-SKLOG_V_Ctx *SKLOG_V_NewCtx(void)
+SKLOG_V_Ctx *
+SKLOG_V_NewCtx(void)
 {
 	#ifdef DO_TRACE
 	DEBUG
@@ -64,7 +65,8 @@ SKLOG_V_Ctx *SKLOG_V_NewCtx(void)
  * 
  */
  
-SKLOG_RETURN SKLOG_V_InitCtx(SKLOG_V_Ctx *ctx)
+SKLOG_RETURN
+SKLOG_V_InitCtx(SKLOG_V_Ctx *ctx)
 {
 	#ifdef DO_TRACE
 	DEBUG
@@ -167,7 +169,8 @@ error:
  * 
  */
  
-SKLOG_RETURN SKLOG_V_FreeCtx(SKLOG_V_Ctx **ctx)
+SKLOG_RETURN
+SKLOG_V_FreeCtx(SKLOG_V_Ctx **ctx)
 {
 	#ifdef DO_TRACE
 	DEBUG
@@ -196,8 +199,8 @@ SKLOG_RETURN SKLOG_V_FreeCtx(SKLOG_V_Ctx **ctx)
  * 
  */
  
-SKLOG_RETURN SKLOG_V_RetrieveLogFiles(SKLOG_V_Ctx *v_ctx,
-	SKLOG_CONNECTION *c)
+SKLOG_RETURN
+SKLOG_V_RetrieveLogFiles(SKLOG_V_Ctx *ctx, SKLOG_CONNECTION *c)
 {
 	#ifdef DO_TRACE
 	DEBUG
@@ -228,9 +231,9 @@ SKLOG_RETURN SKLOG_V_RetrieveLogFiles(SKLOG_V_Ctx *v_ctx,
 		//~ goto error;
 	//~ }
 
-	//~ retval = setup_ssl_connection(c,v_ctx->t_address,v_ctx->t_port,
-								  //~ v_ctx->v_cert,v_ctx->v_privkey,
-								  //~ v_ctx->t_cert_file_path,DO_NOT_VERIFY);
+	//~ retval = setup_ssl_connection(c,ctx->t_address,ctx->t_port,
+								  //~ ctx->v_cert,ctx->v_privkey,
+								  //~ ctx->t_cert_file_path,DO_NOT_VERIFY);
 //~ 
 	//~ if ( retval == SKLOG_FAILURE ) {
 		//~ ERROR("setup_ssl_connection() failure");
@@ -298,7 +301,7 @@ SKLOG_RETURN SKLOG_V_RetrieveLogFiles(SKLOG_V_Ctx *v_ctx,
 
 			while ( token != NULL ) {
 
-				strncpy(v_ctx->verifiable_logfiles[index++],token,UUID_STR_LEN);
+				strncpy(ctx->verifiable_logfiles[index++],token,UUID_STR_LEN);
 				token = strtok(NULL,";");
 				NOTIFY("OK - %d", index);
 			}
@@ -310,7 +313,7 @@ SKLOG_RETURN SKLOG_V_RetrieveLogFiles(SKLOG_V_Ctx *v_ctx,
 	}
 
 	NOTIFY("I'm here...");
-	v_ctx->verifiable_logfiles_size = index;
+	ctx->verifiable_logfiles_size = index;
 	ERR_free_strings();
 	return SKLOG_SUCCESS;
 
@@ -328,8 +331,9 @@ error:
  * 
  */
  
-int retrieve(SKLOG_V_Ctx *ctx, unsigned char *rbuf, size_t *rlen,
-	size_t rlen_max, unsigned char *wbuf, size_t *wlen)
+int
+retrieve(SKLOG_V_Ctx *ctx, unsigned char *rbuf, size_t *rlen,
+		 size_t rlen_max, unsigned char *wbuf, size_t *wlen)
 {
 	#ifdef DO_TRACE
 	DEBUG
@@ -403,8 +407,9 @@ int retrieve(SKLOG_V_Ctx *ctx, unsigned char *rbuf, size_t *rlen,
 	return SKLOG_SUCCESS;
 }
  
-SKLOG_RETURN SKLOG_V_RetrieveLogFiles_v2(SKLOG_V_Ctx *v_ctx,
-	sklog_data_tranfer_cb retrieve_cb)
+SKLOG_RETURN
+SKLOG_V_RetrieveLogFiles_v2(SKLOG_V_Ctx *ctx,
+							sklog_data_tranfer_cb retrieve_cb)
 {
 	#ifdef DO_TRACE
 	DEBUG
@@ -429,7 +434,7 @@ SKLOG_RETURN SKLOG_V_RetrieveLogFiles_v2(SKLOG_V_Ctx *v_ctx,
 	
 	/* check input arguments */
 	
-	if ( v_ctx == NULL || retrieve_cb == NULL ) {
+	if ( ctx == NULL || retrieve_cb == NULL ) {
 		ERROR(MSG_BAD_INPUT_PARAMS);
 		return SKLOG_FAILURE;
 	}
@@ -444,7 +449,7 @@ SKLOG_RETURN SKLOG_V_RetrieveLogFiles_v2(SKLOG_V_Ctx *v_ctx,
 	memcpy(wbuf, tlv, wlen);
 	free(tlv);
 	
-	rv = retrieve_cb(v_ctx, rbuf, (size_t *) &rlen, BUF_8192, wbuf,
+	rv = retrieve_cb(ctx, rbuf, (size_t *) &rlen, BUF_8192, wbuf,
 		(size_t *) &wlen);
 	
 	if ( rv == SKLOG_FAILURE ) {
@@ -483,11 +488,11 @@ SKLOG_RETURN SKLOG_V_RetrieveLogFiles_v2(SKLOG_V_Ctx *v_ctx,
 			id = strtok(buf, ";");
 			
 			while ( id != NULL ) {
-				memcpy(v_ctx->verifiable_logfiles[i++], id, UUID_STR_LEN);
+				memcpy(ctx->verifiable_logfiles[i++], id, UUID_STR_LEN);
 				id = strtok(NULL, ";");
 			}
 			
-			v_ctx->verifiable_logfiles_size = i;
+			ctx->verifiable_logfiles_size = i;
 			
 			rv = SKLOG_SUCCESS;
 			break;
@@ -507,8 +512,9 @@ SKLOG_RETURN SKLOG_V_RetrieveLogFiles_v2(SKLOG_V_Ctx *v_ctx,
  *  
  */
  
-SKLOG_RETURN SKLOG_V_VerifyLogFile(SKLOG_V_Ctx *v_ctx,
-	SKLOG_CONNECTION *c, unsigned int logfile_id)
+SKLOG_RETURN
+SKLOG_V_VerifyLogFile(SKLOG_V_Ctx *ctx, SKLOG_CONNECTION *c,
+					  unsigned int logfile_id)
 {
 	#ifdef DO_TRACE
 	DEBUG
@@ -534,7 +540,7 @@ SKLOG_RETURN SKLOG_V_VerifyLogFile(SKLOG_V_Ctx *v_ctx,
 
 	id = logfile_id;
 
-	while ( strlen((v_ctx)->verifiable_logfiles[id]) <= 0 ) {
+	while ( strlen((ctx)->verifiable_logfiles[id]) <= 0 ) {
 		ERROR("Invalid logfile_id");
 		fprintf(stdout,"Select logfile id: ");
 		memset(inbuf,0,INBUF_LEN);
@@ -542,7 +548,7 @@ SKLOG_RETURN SKLOG_V_VerifyLogFile(SKLOG_V_Ctx *v_ctx,
 			sscanf(inbuf,"%d",&id);
 	}
 	
-	memcpy(value,(v_ctx)->verifiable_logfiles[logfile_id],UUID_STR_LEN);
+	memcpy(value,(ctx)->verifiable_logfiles[logfile_id],UUID_STR_LEN);
 	len = UUID_STR_LEN;
 
 	//~ send: [VERIFY_LOGFILE][UUID_STR_LEN][UUID]
@@ -618,8 +624,9 @@ error:
  *  
  */
  
-int verify(SKLOG_V_Ctx *ctx, unsigned char *rbuf, size_t *rlen,
-	size_t rlen_max, unsigned char *wbuf, size_t *wlen)
+int
+verify(SKLOG_V_Ctx *ctx, unsigned char *rbuf, size_t *rlen,
+	   size_t rlen_max, unsigned char *wbuf, size_t *wlen)
 {
 	#ifdef DO_TRACE
 	DEBUG
@@ -693,8 +700,9 @@ int verify(SKLOG_V_Ctx *ctx, unsigned char *rbuf, size_t *rlen,
 	return SKLOG_SUCCESS;
 }
  
-SKLOG_RETURN SKLOG_V_VerifyLogFile_v2(SKLOG_V_Ctx *v_ctx,
-	char *logfile_id, sklog_data_tranfer_cb verify_cb)
+SKLOG_RETURN
+SKLOG_V_VerifyLogFile_v2(SKLOG_V_Ctx *ctx, char *logfile_id,
+						 sklog_data_tranfer_cb verify_cb)
 {
 	#ifdef DO_TRACE
 	DEBUG
@@ -715,7 +723,7 @@ SKLOG_RETURN SKLOG_V_VerifyLogFile_v2(SKLOG_V_Ctx *v_ctx,
 	
 	/* check input parameters */
 	
-	if ( v_ctx == NULL || logfile_id == NULL || verify_cb == NULL ) {
+	if ( ctx == NULL || logfile_id == NULL || verify_cb == NULL ) {
 		ERROR(MSG_BAD_INPUT_PARAMS);
 		return SKLOG_FAILURE;
 	}
@@ -736,7 +744,7 @@ SKLOG_RETURN SKLOG_V_VerifyLogFile_v2(SKLOG_V_Ctx *v_ctx,
 	/* ---------- */
 	/*  callback  */
 	
-	rv = verify_cb(v_ctx, rbuf, (size_t *)&rlen, BUF_8192, wbuf,
+	rv = verify_cb(ctx, rbuf, (size_t *)&rlen, BUF_8192, wbuf,
 		(size_t *)&wlen);
 		
 	/* ---------- */
@@ -772,8 +780,9 @@ SKLOG_RETURN SKLOG_V_VerifyLogFile_v2(SKLOG_V_Ctx *v_ctx,
  * Verify logfile
  */
  
-SKLOG_RETURN SKLOG_V_VerifyLogFile_uuid(SKLOG_V_Ctx *v_ctx,
-	SKLOG_CONNECTION *c, char *logfile_id)
+SKLOG_RETURN
+SKLOG_V_VerifyLogFile_uuid(SKLOG_V_Ctx *ctx, SKLOG_CONNECTION *c,
+						   char *logfile_id)
 {
 	#ifdef DO_TRACE
 	DEBUG

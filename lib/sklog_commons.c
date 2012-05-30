@@ -54,7 +54,8 @@ typedef enum message_type {
 	undefined
 } MSG_TYPE;
 
-static void msg(MSG_TYPE type, const char *source, const int lineno,
+static void
+msg(MSG_TYPE type, const char *source, const int lineno,
 	const char *func, const char *fmt, va_list ap)
 {
 	int curr_errno = errno;
@@ -146,13 +147,15 @@ static void msg(MSG_TYPE type, const char *source, const int lineno,
 	return;
 }
 
-void msg_debug(const char *source, const int lineno, const char *func)
+void
+msg_debug(const char *source, const int lineno, const char *func)
 {
 	msg(debug, source, lineno, func, NULL, 0);
 	return;
 }
 
-void msg_error(const char *source, const int lineno, const char *func,
+void
+msg_error(const char *source, const int lineno, const char *func,
 	const char *fmt, ...)
 {
 	va_list ap;
@@ -162,7 +165,8 @@ void msg_error(const char *source, const int lineno, const char *func,
 	return;
 }
 
-void msg_notify(const char *source, const int lineno, const char *func,
+void
+msg_notify(const char *source, const int lineno, const char *func,
 	const char *fmt, ...)
 {
 	va_list ap;
@@ -172,7 +176,8 @@ void msg_notify(const char *source, const int lineno, const char *func,
 	return;
 }
 
-void msg_warning(const char *source, const int lineno, const char *func,
+void
+msg_warning(const char *source, const int lineno, const char *func,
 	const char *fmt, ...)
 {
 	va_list ap;
@@ -182,7 +187,8 @@ void msg_warning(const char *source, const int lineno, const char *func,
 	return;
 }
 
-void msg_to_implement(const char *func)
+void
+msg_to_implement(const char *func)
 {
 	fprintf(stderr,"\n+----------------------------------------------------------------------+");
 	fprintf(stderr,"\n| %-68s |",func);
@@ -196,8 +202,9 @@ void msg_to_implement(const char *func)
 	return;
 }
 
-void msg_show_query(const char *source, const int lineno,
-	const char *func, const char *fmt, ...)
+void
+msg_show_query(const char *source, const int lineno, const char *func,
+			   const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
@@ -206,8 +213,9 @@ void msg_show_query(const char *source, const int lineno,
 	return;
 }
 
-static void __msg_show_buffer(const char *source, const int lineno,
-	const char *func, const char *fmt, ...)
+static void
+__msg_show_buffer(const char *source, const int lineno,
+				  const char *func, const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
@@ -216,9 +224,10 @@ static void __msg_show_buffer(const char *source, const int lineno,
 	return;
 }
 
-void msg_show_buffer(const char *source, const int lineno, 
-	const char *func, const char *bufname, unsigned char *buf,
-	unsigned int bufl)
+void
+msg_show_buffer(const char *source, const int lineno, const char *func,
+				const char *bufname, unsigned char *buf,
+				unsigned int bufl)
 {
 	char *b64 = 0;
 	
@@ -231,8 +240,9 @@ void msg_show_buffer(const char *source, const int lineno,
 	return;
 }
 
-static void __msg_json(const char *source, const int lineno,
-	const char *func, const char *fmt, ...)
+static void
+__msg_json(const char *source, const int lineno, const char *func,
+		   const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
@@ -241,8 +251,9 @@ static void __msg_json(const char *source, const int lineno,
 	return;
 }
 
-void msg_json(const char *source, const int lineno, const char *func,
-	char *json_str)
+void
+msg_json(const char *source, const int lineno, const char *func,
+		 char *json_str)
 {
 	json_t *json = 0;
 	json_error_t json_error;
@@ -273,7 +284,8 @@ void msg_json(const char *source, const int lineno, const char *func,
 	return;
 }
 
-void msg_here(const char *source, const int lineno, const char *func)
+void
+msg_here(const char *source, const int lineno, const char *func)
 {
 	msg(here, source, lineno, func, NULL, 0);
 	getchar();
@@ -284,7 +296,8 @@ void msg_here(const char *source, const int lineno, const char *func)
 /*                          SKLOG_CONNECTION                          */
 /*--------------------------------------------------------------------*/
 
-SKLOG_CONNECTION *SKLOG_CONNECTION_New(void)
+SKLOG_CONNECTION *
+SKLOG_CONNECTION_New(void)
 {
 	#ifdef DO_TRACE
     DEBUG
@@ -304,9 +317,10 @@ SKLOG_CONNECTION *SKLOG_CONNECTION_New(void)
     return c;
 }
 
-SKLOG_RETURN SKLOG_CONNECTION_Init(SKLOG_CONNECTION *c, 
-	const char *addr, short int port, X509 *cert, EVP_PKEY *privkey,
-	const char *CA_cert_path, int do_verify)
+SKLOG_RETURN
+SKLOG_CONNECTION_Init(SKLOG_CONNECTION *c, const char *addr,
+					  short int port, X509 *cert, EVP_PKEY *privkey,
+					  const char *CA_cert_path, int do_verify)
 {
 	#ifdef DO_TRACE
     DEBUG

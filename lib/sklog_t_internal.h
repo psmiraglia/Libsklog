@@ -106,42 +106,52 @@ struct sklog_t_storage_driver {
  * 
  */
 
-SKLOG_RETURN parse_t_config_file(char *t_cert_path, char *t_privkey_path,
-	char *t_privkey_passphrase, char *t_id, char *t_address,
-	int *t_port);
+SKLOG_RETURN
+parse_t_config_file(char *t_cert_path, char *t_privkey_path,
+					char *t_privkey_passphrase, char *t_id,
+					char *t_address, int *t_port);
 
-SKLOG_RETURN parse_m0(SKLOG_T_Ctx *t_ctx, unsigned char *m0,
-	unsigned int m0_len, SKLOG_PROTOCOL_STEP *p, uuid_t *logfile_id,
-	unsigned char **pke_t_k0, unsigned int *pke_t_k0_len,
-	unsigned char **e_k0, unsigned int *e_k0_len);
+SKLOG_RETURN
+parse_m0(SKLOG_T_Ctx *t_ctx, unsigned char *m0, unsigned int m0_len,
+		 SKLOG_PROTOCOL_STEP *p, uuid_t *logfile_id,
+		 unsigned char **pke_t_k0, unsigned int *pke_t_k0_len,
+		 unsigned char **e_k0, unsigned int *e_k0_len);
 
-SKLOG_RETURN verify_m0_signature(X509 *u_cert, unsigned char *x0_sign,
-	size_t x0_sign_len, unsigned char *x0, unsigned int x0_len);
+SKLOG_RETURN
+verify_m0_signature(X509 *u_cert, unsigned char *x0_sign,
+					size_t x0_sign_len, unsigned char *x0,
+					unsigned int x0_len);
 
-SKLOG_RETURN verify_m0_certificate(X509 *u_cert);
+SKLOG_RETURN
+verify_m0_certificate(X509 *u_cert);
 
-SKLOG_RETURN parse_e_k0_content(unsigned char *in, unsigned int in_len,
-	unsigned char **x0, unsigned int *x0_len, unsigned char **x0_sign,
-	unsigned int *x0_sign_len);
+SKLOG_RETURN
+parse_e_k0_content(unsigned char *in, unsigned int in_len,
+				   unsigned char **x0, unsigned int *x0_len,
+				   unsigned char **x0_sign, unsigned int *x0_sign_len);
 
-SKLOG_RETURN parse_x0( unsigned char *x0, unsigned int x0_len,
-	X509 **u_cert, unsigned char *auth_key);
+SKLOG_RETURN
+parse_x0(unsigned char *x0, unsigned int x0_len, X509 **u_cert,
+		 unsigned char *auth_key);
 
-SKLOG_RETURN gen_x1(SKLOG_PROTOCOL_STEP *p, unsigned char *x0,
-	unsigned int x0_len, unsigned char **x1, unsigned int *x1_len);
+SKLOG_RETURN
+gen_x1(SKLOG_PROTOCOL_STEP *p, unsigned char *x0, unsigned int x0_len,
+	   unsigned char **x1, unsigned int *x1_len);
 
-SKLOG_RETURN gen_e_k1(SKLOG_T_Ctx *t_ctx, unsigned char *k1,
-	unsigned char *x1, unsigned int x1_len, unsigned char *x1_sign,
-	unsigned int x1_sign_len, unsigned char **e_k1,
-	unsigned int *e_k1_len);      
+SKLOG_RETURN
+gen_e_k1(SKLOG_T_Ctx *t_ctx, unsigned char *k1, unsigned char *x1,
+		 unsigned int x1_len, unsigned char *x1_sign,
+		 unsigned int x1_sign_len, unsigned char **e_k1,
+		 unsigned int *e_k1_len);      
 
-SKLOG_RETURN gen_m1(SKLOG_T_Ctx *t_ctx, SKLOG_PROTOCOL_STEP p,
-	unsigned char *pke_u_k1, unsigned int pke_u_k1_len, 
-	unsigned char *e_k1, unsigned int e_k1_len, unsigned char **m1,
-	unsigned int *m1_len);      
+SKLOG_RETURN
+gen_m1(SKLOG_T_Ctx *t_ctx, SKLOG_PROTOCOL_STEP p,
+	   unsigned char *pke_u_k1, unsigned int pke_u_k1_len,
+	   unsigned char *e_k1, unsigned int e_k1_len, unsigned char **m1,
+	   unsigned int *m1_len);      
 
-SKLOG_RETURN send_m1(SKLOG_T_Ctx *t_ctx, SKLOG_CONNECTION *conn,
-	unsigned char *m1, unsigned int m1_len);
-
+SKLOG_RETURN
+send_m1(SKLOG_T_Ctx *t_ctx, SKLOG_CONNECTION *conn, unsigned char *m1,
+		unsigned int m1_len);
 
 #endif /* SKLOG_T_INTERNAL */

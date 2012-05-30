@@ -45,30 +45,39 @@
 
 #define MSG_SQL_SELECT_EMPTY "Query returned no values"
 
-void msg_debug(const char *source, const int lineno, const char *func);
+void
+msg_debug(const char *source, const int lineno, const char *func);
 
-void msg_error(const char *source, const int lineno, const char *func,
-	const char *fmt, ...);
+void
+msg_error(const char *source, const int lineno, const char *func,
+		  const char *fmt, ...);
 
-void msg_notify(const char *source, const int lineno, const char *func,
-	const char *fmt, ...);
+void
+msg_notify(const char *source, const int lineno, const char *func,
+		   const char *fmt, ...);
 
-void msg_warning(const char *source, const int lineno, const char *func,
-	const char *fmt, ...);
+void
+msg_warning(const char *source, const int lineno, const char *func,
+			const char *fmt, ...);
 
-void msg_to_implement(const char *func);
+void
+msg_to_implement(const char *func);
 
-void msg_show_query(const char *source, const int lineno,
-	const char *func, const char *fmt, ...);
+void
+msg_show_query(const char *source, const int lineno, const char *func,
+			   const char *fmt, ...);
 	
-void msg_show_buffer(const char *source, const int lineno, 
-	const char *func, const char *bufname, unsigned char *buf,
-	unsigned int bufl);
+void
+msg_show_buffer(const char *source, const int lineno, const char *func,
+				const char *bufname, unsigned char *buf,
+				unsigned int bufl);
 	
-void msg_json(const char *source, const int lineno, const char *func,
-	char *json_str);
+void
+msg_json(const char *source, const int lineno, const char *func,
+		 char *json_str);
 
-void msg_here(const char *source, const int lineno, const char *func);
+void
+msg_here(const char *source, const int lineno, const char *func);
 
 #define DEBUG \
 	msg_debug(__FILE__, __LINE__, __func__);
@@ -96,12 +105,6 @@ void msg_here(const char *source, const int lineno, const char *func);
 	
 #define HERE \
 	msg_here(__FILE__, __LINE__, __func__);
-
-/*
-#define SHOWBUF(bufname,buf,bufl) \
-	sklog_show_buffer(getpid(), __FILE__, __LINE__, __func__, bufname, \
-		buf, bufl);
-*/
 
 /*--------------------------------------------------------------------*/
 /*                    memory management macros                        */
@@ -278,14 +281,18 @@ struct sklog_connection {
     int        csock;
 };
 
-SKLOG_CONNECTION *SKLOG_CONNECTION_New(void);
+SKLOG_CONNECTION *
+SKLOG_CONNECTION_New(void);
 
-SKLOG_RETURN SKLOG_CONNECTION_Init(SKLOG_CONNECTION *c, 
-	const char *addr, short int port, X509 *cert, EVP_PKEY *privkey,
-	const char *CA_cert_path, int do_verify);
+SKLOG_RETURN
+SKLOG_CONNECTION_Init(SKLOG_CONNECTION *c, const char *addr,
+					  short int port, X509 *cert, EVP_PKEY *privkey,
+					  const char *CA_cert_path, int do_verify);
 
-SKLOG_RETURN SKLOG_CONNECTION_Destroy(SKLOG_CONNECTION *c);
+SKLOG_RETURN
+SKLOG_CONNECTION_Destroy(SKLOG_CONNECTION *c);
 
-SKLOG_RETURN SKLOG_CONNECTION_Free(SKLOG_CONNECTION **c);
+SKLOG_RETURN
+SKLOG_CONNECTION_Free(SKLOG_CONNECTION **c);
 
 #endif /* SKLOG_COMMONS_H */
