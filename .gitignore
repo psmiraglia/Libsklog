@@ -36,7 +36,6 @@ apps/tnode
 *~
 *.lo
 *.o
-*.la
 *.exe
 *.in
 *.m4
