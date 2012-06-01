@@ -367,7 +367,7 @@ py_SKLOG_U_FlushLogfile (PyObject *self, PyObject *args)
 }
 
 static PyObject *
-py_SKLOG_U_UploadLogfile (PyObject *self, PyObject *args)
+py_SKLOG_U_DumpLogfile (PyObject *self, PyObject *args)
 {
 	int rv = SKLOG_SUCCESS;
 	
@@ -387,7 +387,7 @@ py_SKLOG_U_UploadLogfile (PyObject *self, PyObject *args)
     /*  binding  */
     /* --------- */
     
-    rv = SKLOG_U_UploadLogfile(ctx, filename, mode);
+    rv = SKLOG_U_DumpLogfile(ctx, filename, mode);
     
     if ( rv == SKLOG_FAILURE ) {
 		ERROR("SKLOG_U_UploadLogfile() failure");
@@ -715,7 +715,7 @@ static PyMethodDef pylibsklog_methods[] = {
     {"SKLOG_U_Close", py_SKLOG_U_Close, METH_VARARGS},
     {"SKLOG_U_FreeCtx", py_SKLOG_U_FreeCtx, METH_VARARGS},
     {"SKLOG_U_FlushLogfile", py_SKLOG_U_FlushLogfile, METH_VARARGS},
-    {"SKLOG_U_UploadLogfile", py_SKLOG_U_UploadLogfile, METH_VARARGS},
+    {"SKLOG_U_DumpLogfile", py_SKLOG_U_DumpLogfile, METH_VARARGS},
     
     /* SKLOG_T */
     

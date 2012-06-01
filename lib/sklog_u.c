@@ -24,7 +24,7 @@
 #include "sklog_u.h"
 
 SKLOG_U_Ctx*
-SKLOG_U_NewCtx(void)
+SKLOG_U_NewCtx (void)
 {
     #ifdef DO_TRACE
     DEBUG
@@ -41,7 +41,7 @@ SKLOG_U_NewCtx(void)
 }
 
 SKLOG_RETURN
-SKLOG_U_InitCtx(SKLOG_U_Ctx *ctx)
+SKLOG_U_InitCtx (SKLOG_U_Ctx *ctx)
 {
 	#ifdef DO_TRACE
     DEBUG
@@ -69,7 +69,7 @@ SKLOG_U_InitCtx(SKLOG_U_Ctx *ctx)
 }
 
 SKLOG_RETURN
-SKLOG_U_FreeCtx(SKLOG_U_Ctx **ctx)
+SKLOG_U_FreeCtx (SKLOG_U_Ctx **ctx)
 {
     #ifdef DO_TRACE
     DEBUG
@@ -91,9 +91,9 @@ SKLOG_U_FreeCtx(SKLOG_U_Ctx **ctx)
 }
 
 SKLOG_RETURN
-SKLOG_U_LogEvent(SKLOG_U_Ctx *ctx, SKLOG_DATA_TYPE type, char *data,
-				 unsigned int data_len, char **logentry,
-				 unsigned int *logentry_len)
+SKLOG_U_LogEvent (SKLOG_U_Ctx *ctx, SKLOG_DATA_TYPE type,
+				  char *event, unsigned int event_len, char **logentry,
+				  unsigned int *logentry_len)
 {
 	#ifdef DO_TRACE
     DEBUG
@@ -106,7 +106,7 @@ SKLOG_U_LogEvent(SKLOG_U_Ctx *ctx, SKLOG_DATA_TYPE type, char *data,
     
     /* check input parameter */
     
-    if ( ctx == NULL || data == NULL ) {
+    if ( ctx == NULL || event == NULL ) {
 		ERROR("Bad input parameter(s). Please double-check it!");
 		return SKLOG_FAILURE;
 	}
@@ -120,15 +120,15 @@ SKLOG_U_LogEvent(SKLOG_U_Ctx *ctx, SKLOG_DATA_TYPE type, char *data,
     
     /* serialize content */
     
-    buf = calloc(data_len, sizeof(char));
+    buf = calloc(event_len, sizeof(char));
     
     if ( buf == 0 ) {
 		ERROR("calloc() failure");
 		goto error;
 	}
 	
-	memcpy(buf, data, data_len);
-	bufl = data_len;
+	memcpy(buf, event, event_len);
+	bufl = event_len;
 	
 	/* checking for context initialization */
 	
@@ -389,8 +389,9 @@ check_input_error:
  */
  
 SKLOG_RETURN
-SKLOG_U_Open_M0(SKLOG_U_Ctx *ctx, unsigned char **buf1,
-				unsigned int *buf1l, char **buf2, unsigned int *buf2l)
+SKLOG_U_Open_M0 (SKLOG_U_Ctx *ctx, unsigned char **m0,
+				 unsigned int *m0_len, char **logentry,
+				 unsigned int *logentry_len)
 {
 	#ifdef DO_TRACE
     DEBUG
@@ -406,11 +407,11 @@ SKLOG_U_Open_M0(SKLOG_U_Ctx *ctx, unsigned char **buf1,
     
     int rv = SKLOG_SUCCESS;
     
-    unsigned char *m0 = 0;
-    unsigned int m0_len = 0;
+    unsigned char *blob = 0;
+    unsigned int blob_len = 0;
     
-    char *logentry = 0;
-    unsigned int logentry_len = 0;
+    char *buf = 0;
+    unsigned int buf_len = 0;
     
     /* checking input parameters */
 	
@@ -428,7 +429,7 @@ SKLOG_U_Open_M0(SKLOG_U_Ctx *ctx, unsigned char **buf1,
 	
 	/* generate m0 and the first logentry */
 	
-	rv = generate_m0_message(ctx, &m0, &m0_len, &logentry, &logentry_len);
+	rv = generate_m0_message(ctx, &blob, &blob_len, &buf, &buf_len);
 		
 	if ( rv == SKLOG_FAILURE ) {
 		ERROR("generate_m0_message() failure");
@@ -437,11 +438,11 @@ SKLOG_U_Open_M0(SKLOG_U_Ctx *ctx, unsigned char **buf1,
 	
 	/* save data */
 	
-	*buf1 = m0;
-	*buf1l = m0_len;
+	*m0 = blob;
+	*m0_len = blob_len;
 	
-	*buf2 = logentry;
-	*buf2l = logentry_len;
+	*logentry = buf;
+	*logentry_len = buf_len;
 	
 error:
 
@@ -461,8 +462,9 @@ check_input_error:
  */
  	
 SKLOG_RETURN
-SKLOG_U_Open_M1(SKLOG_U_Ctx *ctx, unsigned char *buf1,
-				unsigned int buf1l, char **buf2, unsigned int *buf2l)
+SKLOG_U_Open_M1 (SKLOG_U_Ctx *ctx, unsigned char *m1,
+				 unsigned int m1_len, char **logentry,
+				 unsigned int *logentry_len)
 {
 	#ifdef DO_TRACE
     DEBUG
@@ -470,19 +472,19 @@ SKLOG_U_Open_M1(SKLOG_U_Ctx *ctx, unsigned char *buf1,
     
     int rv = SKLOG_SUCCESS;
     
-    char *logentry = 0;
-    unsigned int logentry_len = 0;
+    char *buf = 0;
+    unsigned int buf_len = 0;
     
 	/* checking input parameters */
 	
-	if ( ctx == NULL || buf1 == NULL ) {
+	if ( ctx == NULL || m1 == NULL ) {
 		ERROR("Bad input parameter(s). Please double-check it!!!");
 		goto check_input_error;
 	}
     
     /* check m1 message */
 	
-	rv = verify_m1_message(ctx, buf1, buf1l, &logentry, &logentry_len);
+	rv = verify_m1_message(ctx, m1, m1_len, &buf, &buf_len);
 	
 	if ( rv == SKLOG_FAILURE ) {
 		ERROR("verify_m1_message() failure");
@@ -491,8 +493,8 @@ SKLOG_U_Open_M1(SKLOG_U_Ctx *ctx, unsigned char *buf1,
 	
 	/* save data */
 	
-	*buf2 = logentry;
-	*buf2l = logentry_len;
+	*logentry = buf;
+	*logentry_len = buf_len;
 	
 error:
 
@@ -504,7 +506,8 @@ check_input_error:
 }	
 	
 SKLOG_RETURN
-SKLOG_U_Close(SKLOG_U_Ctx *ctx, char **le, unsigned int *le_len)
+SKLOG_U_Close (SKLOG_U_Ctx *ctx, char **logentry,
+			   unsigned int *logentry_len)
 {
     #ifdef DO_TRACE
     DEBUG
@@ -542,8 +545,8 @@ SKLOG_U_Close(SKLOG_U_Ctx *ctx, char **le, unsigned int *le_len)
     
     /* create closure logentry */
 
-	rv = create_logentry(ctx, type, data, data_len, 1, le,
-		le_len);
+	rv = create_logentry(ctx, type, data, data_len, 1, logentry,
+		logentry_len);
 
     if ( rv == SKLOG_FAILURE ) {
         ERROR("create_logentry() failure")
@@ -583,8 +586,8 @@ error:
 }
 
 SKLOG_RETURN
-SKLOG_U_FlushLogfile(SKLOG_U_Ctx *ctx, char *logs[],
-					 unsigned int *logs_size)
+SKLOG_U_FlushLogfile (SKLOG_U_Ctx *ctx, char *logs[],
+					  unsigned int *logs_size)
 {
 	#ifdef DO_TRACE
     DEBUG
@@ -617,7 +620,8 @@ SKLOG_U_FlushLogfile(SKLOG_U_Ctx *ctx, char *logs[],
 }
 
 SKLOG_RETURN
-SKLOG_U_UploadLogfile(SKLOG_U_Ctx *ctx,	const char *filename, int mode)
+SKLOG_U_DumpLogfile (SKLOG_U_Ctx *ctx, const char *filename,
+					 SKLOG_DUMP_MODE dump_mode)
 {
 	#ifdef DO_TRACE
     DEBUG
@@ -634,7 +638,7 @@ SKLOG_U_UploadLogfile(SKLOG_U_Ctx *ctx,	const char *filename, int mode)
 	
 	/* select mode */
 	
-	switch ( mode ) {
+	switch ( dump_mode ) {
 		
 		case DUMP_MODE_RAW:
 			rv = dump_raw(ctx, filename);

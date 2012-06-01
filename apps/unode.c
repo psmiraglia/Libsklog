@@ -158,7 +158,7 @@ init_logging_session:
 			
 			SKLOG_U_FlushLogfile(u_ctx, logs, &logs_size);
 			
-			SKLOG_U_UploadLogfile(u_ctx, filename, DUMP_MODE_JSON);
+			SKLOG_U_DumpLogfile(u_ctx, filename, DUMP_MODE_JSON);
 			
 			
 			SKLOG_U_FreeCtx(&u_ctx);
@@ -171,7 +171,7 @@ init_logging_session:
 	
 	SKLOG_U_Close(u_ctx, &le1, &le1_len);
 	SKLOG_U_FlushLogfile(u_ctx, logs, &logs_size);
-	SKLOG_U_UploadLogfile(u_ctx, filename, DUMP_MODE_JSON);
+	SKLOG_U_DumpLogfile(u_ctx, filename, DUMP_MODE_JSON);
 	SKLOG_U_FreeCtx(&u_ctx);
 	
 	/*

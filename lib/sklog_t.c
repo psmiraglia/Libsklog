@@ -51,7 +51,7 @@
  */
 
 SKLOG_T_Ctx *
-SKLOG_T_NewCtx(void)
+SKLOG_T_NewCtx (void)
 {
     #ifdef DO_TRACE
     DEBUG
@@ -110,7 +110,7 @@ SKLOG_T_NewCtx(void)
  */
  
 SKLOG_RETURN
-SKLOG_T_FreeCtx(SKLOG_T_Ctx **ctx)
+SKLOG_T_FreeCtx (SKLOG_T_Ctx **ctx)
 {
     #ifdef DO_TRACE
     DEBUG
@@ -136,7 +136,7 @@ SKLOG_T_FreeCtx(SKLOG_T_Ctx **ctx)
  */
  
 SKLOG_RETURN
-SKLOG_T_InitCtx(SKLOG_T_Ctx *ctx)
+SKLOG_T_InitCtx (SKLOG_T_Ctx *ctx)
 {
     #ifdef DO_TRACE
     DEBUG
@@ -229,10 +229,10 @@ error:
  */
  
 SKLOG_RETURN
-SKLOG_T_ManageLoggingSessionInit(SKLOG_T_Ctx *ctx, unsigned char *m0,
-								 unsigned int m0_len, char *u_address,
-								 unsigned char **m1,
-								 unsigned int *m1_len)
+SKLOG_T_ManageLoggingSessionInit (SKLOG_T_Ctx *ctx, unsigned char *m0,
+								  unsigned int m0_len, char *u_address,
+								  unsigned char **m1,
+								  unsigned int *m1_len)
 {
     #ifdef DO_TRACE
     DEBUG
@@ -501,7 +501,7 @@ error:
  */
  
 SKLOG_RETURN
-SKLOG_T_ManageLogfileUpload(SKLOG_T_Ctx *ctx, SKLOG_CONNECTION *c)
+SKLOG_T_ManageLogfileUpload (SKLOG_T_Ctx *ctx, SKLOG_CONNECTION *c)
 {
     #ifdef DO_TRACE
     DEBUG
@@ -685,8 +685,8 @@ error:
  */
  
 SKLOG_RETURN
-SKLOG_T_ManageLogfileRetrieve(SKLOG_T_Ctx *ctx, char *logfile_list[],
-							  unsigned int *logfile_list_len)
+SKLOG_T_ManageLogfileRetrieve (SKLOG_T_Ctx *ctx, char *logfile_list[],
+							   unsigned int *logfile_list_size)
 {
     #ifdef DO_TRACE
     DEBUG
@@ -704,7 +704,7 @@ SKLOG_T_ManageLogfileRetrieve(SKLOG_T_Ctx *ctx, char *logfile_list[],
 	/* retrieve logfiles */
 #ifdef USE_MISC
 	rv = ctx->lsdriver->retrieve_logfiles_v2(logfile_list,
-		logfile_list_len);
+		logfile_list_size);
 		
 	if ( rv == SKLOG_FAILURE ) {
 		ERROR("retrieve_logfiles_2() failure");
@@ -712,7 +712,7 @@ SKLOG_T_ManageLogfileRetrieve(SKLOG_T_Ctx *ctx, char *logfile_list[],
 	}
 #else
 	rv = ctx->lsdriver->retrieve_logfiles_2(logfile_list,
-		logfile_list_len);
+		logfile_list_size);
 		
 	if ( rv == SKLOG_FAILURE ) {
 		ERROR("retrieve_logfiles_2() failure");

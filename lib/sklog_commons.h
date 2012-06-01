@@ -197,6 +197,7 @@ msg_here(const char *source, const int lineno, const char *func);
 
 typedef     int                           SKLOG_RETURN;
 typedef     int                           SKLOG_PROTOCOL_STEP;
+typedef     int                           SKLOG_DUMP_MODE;
 typedef     enum       sklog_data_type    SKLOG_DATA_TYPE;
 typedef     enum       sklog_tlv_type     SKLOG_TLV_TYPE;
 typedef     struct     sklog_connection   SKLOG_CONNECTION;
