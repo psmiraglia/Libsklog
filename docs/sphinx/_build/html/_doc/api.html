@@ -26,7 +26,7 @@
     <script type="text/javascript" src="../_static/underscore.js"></script>
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <link rel="top" title="Libsklog 0.1alpha documentation" href="../index.html" />
-    <link rel="next" title="Libsklog Python Bindings" href="python_binding.html" />
+    <link rel="next" title="Python Bindings" href="python_binding.html" />
     <link rel="prev" title="Configuration" href="configuration.html" /> 
   </head>
   <body>
@@ -37,7 +37,10 @@
           <a href="../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="python_binding.html" title="Libsklog Python Bindings"
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="python_binding.html" title="Python Bindings"
              accesskey="N">next</a> |</li>
         <li class="right" >
           <a href="configuration.html" title="Configuration"
@@ -200,7 +203,7 @@ log file and will be <tt class="docutils literal"><span class="pre">logentry_len
 <blockquote>
 <div><dl class="function">
 <dt id="SKLOG_U_LogEvent">
-<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_U_LogEvent</tt><big>(</big><a class="reference internal" href="#SKLOG_U_Ctx" title="SKLOG_U_Ctx">SKLOG_U_Ctx</a><em>&nbsp;*u_ctx</em>, <a class="reference internal" href="#SKLOG_DATA_TYPE" title="SKLOG_DATA_TYPE">SKLOG_DATA_TYPE</a><em>&nbsp;type</em>, char<em>&nbsp;*event</em>, unsigned int<em>&nbsp;event_len</em>, char<em>&nbsp;**logentry</em>, unsigned int<em>&nbsp;*logentry_len</em><big>)</big><a class="headerlink" href="#SKLOG_U_LogEvent" title="Permalink to this definition">¶</a></dt>
+<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_U_LogEvent</tt><big>(</big><a class="reference internal" href="#SKLOG_U_Ctx" title="SKLOG_U_Ctx">SKLOG_U_Ctx</a><em>&nbsp;*ctx</em>, <a class="reference internal" href="#SKLOG_DATA_TYPE" title="SKLOG_DATA_TYPE">SKLOG_DATA_TYPE</a><em>&nbsp;type</em>, char<em>&nbsp;*event</em>, unsigned int<em>&nbsp;event_len</em>, char<em>&nbsp;**logentry</em>, unsigned int<em>&nbsp;*logentry_len</em><big>)</big><a class="headerlink" href="#SKLOG_U_LogEvent" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </div></blockquote>
@@ -307,7 +310,7 @@ JSON array element is structured as previously described:</p>
 <blockquote>
 <div><dl class="function">
 <dt id="SKLOG_U_Close">
-<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_U_Close</tt><big>(</big><a class="reference internal" href="#SKLOG_U_Ctx" title="SKLOG_U_Ctx">SKLOG_U_Ctx</a><em>&nbsp;*u_ctx</em>, char<em>&nbsp;**logentry</em>, unsigned int<em>&nbsp;*logentry_len</em><big>)</big><a class="headerlink" href="#SKLOG_U_Close" title="Permalink to this definition">¶</a></dt>
+<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_U_Close</tt><big>(</big><a class="reference internal" href="#SKLOG_U_Ctx" title="SKLOG_U_Ctx">SKLOG_U_Ctx</a><em>&nbsp;*ctx</em>, char<em>&nbsp;**logentry</em>, unsigned int<em>&nbsp;*logentry_len</em><big>)</big><a class="headerlink" href="#SKLOG_U_Close" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </div></blockquote>
@@ -449,14 +452,14 @@ the response. Both the <tt class="docutils literal"><span class="pre">m0</span><
 <blockquote>
 <div><dl class="function">
 <dt id="SKLOG_T_ManageLogfileRetrieve">
-<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_T_ManageLogfileRetrieve</tt><big>(</big><a class="reference internal" href="#SKLOG_T_Ctx" title="SKLOG_T_Ctx">SKLOG_T_Ctx</a><em>&nbsp;*ctx</em>, char<em>&nbsp;*logfile_list[]</em>, unsigned int<em>&nbsp;*logfile_list_len</em><big>)</big><a class="headerlink" href="#SKLOG_T_ManageLogfileRetrieve" title="Permalink to this definition">¶</a></dt>
+<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_T_ManageLogfileRetrieve</tt><big>(</big><a class="reference internal" href="#SKLOG_T_Ctx" title="SKLOG_T_Ctx">SKLOG_T_Ctx</a><em>&nbsp;*ctx</em>, char<em>&nbsp;*logfile_list[]</em>, unsigned int<em>&nbsp;*logfile_list_size</em><big>)</big><a class="headerlink" href="#SKLOG_T_ManageLogfileRetrieve" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </div></blockquote>
 <p><strong>Description</strong></p>
 <blockquote>
 <div>Manages the logfile retrieve requests. The array <tt class="docutils literal"><span class="pre">logfile_list</span></tt>,
-that will be composed by <tt class="docutils literal"><span class="pre">logfile_list_len</span></tt> elements,
+that will be composed by <tt class="docutils literal"><span class="pre">logfile_list_size</span></tt> elements,
 will contains a list of logging session id.</div></blockquote>
 <p><strong>Return values</strong></p>
 <blockquote>
@@ -606,7 +609,7 @@ Configuration file parsing is <strong>not yet implemented</strong>.</div></block
 <blockquote>
 <div><dl class="function">
 <dt id="SKLOG_V_RetrieveLogFiles">
-<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_V_RetrieveLogFiles</tt><big>(</big><a class="reference internal" href="#SKLOG_V_Ctx" title="SKLOG_V_Ctx">SKLOG_V_Ctx</a><em>&nbsp;*v_ctx</em>, <a class="reference internal" href="#SKLOG_CONNECTION" title="SKLOG_CONNECTION">SKLOG_CONNECTION</a><em>&nbsp;*c</em><big>)</big><a class="headerlink" href="#SKLOG_V_RetrieveLogFiles" title="Permalink to this definition">¶</a></dt>
+<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_V_RetrieveLogFiles</tt><big>(</big><a class="reference internal" href="#SKLOG_V_Ctx" title="SKLOG_V_Ctx">SKLOG_V_Ctx</a><em>&nbsp;*ctx</em>, <a class="reference internal" href="#SKLOG_CONNECTION" title="SKLOG_CONNECTION">SKLOG_CONNECTION</a><em>&nbsp;*c</em><big>)</big><a class="headerlink" href="#SKLOG_V_RetrieveLogFiles" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </div></blockquote>
@@ -649,7 +652,7 @@ stored in <tt class="docutils literal"><span class="pre">ctx-&gt;verifiable_logf
 <blockquote>
 <div><dl class="function">
 <dt id="SKLOG_V_VerifyLogFile">
-<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_V_VerifyLogFile</tt><big>(</big><a class="reference internal" href="#SKLOG_V_Ctx" title="SKLOG_V_Ctx">SKLOG_V_Ctx</a><em>&nbsp;*v_ctx</em>, <a class="reference internal" href="#SKLOG_CONNECTION" title="SKLOG_CONNECTION">SKLOG_CONNECTION</a><em>&nbsp;*c</em>, unsigned int<em>&nbsp;logfile_id</em><big>)</big><a class="headerlink" href="#SKLOG_V_VerifyLogFile" title="Permalink to this definition">¶</a></dt>
+<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_V_VerifyLogFile</tt><big>(</big><a class="reference internal" href="#SKLOG_V_Ctx" title="SKLOG_V_Ctx">SKLOG_V_Ctx</a><em>&nbsp;*ctx</em>, <a class="reference internal" href="#SKLOG_CONNECTION" title="SKLOG_CONNECTION">SKLOG_CONNECTION</a><em>&nbsp;*c</em>, unsigned int<em>&nbsp;logfile_id</em><big>)</big><a class="headerlink" href="#SKLOG_V_VerifyLogFile" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </div></blockquote>
@@ -669,7 +672,7 @@ stored in <tt class="docutils literal"><span class="pre">ctx-&gt;verifiable_logf
 <blockquote>
 <div><dl class="function">
 <dt id="SKLOG_V_VerifyLogFile_uuid">
-<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_V_VerifyLogFile_uuid</tt><big>(</big><a class="reference internal" href="#SKLOG_V_Ctx" title="SKLOG_V_Ctx">SKLOG_V_Ctx</a><em>&nbsp;*v_ctx</em>, <a class="reference internal" href="#SKLOG_CONNECTION" title="SKLOG_CONNECTION">SKLOG_CONNECTION</a><em>&nbsp;*c</em>, char<em>&nbsp;*logfile_id</em><big>)</big><a class="headerlink" href="#SKLOG_V_VerifyLogFile_uuid" title="Permalink to this definition">¶</a></dt>
+<a class="reference internal" href="#SKLOG_RETURN" title="SKLOG_RETURN">SKLOG_RETURN</a> <tt class="descname">SKLOG_V_VerifyLogFile_uuid</tt><big>(</big><a class="reference internal" href="#SKLOG_V_Ctx" title="SKLOG_V_Ctx">SKLOG_V_Ctx</a><em>&nbsp;*ctx</em>, <a class="reference internal" href="#SKLOG_CONNECTION" title="SKLOG_CONNECTION">SKLOG_CONNECTION</a><em>&nbsp;*c</em>, char<em>&nbsp;*logfile_id</em><big>)</big><a class="headerlink" href="#SKLOG_V_VerifyLogFile_uuid" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </div></blockquote>
@@ -740,7 +743,7 @@ stored in <tt class="docutils literal"><span class="pre">ctx-&gt;verifiable_logf
                         title="previous chapter">Configuration</a></p>
   <h4>Next topic</h4>
   <p class="topless"><a href="python_binding.html"
-                        title="next chapter">Libsklog Python Bindings</a></p>
+                        title="next chapter">Python Bindings</a></p>
   <h3>This Page</h3>
   <ul class="this-page-menu">
     <li><a href="../_sources/_doc/api.txt"
@@ -770,7 +773,10 @@ stored in <tt class="docutils literal"><span class="pre">ctx-&gt;verifiable_logf
           <a href="../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="python_binding.html" title="Libsklog Python Bindings"
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="python_binding.html" title="Python Bindings"
              >next</a> |</li>
         <li class="right" >
           <a href="configuration.html" title="Configuration"
@@ -780,7 +786,7 @@ stored in <tt class="docutils literal"><span class="pre">ctx-&gt;verifiable_logf
     </div>
     <div class="footer">
         &copy; Copyright 2012, Paolo Smiraglia.
-      Last updated on May 30, 2012.
+      Last updated on Jun 01, 2012.
       Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>

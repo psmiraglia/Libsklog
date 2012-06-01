@@ -137,7 +137,7 @@ SKLOG_U_LogEvent()
 
 **Synopsis**
 
-	.. c:function:: SKLOG_RETURN SKLOG_U_LogEvent(SKLOG_U_Ctx *u_ctx, \
+	.. c:function:: SKLOG_RETURN SKLOG_U_LogEvent(SKLOG_U_Ctx *ctx, \
 		SKLOG_DATA_TYPE type, char *event, unsigned int event_len, \
 		char **logentry, unsigned int *logentry_len)
 	
@@ -240,7 +240,7 @@ SKLOG_U_Close()
 
 **Synopsis**
 
-	.. c:function:: SKLOG_RETURN SKLOG_U_Close(SKLOG_U_Ctx *u_ctx, \
+	.. c:function:: SKLOG_RETURN SKLOG_U_Close(SKLOG_U_Ctx *ctx, \
 		char **logentry, unsigned int *logentry_len)
 
 **Description**
@@ -370,12 +370,12 @@ SKLOG_T_ManageLogfileRetrieve()
 
 	.. c:function:: SKLOG_RETURN \
 		SKLOG_T_ManageLogfileRetrieve(SKLOG_T_Ctx *ctx, \
-		char *logfile_list[], unsigned int *logfile_list_len)
+		char *logfile_list[], unsigned int *logfile_list_size)
 
 **Description**
 	
 	Manages the logfile retrieve requests. The array ``logfile_list``,
-	that will be composed by ``logfile_list_len`` elements, 
+	that will be composed by ``logfile_list_size`` elements, 
 	will contains a list of logging session id.
 	
 **Return values**
@@ -510,7 +510,7 @@ SKLOG_V_RetrieveLogFiles()
 **Synopsis**
 	
 	.. c:function:: SKLOG_RETURN \
-		SKLOG_V_RetrieveLogFiles(SKLOG_V_Ctx *v_ctx, \
+		SKLOG_V_RetrieveLogFiles(SKLOG_V_Ctx *ctx, \
 		SKLOG_CONNECTION *c)
 
 **Description**
@@ -550,7 +550,7 @@ SKLOG_V_VerifyLogFile()
 
 **Synopsis**
 	
-	.. c:function:: SKLOG_RETURN SKLOG_V_VerifyLogFile(SKLOG_V_Ctx *v_ctx, SKLOG_CONNECTION *c, unsigned int logfile_id)
+	.. c:function:: SKLOG_RETURN SKLOG_V_VerifyLogFile(SKLOG_V_Ctx *ctx, SKLOG_CONNECTION *c, unsigned int logfile_id)
 
 **Description**
 	
@@ -566,7 +566,7 @@ SKLOG_V_VerifyLogFile_uuid()
 
 **Synopsis**
 	
-	.. c:function:: SKLOG_RETURN SKLOG_V_VerifyLogFile_uuid(SKLOG_V_Ctx *v_ctx, SKLOG_CONNECTION *c, char *logfile_id)
+	.. c:function:: SKLOG_RETURN SKLOG_V_VerifyLogFile_uuid(SKLOG_V_Ctx *ctx, SKLOG_CONNECTION *c, char *logfile_id)
 
 **Description**
 	

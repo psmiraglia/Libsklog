@@ -22,8 +22,8 @@ Probably to run your application you will need to set ``LD_LIBRARY_PATH`` enviro
 
 	LD_LIBRARY_PATH=/usr/local/lib ./my_log_app.bin
 	
-Sample applications
-===================
+Sample C applications
+=====================
 
 Libsklog library is provided with three sample application: 
 ``unode``, ``tnode``, ``vnode``.
@@ -47,10 +47,10 @@ Libsklog library is provided with three sample application:
 
 **Source**
 
-	.. literalinclude:: ../../../apps/tnode.c
-		:language: c
-		:linenos:
-		:tab-width: 4
+.. literalinclude:: ../../../apps/tnode.c
+	:language: c
+	:linenos:
+	:tab-width: 4
 		
 ``unode``
 ^^^^^^^^^
@@ -73,10 +73,10 @@ Libsklog library is provided with three sample application:
 	
 **Source**
 
-	.. literalinclude:: ../../../apps/unode.c
-		:language: c
-		:linenos:
-		:tab-width: 4
+.. literalinclude:: ../../../apps/unode.c
+	:language: c
+	:linenos:
+	:tab-width: 4
 		
 ``vnode``
 ^^^^^^^^^
@@ -101,7 +101,70 @@ Libsklog library is provided with three sample application:
 	
 **Source**
 
-	.. literalinclude:: ../../../apps/vnode.c
-		:language: c
+.. literalinclude:: ../../../apps/vnode.c
+	:language: c
+	:linenos:
+	:tab-width: 4
+		
+Sample Python applications
+==========================
+
+Preliminaries
+^^^^^^^^^^^^^
+
+	TODO
+
+RESTserver.py
+^^^^^^^^^^^^^
+
+**Description**
+
+**Usage**
+
+	::
+	
+		$> cd $PREFIX/etc/libsklog/python/apps
+		$> python RESTserver.py
+		
+		Bottle server starting up (using WSGIRefServer())...
+		Listening on http://127.0.0.1:9000/
+		Hit Ctrl-C to quit.
+
+**Source**
+
+.. literalinclude:: ../../../lib/bindings/python/apps/RESTserver.py
+	:language: py
+	:linenos:
+	:tab-width: 4
+
+RESTclient.py
+^^^^^^^^^^^^^
+
+**Description**
+
+**Usage**
+
+	::
+	
+		$> cd $PREFIX/etc/libsklog/python/apps
+		$> python RESTclient.py
+		
+**Note**
+
+	This application simulates a process that logs dummy events. To
+	retrieve log files and/or verify a logfile use ``curl`` as follow.
+	
+	Retrieve ::
+	
+		$> curl -d'{"operation":"retrieveLogfiles"}' -H'Content-type: application/json'  http://localhost:9000/logservice
+		
+	Verify ::
+		
+		$> curl -d'{"operation":"verifyLogfile","data":{"logfile_id":"ad96e592-abeb-11e1-a0b0-0025b345ca14"}}' -H'Content-type: application/json'  http://localhost:9000/logservice
+
+**Source**
+
+.. literalinclude:: ../../../lib/bindings/python/apps/RESTclient.py
+		:language: py
 		:linenos:
 		:tab-width: 4
