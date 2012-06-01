@@ -24,6 +24,7 @@
 
 #include "sklog_u.h"
 #include "sklog_t.h"
+#include "sklog_v.h"
 #include "sklog_internal.h"
 
 #include <string.h>
@@ -35,19 +36,21 @@
  * 
  */
  
-static PyObject *py_SKLOG_U_NewCtx(PyObject *self, PyObject *args)
+static PyObject *
+py_SKLOG_U_NewCtx (PyObject *self, PyObject *args)
 {
     SKLOG_U_Ctx *ctx = SKLOG_U_NewCtx();
 
     if ( ctx == NULL ) {
         ERROR("SKLOG_U_NewCtx() failure");
-        return Py_BuildValue("i", SKLOG_FAILURE);
+        return Py_BuildValue("il", SKLOG_FAILURE, 0);
     }
 
-    return Py_BuildValue("l", ctx);
+    return Py_BuildValue("il", SKLOG_SUCCESS, ctx);
 }
 
-static PyObject *py_SKLOG_U_InitCtx(PyObject *self, PyObject *args)
+static PyObject *
+py_SKLOG_U_InitCtx (PyObject *self, PyObject *args)
 {
 	int rv = SKLOG_SUCCESS;
 	
@@ -74,14 +77,14 @@ static PyObject *py_SKLOG_U_InitCtx(PyObject *self, PyObject *args)
 	return Py_BuildValue("i", SKLOG_SUCCESS);
 }
 
-static PyObject *py_SKLOG_U_Open(PyObject* self, PyObject* args)
+static PyObject *
+py_SKLOG_U_Open (PyObject* self, PyObject* args)
 {
     char *le1 = 0;
     char *le2 = 0;
     unsigned int le1_len = 0;
     unsigned int le2_len = 0;
     
-    //~ char logid[UUID_STR_LEN+1] = {0};
     char logid[SKLOG_UUID_STR_LEN+1] = {0};
     
 
@@ -103,7 +106,8 @@ static PyObject *py_SKLOG_U_Open(PyObject* self, PyObject* args)
     return Py_BuildValue("s#s#s#",logid,SKLOG_UUID_STR_LEN,le1,le1_len,le2,le2_len);
 }
 
-static PyObject *py_SKLOG_U_Open_M0(PyObject *self, PyObject *args)
+static PyObject *
+py_SKLOG_U_Open_M0 (PyObject *self, PyObject *args)
 {
 	int rv = SKLOG_SUCCESS;
 	
@@ -115,6 +119,8 @@ static PyObject *py_SKLOG_U_Open_M0(PyObject *self, PyObject *args)
 	
 	char *logentry = 0;
 	unsigned int logentry_len = 0;
+	
+	//~ char buf[BUF_8192+1] = { 0x0 };
 	
 	char *b64 = 0;
 	
@@ -132,7 +138,7 @@ static PyObject *py_SKLOG_U_Open_M0(PyObject *self, PyObject *args)
 		
 	if ( rv == SKLOG_FAILURE ) {
 		ERROR("SKLOG_U_Open_MO() failure");
-		return Py_BuildValue("i", rv);
+		return Py_BuildValue("iss", rv, NULL, NULL);
 	}
 	
 	/* encode M0 as base64 */
@@ -141,18 +147,18 @@ static PyObject *py_SKLOG_U_Open_M0(PyObject *self, PyObject *args)
 	
 	if ( rv == SKLOG_FAILURE ) {
 		ERROR("b64_enc() failure");
-		return Py_BuildValue("i", rv);
+		return Py_BuildValue("iss", rv, NULL, NULL);
 	}
 	
 	free(m0);
 	
 	/* return */
 	
-	return Py_BuildValue("s#s#", b64, strlen(b64), logentry,
-		logentry_len);
+	return Py_BuildValue("iss", rv, b64, logentry);
 }
 
-static PyObject *py_SKLOG_U_Open_M1(PyObject *self, PyObject *args)
+static PyObject *
+py_SKLOG_U_Open_M1 (PyObject *self, PyObject *args)
 {
 	int rv = 0;
 	
@@ -165,13 +171,16 @@ static PyObject *py_SKLOG_U_Open_M1(PyObject *self, PyObject *args)
     char *logentry = 0;
 	unsigned int logentry_len = 0;
     
-    char b64[BUF_4096+1] = { 0x0 };
+    char b64[BUF_8192+1] = { 0x0 };
+    char *buf = 0;
     
     /* parse input arguments */
     
-	PyArg_ParseTuple(args,"ls",&ctx_addr, b64);
+	PyArg_ParseTuple(args, "ls", &ctx_addr, &buf);
     
     ctx = (SKLOG_U_Ctx *) ctx_addr;
+    
+    memcpy(b64, buf, strlen(buf));
     
     rv = b64_dec(b64, strlen(b64), &m1, &m1_len);
     
@@ -188,17 +197,18 @@ static PyObject *py_SKLOG_U_Open_M1(PyObject *self, PyObject *args)
     
     if ( rv == SKLOG_FAILURE ) {
 		ERROR("SKLOG_U_Open_M1() failure");
-		return Py_BuildValue("i", rv);
+		return Py_BuildValue("is", rv, NULL);
 	}
 	
 	free(m1);
 	
 	/* return */
 	
-	return Py_BuildValue("s#", logentry, logentry_len);
+	return Py_BuildValue("is", rv, logentry);
 }
 
-static PyObject *py_SKLOG_U_LogEvent(PyObject *self, PyObject *args)
+static PyObject *
+py_SKLOG_U_LogEvent (PyObject *self, PyObject *args)
 {
 	int rv = SKLOG_SUCCESS;
     
@@ -227,17 +237,20 @@ static PyObject *py_SKLOG_U_LogEvent(PyObject *self, PyObject *args)
 
     if ( rv == SKLOG_FAILURE ) {
         ERROR("SKLOG_U_LogEvent() failure");
-        return Py_BuildValue("i", rv);
+        return Py_BuildValue("is", rv, NULL);
     }
     
-    free(data);
+    if ( rv == SKLOG_SESSION_TO_RENEW ) {
+        return Py_BuildValue("is", rv, NULL);
+    }
     
     /* return */
     
-    return Py_BuildValue("s#", logentry, logentry_len);
+    return Py_BuildValue("is", rv, logentry);
 }
 
-static PyObject *py_SKLOG_U_Close(PyObject *self, PyObject *args)
+static PyObject *
+py_SKLOG_U_Close (PyObject *self, PyObject *args)
 {
 	int rv = SKLOG_SUCCESS;
 
@@ -261,15 +274,16 @@ static PyObject *py_SKLOG_U_Close(PyObject *self, PyObject *args)
 
     if ( rv == SKLOG_FAILURE ) {
         ERROR("SKLOG_U_Close() failure");
-        return Py_BuildValue("i", rv);
+        return Py_BuildValue("is", rv, NULL);
     }
     
     /* return */
     
-    return Py_BuildValue("s#", logentry, logentry_len);
+    return Py_BuildValue("is", rv, logentry);
 }
 
-static PyObject *py_SKLOG_U_FreeCtx(PyObject *self, PyObject *args)
+static PyObject *
+py_SKLOG_U_FreeCtx (PyObject *self, PyObject *args)
 {
     int rv = SKLOG_SUCCESS;
     
@@ -296,25 +310,113 @@ static PyObject *py_SKLOG_U_FreeCtx(PyObject *self, PyObject *args)
     return Py_BuildValue("i", rv);
 }
 
+static PyObject *
+py_SKLOG_U_FlushLogfile (PyObject *self, PyObject *args)
+{
+	int rv = SKLOG_SUCCESS;
+	
+	SKLOG_U_Ctx *ctx = 0;
+	long int ctx_addr = 0;
+	
+	char *logs[BUF_8192] = { 0x0 };
+	unsigned int logs_size = 0;
+	int i = 0;
+	
+	PyObject *tuple = 0;
+	PyObject *logentry = 0;
+	
+	/* parse input arguments */
+	
+	PyArg_ParseTuple(args, "l", &ctx_addr);
+	
+	ctx = (SKLOG_U_Ctx *) ctx_addr;
+	
+	/* --------- */
+    /*  binding  */
+    /* --------- */
+    
+    rv = SKLOG_U_FlushLogfile(ctx, logs, &logs_size);
+    
+    if ( rv == SKLOG_FAILURE ) {
+		ERROR("SKLOG_U_FlushLogfile() failure");
+		return Py_BuildValue("i", rv);
+	}
+	
+	/* generate tuple */
+	
+	tuple = PyTuple_New(logs_size);
+	
+	if ( tuple == NULL ) {
+		ERROR("PyTuple_New() failure");
+		return Py_BuildValue("i", SKLOG_FAILURE);
+	}
+	
+	for ( i = 0 ; i < logs_size ; i++ ) {
+		
+		logentry = PyString_FromString(logs[i]);
+		
+		if ( logentry == NULL ) {
+			ERROR("PyString_FromString() failure");
+			return Py_BuildValue("i", SKLOG_FAILURE);
+		}
+		
+		PyTuple_SetItem(tuple, i, logentry);
+	}
+	
+	return tuple;
+}
+
+static PyObject *
+py_SKLOG_U_UploadLogfile (PyObject *self, PyObject *args)
+{
+	int rv = SKLOG_SUCCESS;
+	
+	SKLOG_U_Ctx *ctx = 0;
+	long int ctx_addr = 0;
+	
+	char filename[BUF_512+1] = { 0x0 };
+	int mode = 0;
+	
+	/* parse input arguments */
+	
+	PyArg_ParseTuple(args, "lsi", &ctx_addr, &filename, &mode);
+	
+	ctx = (SKLOG_U_Ctx *) ctx_addr;
+	
+	/* --------- */
+    /*  binding  */
+    /* --------- */
+    
+    rv = SKLOG_U_UploadLogfile(ctx, filename, mode);
+    
+    if ( rv == SKLOG_FAILURE ) {
+		ERROR("SKLOG_U_UploadLogfile() failure");
+        return Py_BuildValue("i", rv);
+	}
+	
+	return Py_BuildValue("i", rv);
+}
 
 /*
  * T API bindings
  * 
  */
 
-static PyObject *py_SKLOG_T_NewCtx(PyObject *self, PyObject *args)
+static PyObject *
+py_SKLOG_T_NewCtx (PyObject *self, PyObject *args)
 {
     SKLOG_T_Ctx *ctx = SKLOG_T_NewCtx();
 
     if ( ctx == NULL ) {
         ERROR("SKLOG_T_NewCtx() failure");
-        return Py_BuildValue("i", SKLOG_FAILURE);
+        return Py_BuildValue("il", SKLOG_FAILURE, 0);
     }
 
-    return Py_BuildValue("l", ctx);	
+    return Py_BuildValue("il", SKLOG_SUCCESS, ctx);	
 }
 
-static PyObject *py_SKLOG_T_InitCtx(PyObject *self, PyObject *args)
+static PyObject *
+py_SKLOG_T_InitCtx (PyObject *self, PyObject *args)
 {
 	int rv = SKLOG_SUCCESS;
 	
@@ -341,7 +443,8 @@ static PyObject *py_SKLOG_T_InitCtx(PyObject *self, PyObject *args)
 	return Py_BuildValue("i", rv);
 }
 
-static PyObject *py_SKLOG_T_FreeCtx(PyObject *self, PyObject *args)
+static PyObject *
+py_SKLOG_T_FreeCtx (PyObject *self, PyObject *args)
 {
 	int rv = SKLOG_SUCCESS;
     
@@ -368,7 +471,8 @@ static PyObject *py_SKLOG_T_FreeCtx(PyObject *self, PyObject *args)
     return Py_BuildValue("i", rv);
 }
 
-static PyObject *py_SKLOG_T_ManageLoggingSessionInit(PyObject* self, PyObject* args)
+static PyObject *
+py_SKLOG_T_ManageLoggingSessionInit (PyObject* self, PyObject* args)
 {
 	int rv = SKLOG_SUCCESS;
 	
@@ -389,15 +493,13 @@ static PyObject *py_SKLOG_T_ManageLoggingSessionInit(PyObject* self, PyObject* a
 	
 	PyArg_ParseTuple(args, "ls", &ctx_addr, &b64);
 	
-	NOTIFY("%s", b64);
-	
 	ctx = (SKLOG_T_Ctx *) ctx_addr;
 	
 	rv = b64_dec(b64, strlen(b64), &m0, &m0_len);
     
     if ( rv == SKLOG_FAILURE ) {
 		ERROR("b64_dec() failure");
-		return Py_BuildValue("i", rv);
+		return Py_BuildValue("is", rv, NULL);
 	}
 	
 	/* --------- */
@@ -409,20 +511,21 @@ static PyObject *py_SKLOG_T_ManageLoggingSessionInit(PyObject* self, PyObject* a
     
     if ( rv == SKLOG_FAILURE ) {
 		ERROR("SKLOG_T_ManageLoggingSessionInit() failure");
-		return Py_BuildValue("i", rv);
+		return Py_BuildValue("is", rv, NULL);
 	}
 	
 	rv = b64_enc(m1, m1_len, &b64);
 	
 	if ( rv == SKLOG_FAILURE ) {
 		ERROR("b64_enc() failure");
-		return Py_BuildValue("i", rv);
+		return Py_BuildValue("is", rv, NULL);
 	}
 	
-	return Py_BuildValue("s#", b64, strlen(b64));
+	return Py_BuildValue("is", rv, b64);
 }
 
-static PyObject *py_SKLOG_T_ManageLogfileRetrieve(PyObject *self, PyObject *args)
+static PyObject *
+py_SKLOG_T_ManageLogfileRetrieve (PyObject *self, PyObject *args)
 {
 	int rv = SKLOG_SUCCESS;
 	
@@ -478,7 +581,8 @@ static PyObject *py_SKLOG_T_ManageLogfileRetrieve(PyObject *self, PyObject *args
 	return tuple;
 }
 
-static PyObject *py_SKLOG_T_ManageLogfileVerify(PyObject *self, PyObject *args)
+static PyObject *
+py_SKLOG_T_ManageLogfileVerify (PyObject *self, PyObject *args)
 {
 	int rv = SKLOG_SUCCESS;
 	
@@ -504,15 +608,103 @@ static PyObject *py_SKLOG_T_ManageLogfileVerify(PyObject *self, PyObject *args)
 		return Py_BuildValue("i", rv);
 	}
 	
+	return Py_BuildValue("i", rv);
+}
+
+/*
+ * V API bindings
+ * 
+ */
+
+static PyObject *
+py_SKLOG_V_NewCtx (PyObject *self, PyObject *args)
+{
+	SKLOG_V_Ctx *ctx = SKLOG_V_NewCtx();
+
+    if ( ctx == NULL ) {
+        ERROR("SKLOG_V_NewCtx() failure");
+        return Py_BuildValue("i", SKLOG_FAILURE);
+    }
+
+    return Py_BuildValue("il", SKLOG_SUCCESS, ctx);	
+}
+
+static PyObject *
+py_SKLOG_V_InitCtx (PyObject *self, PyObject *args)
+{
+	int rv = SKLOG_SUCCESS;
+	
+	SKLOG_V_Ctx *ctx = 0;
+	long int ctx_addr = 0;
+	
+	/* parse input arguments */
+	
+	PyArg_ParseTuple(args, "l", &ctx_addr);
+	
+	ctx = (SKLOG_V_Ctx *) ctx_addr;
+	
+	/* --------- */
+    /*  binding  */
+    /* --------- */
+	
+	rv = SKLOG_V_InitCtx(ctx);
+	
+	if ( rv == SKLOG_FAILURE ) {
+		ERROR("SKLOG_V_InitCtx() failure");
+		return Py_BuildValue("i", rv);
+	}
+	
+	return Py_BuildValue("i", rv);
+}
+ 
+static PyObject *
+py_SKLOG_V_FreeCtx (PyObject *self, PyObject *args)
+{
+	int rv = SKLOG_SUCCESS;
+    
+    SKLOG_V_Ctx *ctx = 0;
+    long int ctx_addr = 0;
+
+	/* parse input parameters */
+	
+    PyArg_ParseTuple(args, "l", &ctx_addr);
+    
+    ctx = (SKLOG_V_Ctx *) ctx_addr;
+    
+    /* --------- */
+    /*  binding  */
+    /* --------- */
+
+	rv = SKLOG_V_FreeCtx(&ctx);
+
+    if ( rv == SKLOG_FAILURE ) {
+        ERROR("SKLOG_V_FreeCtx() failure");
+        return Py_BuildValue("i", rv);
+    }
+
+    return Py_BuildValue("i", rv);
+} 
+
+static PyObject *
+py_SKLOG_V_RetrieveLogFiles (PyObject *self, PyObject *args)
+{
 	return Py_BuildValue("i", SKLOG_SUCCESS);
 }
 
+static PyObject *
+py_SKLOG_V_VerifyLogFile (PyObject *self, PyObject *args)
+{
+	return Py_BuildValue("i", SKLOG_SUCCESS);
+}
+ 
 /*
  * Bind Python function names to our C functions
  * 
  */
 
 static PyMethodDef pylibsklog_methods[] = {
+	
+	/* SKLOG_U */
 	
     {"SKLOG_U_NewCtx", py_SKLOG_U_NewCtx, METH_VARARGS},
     {"SKLOG_U_InitCtx", py_SKLOG_U_InitCtx, METH_VARARGS},
@@ -522,6 +714,10 @@ static PyMethodDef pylibsklog_methods[] = {
     {"SKLOG_U_LogEvent", py_SKLOG_U_LogEvent, METH_VARARGS},
     {"SKLOG_U_Close", py_SKLOG_U_Close, METH_VARARGS},
     {"SKLOG_U_FreeCtx", py_SKLOG_U_FreeCtx, METH_VARARGS},
+    {"SKLOG_U_FlushLogfile", py_SKLOG_U_FlushLogfile, METH_VARARGS},
+    {"SKLOG_U_UploadLogfile", py_SKLOG_U_UploadLogfile, METH_VARARGS},
+    
+    /* SKLOG_T */
     
     {"SKLOG_T_NewCtx", py_SKLOG_T_NewCtx, METH_VARARGS},
     {"SKLOG_T_FreeCtx", py_SKLOG_T_FreeCtx, METH_VARARGS},
@@ -532,6 +728,17 @@ static PyMethodDef pylibsklog_methods[] = {
 		py_SKLOG_T_ManageLogfileRetrieve, METH_VARARGS},
     {"SKLOG_T_ManageLogfileVerify",
 		py_SKLOG_T_ManageLogfileVerify, METH_VARARGS},
+		
+	/* SKLOG_V */
+		
+	{"SKLOG_V_NewCtx", py_SKLOG_V_NewCtx, METH_VARARGS},
+    {"SKLOG_V_InitCtx", py_SKLOG_V_InitCtx, METH_VARARGS},
+    {"SKLOG_V_FreeCtx", py_SKLOG_V_FreeCtx, METH_VARARGS},
+    {"SKLOG_V_RetrieveLogFiles", py_SKLOG_V_RetrieveLogFiles,
+		METH_VARARGS},
+    {"SKLOG_V_VerifyLogFile", py_SKLOG_V_VerifyLogFile, METH_VARARGS},
+    
+    /* sentinel value */
 	
     {NULL, NULL}
 };
@@ -541,7 +748,8 @@ static PyMethodDef pylibsklog_methods[] = {
  * 
  */
 
-void initlibsklog()
+void
+initlibsklog()
 {
 	(void) Py_InitModule("libsklog", pylibsklog_methods);
 }
