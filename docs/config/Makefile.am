@@ -3,6 +3,7 @@ install-data-local:
 		mkdir -p $(sysconfdir)/libsklog ; \
 	fi ; \
 	sed "s|%%%SYSCONFDIR%%%|$(sysconfdir)|g" \
-		$(srcdir)/libsklog-u.conf.example > $(sysconfdir)/libsklog/libsklog-u.conf.example && \
+		$(srcdir)/libsklog-u.conf.example > $(sysconfdir)/libsklog/libsklog-u.conf && \
 	sed "s|%%%SYSCONFDIR%%%|$(sysconfdir)|g" \
-		$(srcdir)/libsklog-t.conf.example >	$(sysconfdir)/libsklog/libsklog-t.conf.example
+		$(srcdir)/libsklog-t.conf.example >	$(sysconfdir)/libsklog/libsklog-t.conf && \
+	mkdir -p $(localstatedir)/log/libsklog
