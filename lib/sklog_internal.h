@@ -37,150 +37,111 @@
 /*--------------------------------------------------------------------*/
 
 SKLOG_RETURN
-sign_message(unsigned char    *message,
-             unsigned int     message_len,
-             EVP_PKEY         *signing_key,
-             unsigned char    **signature,
-             unsigned int     *signature_len);
+sign_message(unsigned char *message, unsigned int message_len,
+			 EVP_PKEY *signing_key, unsigned char **signature,
+			 unsigned int *signature_len);
 
 SKLOG_RETURN
-sign_verify(EVP_PKEY         *verify_key,
-            unsigned char    *signature,
-            size_t           signature_len,
-            unsigned char    *message,
-            unsigned int     message_len);
+sign_verify(EVP_PKEY *verify_key, unsigned char	*signature,
+			size_t signature_len, unsigned char	*message,\
+			unsigned int message_len);
 
 SKLOG_RETURN
-pke_encrypt(X509             *cert,   
-            unsigned char    *in,
-            unsigned char    in_len,
-            unsigned char    **out,
-            size_t           *out_len);
+pke_encrypt(X509 *cert, unsigned char *in, unsigned char in_len,
+			unsigned char **out, size_t	*out_len);
 
 SKLOG_RETURN
-pke_decrypt(EVP_PKEY         *key,
-            unsigned char    *in,
-            size_t           in_len,
-            unsigned char    **out,
-            size_t           *out_len);
+pke_decrypt(EVP_PKEY *key, unsigned char *in, size_t in_len,
+			unsigned char **out, size_t *out_len);
 
 SKLOG_RETURN
-aes256_encrypt(unsigned char    *plain,
-               unsigned int     plain_len,
-               unsigned char    *key,
-               unsigned int     key_len,
-               unsigned char    **cipher,
-               unsigned int     *cipher_len);
+aes256_encrypt(unsigned char *plain, unsigned int plain_len,
+			   unsigned char *key, unsigned int key_len,
+			   unsigned char **cipher, unsigned int *cipher_len);
 
 SKLOG_RETURN
-aes256_decrypt(unsigned char    *cipher,
-               unsigned int     cipher_len,
-               unsigned char    *key,
-               unsigned int     key_len,
-               unsigned char    **plain,
-               unsigned int     *plain_len);
+aes256_decrypt(unsigned char *cipher, unsigned int cipher_len,
+			   unsigned char *key, unsigned int key_len,
+			   unsigned char **plain, unsigned int *plain_len);
 
 SKLOG_RETURN
-sha256(unsigned char    *message,
-       unsigned int     message_len,
-       unsigned char    *hash,
-       unsigned int     *hash_len);
+sha256(unsigned char *message, unsigned int message_len,
+	   unsigned char *hash, unsigned int *hash_len);
 
 SKLOG_RETURN
-hmac(unsigned char    *message,
-     unsigned int     message_len,
-     unsigned char    *key,
-     unsigned int     key_len,
-     unsigned char    *hmac,
-     unsigned int     *hmac_len);
+hmac(unsigned char *message, unsigned int message_len, 
+	 unsigned char *key, unsigned int key_len, unsigned char *hmac,
+	 unsigned int *hmac_len);
 
 SKLOG_RETURN
-b64_enc(unsigned char    *blob,
-        unsigned int     blob_len,
-        char             **b64_blob);
+b64_enc(unsigned char *blob, unsigned int blob_len, char **b64_blob);
 
 SKLOG_RETURN
-b64_dec(char    *b64_blob,
-        unsigned int     b64_blob_len,
-        unsigned char    **blob,
-        unsigned int     *blob_len);
+b64_dec(char *b64_blob, unsigned int b64_blob_len,
+		unsigned char **blob, unsigned int *blob_len);
+		
 /*--------------------------------------------------------------------*/
 /*                         tlv management                             */
 /*--------------------------------------------------------------------*/
 
-//~ SKLOG_RETURN
-//~ tlv_create(uint32_t         type,
-           //~ unsigned int     data_len,
-           //~ void             *data,
-           //~ unsigned char    *buffer);
+SKLOG_RETURN
+tlv_parse(unsigned char *tlv_msg, uint32_t type, void *data,
+		  unsigned int *data_len);
 
 SKLOG_RETURN
-tlv_parse(unsigned char    *tlv_msg,
-          uint32_t         type,
-          void             *data,
-          unsigned int     *data_len);
+tlv_get_type(unsigned char *tlv_msg, uint32_t *type);
 
 SKLOG_RETURN
-tlv_get_type(unsigned char    *tlv_msg,
-             uint32_t         *type);
+tlv_get_len(unsigned char *tlv_msg, unsigned int *len);
 
 SKLOG_RETURN
-tlv_get_len(unsigned char    *tlv_msg,
-            unsigned int     *len);
+tlv_get_value(unsigned char	*tlv_msg, unsigned char	**value);
 
 SKLOG_RETURN
-tlv_get_value(unsigned char    *tlv_msg,
-              unsigned char    **value);
+tlv_parse_message(unsigned char	*msg, uint32_t expected_type,
+				  uint32_t *type, unsigned int *len,
+				  unsigned char	**value);
 
 SKLOG_RETURN
-tlv_parse_message(unsigned char    *msg,
-                  uint32_t         exected_type,
-                  uint32_t         *type,
-                  unsigned int     *len,
-                  unsigned char    **value);
-
-SKLOG_RETURN
-tlv_create_message(uint32_t         type,
-                   unsigned int     len,
-                   unsigned char    *value,
-                   unsigned char    **message,
-                   unsigned int     *message_len);
+tlv_create_message(uint32_t type, unsigned int len,
+				   unsigned char *value, unsigned char **message,
+				   unsigned int *message_len);
 
 /*--------------------------------------------------------------------*/
 /*                      timestamp management                          */
 /*--------------------------------------------------------------------*/
 
 SKLOG_RETURN
-serialize_timeval(struct timeval    *time,
-                  unsigned char     **buf,
-                  unsigned int      *buf_len);
+serialize_timeval(struct timeval *time, unsigned char **buf,
+				  unsigned int *buf_len);
 
 SKLOG_RETURN
-deserialize_timeval(unsigned char     *buf,
-                    unsigned int      buf_len,
-                    struct timeval    *time);
+deserialize_timeval(unsigned char *buf, unsigned int buf_len,
+					struct timeval *time);
 
-SKLOG_RETURN time_now_usec(unsigned long *usec);
+SKLOG_RETURN
+time_now_usec(unsigned long *usec);
 
-SKLOG_RETURN time_usec2ascii(char *ascii_time, unsigned long usec_time);
+SKLOG_RETURN
+time_usec2ascii(char *ascii_time, unsigned long usec_time);
 
-SKLOG_RETURN time_serialize(unsigned char **buf, unsigned int *bufl,
-	unsigned long usec_time);
+SKLOG_RETURN 
+time_serialize(unsigned char **buf, unsigned int *bufl,
+			   unsigned long usec_time);
 
-SKLOG_RETURN time_deserialize(unsigned long *usec_time,
-	unsigned char *buf, unsigned int bufl);
+SKLOG_RETURN
+time_deserialize(unsigned long *usec_time, unsigned char *buf,
+				 unsigned int bufl);
 
 /*--------------------------------------------------------------------*/
 /*                       memory management                            */
 /*--------------------------------------------------------------------*/
 
 SKLOG_RETURN
-mem_alloc_n(void      **mem,
-            size_t    size,
-            size_t    couny);
+mem_alloc_n(void **mem, size_t size, size_t	count);
 
 SKLOG_RETURN
-mem_free(void      **mem);
+mem_free(void **mem);
 
 /*--------------------------------------------------------------------*/
 /*                    logfile flush management                        */
@@ -188,20 +149,21 @@ mem_free(void      **mem);
 
 SKLOG_RETURN
 #ifdef USE_SSL
-flush_logfile_send_logentry(SSL              *ssl,
+flush_logfile_send_logentry(SSL *ssl, char*f_uuid, unsigned char *type,
+							unsigned int type_len,
+							unsigned char *data_enc,
+							unsigned int data_enc_len, unsigned char *y,
+							unsigned int y_len, unsigned char *z,
+							unsigned int z_len);
 #endif
 #ifdef USE_BIO
-flush_logfile_send_logentry(BIO              *bio,
+flush_logfile_send_logentry(BIO *bio, char*f_uuid, unsigned char *type,
+							unsigned int type_len,
+							unsigned char *data_enc,
+							unsigned int data_enc_len, unsigned char *y,
+							unsigned int y_len, unsigned char *z,
+							unsigned int z_len);
 #endif
-                            char             *f_uuid,
-                            unsigned char    *type,
-                            unsigned int     type_len,
-                            unsigned char    *data_enc,
-                            unsigned int     data_enc_len,
-                            unsigned char    *y,
-                            unsigned int     y_len,
-                            unsigned char    *z,
-                            unsigned int     z_len);
 
 /*--------------------------------------------------------------------*/
 /*                         conenctions                                */
@@ -265,45 +227,53 @@ flush_logfile_send_logentry(BIO              *bio,
 #define TERM_LINE 72
 
 void
-sklog_show_buffer(int pid,
-				  const char *file,
-				  int line,
-				  const char *func,
-				  const char *bufname,
-				  unsigned char *buf,
+sklog_show_buffer(int pid, const char *file, int line, const char *func,
+				  const char *bufname, unsigned char *buf,
 				  unsigned int bufl);
 
 /*--------------------------------------------------------------------*/
 /*                              uuid                                  */
 /*--------------------------------------------------------------------*/
 
-int sklog_uuid_unparse(uuid_t u, char *out);
+int
+sklog_uuid_unparse(uuid_t u, char *out);
 
-void write2file(const char *file, const char *mode, unsigned char *buf, unsigned int bufl);
+void
+write2file(const char *file, const char *mode, unsigned char *buf,
+		   unsigned int bufl);
 
 /*--------------------------------------------------------------------*/
 /*                            networking                              */
 /*--------------------------------------------------------------------*/
 
-SKLOG_RETURN tcp_accept(int lsock, int *csock, char *cli_addr);
+SKLOG_RETURN
+tcp_accept(int lsock, int *csock, char *cli_addr);
 
-SKLOG_RETURN tcp_bind(int lsock, const char *addr, short int port);
+SKLOG_RETURN
+tcp_bind(int lsock, const char *addr, short int port);
 
-SKLOG_RETURN tcp_connect(int csock, const char *addr, short int port);
+SKLOG_RETURN
+tcp_connect(int csock, const char *addr, short int port);
 
-SKLOG_RETURN tcp_listen(int lsock);
+SKLOG_RETURN
+tcp_listen(int lsock);
 
-SKLOG_RETURN tcp_read(void);
+SKLOG_RETURN
+tcp_read(void);
 
-SKLOG_RETURN tcp_socket(int *sock);
+SKLOG_RETURN
+tcp_socket(int *sock);
 
-SKLOG_RETURN tcp_write(void);
+SKLOG_RETURN
+tcp_write(void);
 
-SKLOG_RETURN ssl_init_SSL(SSL_CTX *ssl_ctx, SSL **ssl);
+SKLOG_RETURN
+ssl_init_SSL(SSL_CTX *ssl_ctx, SSL **ssl);
 
-SKLOG_RETURN ssl_init_SSL_CTX(const SSL_METHOD *method, 
-	const char *cert_path, const char *privkey_path, int do_verify,
-	const char *CA_cert_path, SSL_CTX **ssl_ctx);
+SKLOG_RETURN
+ssl_init_SSL_CTX(const SSL_METHOD *method, const char *cert_path,
+				 const char *privkey_path, int do_verify,
+				 const char *CA_cert_path, SSL_CTX **ssl_ctx);
 
 
 #endif /* SKLOG_INTERNAL_H */

@@ -62,7 +62,7 @@ msg(MSG_TYPE type, const char *source, const int lineno,
 	
 	char buf[MSG_BUFLEN+1] = { 0 };
 	size_t bufl = 0;
-
+	
 	/* append prefix */
 	
 	switch ( type ) {
@@ -109,6 +109,24 @@ msg(MSG_TYPE type, const char *source, const int lineno,
 		default:
 			break;
 	}
+	
+	/* indent */
+	
+	/*
+	if (( strcmp(source, "sklog_u.c") == 0 ||
+		strcmp(source, "sklog_t.c") == 0 )) {
+		strcat(buf+bufl, ">");
+		bufl = strlen(buf);
+	} else if (( strcmp(source, "sklog_u_internal.c") == 0 ||
+		strcmp(source, "sklog_t_internal.c") == 0)) {
+		strcat(buf+bufl, ">>");
+		bufl = strlen(buf);
+	} else if (( strcmp(source, "sklog_internal.c") == 0 ||
+		strcmp(source, "sklog_commons.c") == 0 )) {
+		strcat(buf+bufl, ">>>");
+		bufl = strlen(buf);
+	}
+	*/
 	
 	/* append pid */
 	

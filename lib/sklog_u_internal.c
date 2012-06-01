@@ -553,16 +553,6 @@ __create_logentry_umberlog(SKLOG_U_Ctx *ctx, SKLOG_DATA_TYPE type,
 						   int req_blob, char **blob,
 						   unsigned int *blob_len)
 {
-	/*
-	{
-		"sk_type": "0x00000002",
-		"sk_data": "...",
-		"sk_hash": "...",
-		"sk_hmac": "..."
-	}
-	*/
-		
-	
 	int rv = SKLOG_SUCCESS;
 	
 #ifndef DISABLE_ENCRYPTION	
@@ -1573,7 +1563,7 @@ parse_m1(unsigned char *m1, unsigned int m1_len, SKLOG_PROTOCOL_STEP *p,
 	
 	unsigned int ds = 0;
 	unsigned int len = 0;
-
+	
 	if ( tlv_parse(&m1[ds],PROTOCOL_STEP,p,&len) == SKLOG_FAILURE ) {
 		ERROR("M1 message is bad structured: expected PROTOCOLO_STEP");
 		goto error;

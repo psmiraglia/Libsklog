@@ -147,11 +147,14 @@ SKLOG_U_LogEvent(SKLOG_U_Ctx *ctx, SKLOG_DATA_TYPE type, char *data,
 		goto error;
 	}
 	
+	free(buf);
+	buf = 0;
+	
 error:
 
 	if ( buf ) 
 		free(buf);
-		
+	
 	return rv;
 }
 
