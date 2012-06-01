@@ -1,3 +1,5 @@
+LIBUMBERLOGPATH = $(srcdir)/libumberlog
+
 SUBDIRS = bindings
 
 lib_LTLIBRARIES = libsklog.la
@@ -51,14 +53,13 @@ libsklog_la_CFLAGS += @PY_CFLAGS@
 endif
 
 if HAVE_UMBERLOG
-libsklog_la_CFLAGS += @UMBERLOG_CFLAGS@
+libsklog_la_CFLAGS += -I$(LIBUMBERLOGPATH)/include
 endif
 
 libsklog_la_LDFLAGS = \
 	--version-info $(LIB_VERSION) \
 	-luuid -lconfig \
 	-L@SSLDIR@/lib -lcrypto -lssl \
-	-Llibumberlog/lib -lumberlog \
 	-ljansson
 
 if HAVE_STORAGE_SQLITE
@@ -78,5 +79,5 @@ libsklog_la_LDFLAGS += @PY_LDFLAGS@
 endif
 
 if HAVE_UMBERLOG
-libsklog_la_LDFLAGS += @UMBERLOG_LDFLAGS@
+libsklog_la_LDFLAGS += -L$(LIBUMBERLOGPATH)/lib -lumberlog
 endif

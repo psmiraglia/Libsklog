@@ -1,0 +1,10 @@
+prefix=/home/paolo/GIT/libsklog/lib/libumberlog
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libumberlog
+Version: 0.2.1
+Description: CEE-enhanced syslog() API
+URL: https://github.com/algernon/libumberlog
+Libs: -L${libdir} -lumberlog

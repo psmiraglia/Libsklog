@@ -85,10 +85,10 @@ AC_ARG_ENABLE(
 	[bindings-python],
 	AC_HELP_STRING(
 		[--enable-bindings-python],
-		[Build Libsklog with python bindings [default=no]]
+		[Build Libsklog with python bindings [default=yes]]
 	),
 	[enable_python="$enableval"],
-	[enable_python="no"]
+	[enable_python="yes"]
 )
 
 if test "x$enable_python" = "xyes" ; then
@@ -122,8 +122,6 @@ AC_ARG_WITH([lumberjack],
 
 if test "x$lumberjack" == "xyes"; then
 	AC_DEFINE([UMBERLOG], [1], [Enable libumberlog features])
-	AC_SUBST([UMBERLOG_CFLAGS], ["-Ilibumberlog/include"])
-	AC_SUBST([UMBERLOG_LDFLAGS], ["-Llibumberlog/lib -lumberlog"])
 	AM_CONDITIONAL([HAVE_UMBERLOG], [true])
 else
 	AM_CONDITIONAL([HAVE_UMBERLOG], [false])

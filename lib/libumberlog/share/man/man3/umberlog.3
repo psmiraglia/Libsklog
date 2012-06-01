@@ -1,0 +1,172 @@
+.\" Man page generated from reStructeredText.
+.
+.TH UMBERLOG 3 "2012-04-28" "" "CEE-enhanced syslog Manual"
+.SH NAME
+umberlog \- CEE-enhanced syslog message generation
+.
+.nr rst2man-indent-level 0
+.
+.de1 rstReportMargin
+\\$1 \\n[an-margin]
+level \\n[rst2man-indent-level]
+level margin: \\n[rst2man-indent\\n[rst2man-indent-level]]
+-
+\\n[rst2man-indent0]
+\\n[rst2man-indent1]
+\\n[rst2man-indent2]
+..
+.de1 INDENT
+.\" .rstReportMargin pre:
+. RS \\$1
+. nr rst2man-indent\\n[rst2man-indent-level] \\n[an-margin]
+. nr rst2man-indent-level +1
+.\" .rstReportMargin post:
+..
+.de UNINDENT
+. RE
+.\" indent \\n[an-margin]
+.\" old: \\n[rst2man-indent\\n[rst2man-indent-level]]
+.nr rst2man-indent-level -1
+.\" new: \\n[rst2man-indent\\n[rst2man-indent-level]]
+.in \\n[rst2man-indent\\n[rst2man-indent-level]]u
+..
+.SH SYNOPSIS
+.sp
+.nf
+.ft C
+#include <umberlog.h>
+
+void ul_openlog (const char *ident, int option, int facility);
+void ul_closelog (void);
+
+int ul_syslog (int priority, const char *format, ....);
+int ul_vsyslog (int priority, const char *format, va_list ap);
+
+void ul_legacy_syslog (int priority, const char *format, ...);
+void ul_legacy_vsyslog (int priority, const char *format, va_list ap);
+
+void ul_format (int priority, const char *format, ...);
+void ul_vformat (int priority, const char *format, va_list ap);
+.ft P
+.fi
+.SH DESCRIPTION
+.sp
+\fBul_openlog()\fP (also aliased to \fBopenlog()\fP) is a wrapper around
+the original \fBopenlog()\fP function, which opens a connection to the
+system logger for a program. The updated version adds support for a
+number of new option flags, described below.
+.sp
+\fBul_closelog()\fP (also aliased to \fBcloselog()\fP) is similar to
+\fBul_openlog()\fP in that it is a wrapper around the original
+\fBcloselog()\fP. It clears any settings set so far, to get back to a
+clean state.
+.sp
+\fBul_legacy_syslog()\fP and \fBul_legacy_vsyslog()\fP are both thin
+layers over the original \fBsyslog()\fP and \fBvsyslog()\fP functions, and
+the library overrides the original functions with this two. The only
+change these functions bring, are that the message they generate will
+be a CEE\-enhanced message, with a JSON payload. See below for an
+explanation on what this means.
+.sp
+\fBul_syslog()\fP and \fBul_vsyslog()\fP are two new functions provided by
+the library, that have similar interface to the legacy \fBsyslog()\fP
+functions, but they can be used to add arbitrary key\-value pairs to
+the emitted message. After the \fImsg_format\fP format string, and any
+other parameters it refers to, there must be a NULL\-terminated list of
+\fIkey\fP, \fIvalue format\fP, \fIformat parameters\fP. Each of these pairs,
+constructed from the \fIkey\fP and the \fBprintf(3)\fP\-style \fIvalue format\fP
+will be added to the generated message.
+.sp
+\fBul_format()\fP and \fBul_vformat()\fP do the same as the syslog
+variants above, except the formatted payload is not sent to syslog,
+but returned as a newly allocated string.
+.SH RETURN VALUE
+.sp
+When successful, \fBul_syslog()\fP and \fBul_vsyslog()\fP return zero,
+while \fBul_format()\fP and \fBul_vformat()\fP return a character string.
+.sp
+On failure the former two will return non\-zero, the latter two
+\fBNULL\fP, and set \fIerrno\fP appropriately.
+.SH CEE PAYLOAD
+.sp
+All of the improved \fBsyslog()\fP functions, the legacy and overridden
+ones and the new ones too turn the original syslog message into a
+CEE\-enabled JSON payload, with the original message put into the \fImsg\fP
+field, and any additional fields put into the same structure.
+.sp
+By default, unless the \fBLOG_UL_NODISCOVER\fP option flag is set, all
+of these functions will also add a few automatically discovered fields
+into the payload:
+.INDENT 0.0
+.TP
+.B \fIpid\fP
+The process ID of the program, as returned by \fBgetpid()\fP The value
+of this is \- by default \- determined at the time of calling
+\fBul_openlog()\fP, but if caching is disabled, it will be rechecked
+every time.
+.TP
+.B \fIfacility\fP, \fIpriority\fP
+The syslog facility and priority as a text string.
+.TP
+.B \fIprogram\fP
+The identification set at the time of \fBul_openlog()\fP.
+.TP
+.B \fIuid\fP, \fIgid\fP
+The user and group ID of the process, determined at \fBul_openlog()\fP
+time by default, unless caching is disabled.
+.TP
+.B \fIhost\fP
+The name of the originating host, determined at \fBul_openlog()\fP
+time by default, using \fBgethostname()\fP.
+.TP
+.B \fItimestamp\fP
+High\-precision timestamp, in textual format. Included by default,
+but can be controlled by the \fBLOG_UL_NOTIME\fP option flag at
+\fBul_openlog()\fP time.
+.UNINDENT
+.SH EXTRA OPTION FLAGS
+.sp
+The \fIoption\fP argument to \fBul_openlog()\fP is an OR of any of the
+original \fBopenlog()\fP flags, and these:
+.INDENT 0.0
+.TP
+.B LOG_UL_NODISCOVER
+Disable all automatic discovery, and only include the \fImessage\fP,
+and any specified \fIkey\-value\fP pairs in the generated message.
+.TP
+.B LOG_UL_NOCACHE
+When automatic discovery is enabled, disable caching certain
+properties, that might change between the call to \fBopenlog()\fP and
+the \fBul_syslog()\fP invocation.
+.TP
+.B LOG_UL_NOCACHE_UID
+Disable the \fIuid\fP and \fIgid\fP caching when automatic discovery is
+enabled, but do cache the rest.
+.TP
+.B LOG_UL_NOTIME
+Do not add a high\-precision timestamp to the generated message when
+automatic discovery is enabled.
+.UNINDENT
+.SH EXAMPLES
+.sp
+.nf
+.ft C
+status = ul_syslog(LOG_NOTICE, "Logged in user: %s", username,
+                   "service", "%s", service,
+                   "auth\-method", "%s", auth_method,
+                   "sessionid", "%d", session_id,
+                   NULL);
+.ft P
+.fi
+.SH SEE ALSO
+.sp
+\fBsyslog(1)\fP
+.SH COPYRIGHT
+.sp
+This page is part of the \fIlibumberlog\fP project, and is available under
+the same 2\-clause BSD license as the rest of the project.
+.SH AUTHOR
+Gergely Nagy <algernon@balabit.hu>
+.\" Generated by docutils manpage writer.
+.\" 
+.
