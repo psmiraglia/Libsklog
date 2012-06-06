@@ -41,8 +41,10 @@ SKLOG_T_ManageLoggingSessionInit (SKLOG_T_Ctx *ctx, unsigned char *m0,
 								  unsigned char **m1,
 								  unsigned int *m1_len);
 
+/*
 SKLOG_RETURN
 SKLOG_T_ManageLogfileUpload (SKLOG_T_Ctx *ctx, SKLOG_CONNECTION *c);
+*/
 
 SKLOG_RETURN
 SKLOG_T_ManageLogfileRetrieve (SKLOG_T_Ctx *ctx, char *logfile_list[],
@@ -50,6 +52,10 @@ SKLOG_T_ManageLogfileRetrieve (SKLOG_T_Ctx *ctx, char *logfile_list[],
 
 SKLOG_RETURN
 SKLOG_T_ManageLogfileVerify (SKLOG_T_Ctx *ctx, char *logfile_id);
+
+SKLOG_RETURN
+SKLOG_T_ManageLogfileUpload (SKLOG_T_Ctx *ctx, char *logfile_id,
+							 char *logs[], unsigned int logs_size);
 
 SKLOG_RETURN
 SKLOG_T_RunServer (SKLOG_T_Ctx *ctx);

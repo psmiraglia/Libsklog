@@ -83,6 +83,8 @@ class Logservice():
 			return self.retrieveLogfiles(self.t_service)
 		elif req_op == 'verifyLogfile':
 			return self.verifyLogfile(self.t_service, req_data['data'])
+		elif req_op == 'uploadLogfile':
+			return self.uploadLogfile(self.t_service, req_data['data'])
 		else:
 			return '<h1>What???</h1>'
 			
@@ -140,8 +142,26 @@ class Logservice():
 			return '{"operation":"verifyLogfile", "logfile_id": "%s", "result": "failure"}' % logfile_id
 		else:
 			return '{"operation":"verifyLogfile", "logfile_id": "%s", "result": "success"}' % logfile_id
+	
+	def uploadLogfile(self, t, req_data):
 		
-#
+		logs = []
+		
+		logfile_id = req_data['logfile_id']
+		
+		blob = req_data['logs']
+		
+		for logentry in blob:
+			temp = json.dumps(logentry, separators=(',',':'), sort_keys=True)
+			logs.append(temp)
+			
+		r = t.manage_logfile_upload(logfile_id, logs)
+		
+		if r == 0:
+			return '{"operation": "uploadLogfile", "result": "success"}'
+		else:
+			return '{"operation": "uploadLogfile", "result": "failure"}'
+#	
 # main
 #		
 

@@ -364,7 +364,12 @@ SKLOG_RETURN sklog_misc_u_dump_json(char *logfile_id,
 	char line[BUF_8192+1] = { 0x0 };
 	int eol = 0;
 	
+	char opened[BUF_512+1] = { 0x0 };
+	char closed[BUF_512+1] = { 0x0 };
+	
 	int is_the_first = 1;
+	
+	int i = 0;
 	
 	/* check input parameters */
 	
@@ -398,13 +403,38 @@ SKLOG_RETURN sklog_misc_u_dump_json(char *logfile_id,
 	
 	/* read */
 	
-	fprintf(out, "{\"session\":\"%s\",\"logs\":[", logfile_id);
+	/* ignore first line */
 	
+	fgets(line, BUF_8192, in);
+	memset(line, 0, BUF_8192);
+	
+	/* get opened */
+
+	fgets(line, BUF_8192, in);
+	
+	if ( line[0] == '#' ) {
+		i = 0;
+		while ( line[i++] != ':');
+		i++;
+		memcpy(opened, line+i, strlen(line)-i-1);
+	}
+	
+	fprintf(out, "{\"logfile_id\":\"%s\",\"opened\":\"%s\",\"logs\":[",
+		logfile_id, opened);
+
 	while ( !feof(in) ) {
 		
 		fgets(line, BUF_8192, in);
 		
-		if ( line[0] == '#' || line[0] == '\n' || line[0] == '\0' ) {
+		if ( line[0] == '#' ) {
+			i = 0;
+			while ( line[i++] != ':');
+			i++;
+			memcpy(closed, line+i, strlen(line)-i);
+			continue;
+		}
+		
+		if ( line[0] == '\n' || line[0] == '\0' ) {
 			memset(line, 0, BUF_8192);
 			continue;
 		}
@@ -424,7 +454,7 @@ SKLOG_RETURN sklog_misc_u_dump_json(char *logfile_id,
 		memset(line, 0, BUF_8192);
 	}
 	
-	fprintf(out, "]}\n");
+	fprintf(out, "],\"closed\":\"%s\"}\n", closed);
 	
 	fclose(in);
 	fclose(out);
@@ -650,6 +680,59 @@ SKLOG_RETURN sklog_misc_t_store_logentry(unsigned char *blob,
 	 * 
 	 */
 	 
+	return SKLOG_SUCCESS;
+}
+
+SKLOG_RETURN
+sklog_misc_t_store_logentry_v2 (char *logfile_id, char *logentry,
+								unsigned int logentry_len)
+{
+	#ifdef DO_TRACE
+	DEBUG
+	#endif
+	
+	int rv = 0;
+	
+	FILE *fp = 0;
+	char filename[BUF_512+1] = { 0x0 };
+	
+	/* chech input parameters */
+	
+	if ( logfile_id == NULL || logentry == NULL ) {
+		ERROR(MSG_BAD_INPUT_PARAMS);
+		return SKLOG_FAILURE;
+	}
+	
+	/* open logfile */
+	
+	rv = snprintf(filename, BUF_512, "%s/T/%s.log", LOGFILE_PATH,
+		logfile_id);
+		
+	if ( rv < 0 ) {
+		ERROR("snprintf() failure");
+		return SKLOG_FAILURE;
+	}
+	
+	fp = fopen(filename, "a");
+	
+	if ( fp == NULL ) {
+		ERROR("Unable to open file %s", filename);
+		return SKLOG_FAILURE;
+	}
+	
+	/* write logentry */
+	
+	rv = fprintf(fp, "%s\n", logentry);
+	
+	if ( rv < 0 ) {
+		ERROR("fprintf() failure");
+		return SKLOG_FAILURE;
+	}
+	
+	/* close file */
+	
+	fclose(fp);
+	
 	return SKLOG_SUCCESS;
 }
 
@@ -928,8 +1011,12 @@ SKLOG_RETURN sklog_misc_t_verify_logfile_v2(char *logfile_id)
 	
 	/* open file */
 	
+	rv = snprintf(filename, BUF_512, "%s/T/%s.log", LOGFILE_PATH,
+		logfile_id);
+	/*	
 	rv = snprintf(filename, BUF_512, "%s/%s.log", LOGFILE_PATH,
 		logfile_id);
+	*/
 		
 	if ( rv < 0 ) {
 		ERROR("snprintf() failure");

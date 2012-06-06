@@ -93,6 +93,7 @@ SKLOG_T_NewCtx (void)
     ctx->lsdriver->store_m0_msg_v2 = &sklog_misc_t_store_m0_msg_v2;
     ctx->lsdriver->retrieve_logfiles_v2 = &sklog_misc_t_retrieve_logfiles_v2;
     ctx->lsdriver->verify_logfile_v2 = &sklog_misc_t_verify_logfile_v2;
+    ctx->lsdriver->store_logentry_v2 = &sklog_misc_t_store_logentry_v2;
     #else
     ctx->lsdriver->store_authkey =     &sklog_sqlite_t_store_authkey;
     ctx->lsdriver->store_m0_msg =      &sklog_sqlite_t_store_m0_msg;
@@ -500,6 +501,7 @@ error:
  * 
  */
  
+/* 
 SKLOG_RETURN
 SKLOG_T_ManageLogfileUpload (SKLOG_T_Ctx *ctx, SKLOG_CONNECTION *c)
 {
@@ -677,6 +679,51 @@ SKLOG_T_ManageLogfileUpload (SKLOG_T_Ctx *ctx, SKLOG_CONNECTION *c)
 error:
     ERR_free_strings();
     return SKLOG_FAILURE;
+}
+*/
+
+SKLOG_RETURN
+SKLOG_T_ManageLogfileUpload (SKLOG_T_Ctx *ctx, char *logfile_id,
+							 char *logs[], unsigned int logs_size)
+{
+	#ifdef DO_TRACE
+    DEBUG
+    #endif
+    
+    int rv = SKLOG_SUCCESS;
+    
+    int i = 0;
+    
+    /* check input parameters */
+    
+    if ( ctx == NULL || logfile_id == NULL ) {
+		ERROR(MSG_BAD_INPUT_PARAMS);
+		return SKLOG_FAILURE;
+	}
+	
+	/* store log entryes */
+	
+	for ( i = 0 ; i < logs_size ; i++ ) {
+		
+		if ( logs[i] == NULL ) {
+			ERROR("something goes wrong: empty log entry");
+			return SKLOG_FAILURE;
+		}
+		
+		rv = ctx->lsdriver->store_logentry_v2(logfile_id, logs[i],
+			strlen(logs[i]));
+		
+		if ( rv == SKLOG_FAILURE ) {
+			ERROR("ctx->lsdriver->store_logentry() failure");
+			return rv;
+		}
+	}
+	
+	/* to fix: add newline at the end of file */
+	
+	ctx->lsdriver->store_logentry_v2(logfile_id, "\n", 1);
+	
+	return SKLOG_SUCCESS;
 }
 
 /*
@@ -1150,13 +1197,15 @@ SKLOG_T_RunServer(SKLOG_T_Ctx *ctx)
 					break;
 					
 				case logfile_upload:
-				
+					
+					/**
 					rv = SKLOG_T_ManageLogfileUpload(ctx, conn);
 					
 					if ( rv == SKLOG_FAILURE ) {
 						ERROR("SKLOG_T_ManageLogfileUpload() failure");
 						goto child_error;
 					}
+					*/
 					
 					break;
 					

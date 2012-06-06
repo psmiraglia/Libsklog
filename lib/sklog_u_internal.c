@@ -629,8 +629,12 @@ __create_logentry_umberlog(SKLOG_U_Ctx *ctx, SKLOG_DATA_TYPE type,
 		goto error;
 	}
 	
+	/*
 	json_str = json_dumps(umberlog_data, JSON_COMPACT | 
 		JSON_PRESERVE_ORDER | JSON_ENSURE_ASCII);
+	*/
+	json_str = json_dumps(umberlog_data, JSON_COMPACT | 
+		JSON_SORT_KEYS | JSON_ENSURE_ASCII);
 	
 	memcpy(buf, json_str, strlen(json_str));
 	bufl = strlen(json_str);
@@ -853,7 +857,11 @@ __create_logentry_umberlog(SKLOG_U_Ctx *ctx, SKLOG_DATA_TYPE type,
 	
 	/* save data */
 	
+	/*
 	logentry = json_dumps(root, JSON_COMPACT | JSON_PRESERVE_ORDER | 
+		JSON_ENSURE_ASCII);
+	*/
+	logentry = json_dumps(root, JSON_COMPACT | JSON_SORT_KEYS | 
 		JSON_ENSURE_ASCII);
 	
 	if ( logentry == NULL ) {

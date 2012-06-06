@@ -374,7 +374,7 @@ py_SKLOG_U_DumpLogfile (PyObject *self, PyObject *args)
 	SKLOG_U_Ctx *ctx = 0;
 	long int ctx_addr = 0;
 	
-	char filename[BUF_512+1] = { 0x0 };
+	char *filename = { 0x0 };
 	int mode = 0;
 	
 	/* parse input arguments */
@@ -390,7 +390,7 @@ py_SKLOG_U_DumpLogfile (PyObject *self, PyObject *args)
     rv = SKLOG_U_DumpLogfile(ctx, filename, mode);
     
     if ( rv == SKLOG_FAILURE ) {
-		ERROR("SKLOG_U_UploadLogfile() failure");
+		ERROR("SKLOG_U_DumpLogfile() failure");
         return Py_BuildValue("i", rv);
 	}
 	
@@ -611,6 +611,98 @@ py_SKLOG_T_ManageLogfileVerify (PyObject *self, PyObject *args)
 	return Py_BuildValue("i", rv);
 }
 
+static PyObject *
+py_SKLOG_T_ManageLogfileUpload (PyObject *self, PyObject *args)
+{
+	int rv = SKLOG_SUCCESS;
+	
+	SKLOG_T_Ctx *ctx = 0;
+	long int ctx_addr = 0;
+	
+	char *logfile_id = 0x0;
+	
+	PyObject *list = 0;
+	PyObject *item = 0;
+	
+	char *string = 0;
+	
+	char logentry[BUF_8192] = { 0x0 };
+	
+	char *logs[BUF_8192] = { 0x0 };
+	unsigned int logs_size = 0;
+	
+	int i = 0;
+	
+	/* parse input arguments */
+	
+	PyArg_ParseTuple(args, "lsO", &ctx_addr, &logfile_id, &list);
+	
+	ctx = (SKLOG_T_Ctx *) ctx_addr;
+	
+	if ( list == NULL ) {
+		ERROR("PyArg_ParseTuple() failure");
+		return Py_BuildValue("i", SKLOG_FAILURE);
+	}
+	
+	/* --------- */
+    /*  binding  */
+    /* --------- */
+    
+    logs_size = PyList_GET_SIZE(list);
+    
+    if ( logs_size < 0 ) {
+		ERROR("PyList_GET_SIZE() failure");
+		return Py_BuildValue("i", SKLOG_FAILURE);
+	}
+    
+    for ( i = 0 ; i < logs_size ; i++ ) {
+		
+		item = PyList_GET_ITEM(list, i);
+		
+		if ( item == NULL ) {
+			ERROR("PyList_GET_ITEM() failure");
+			return Py_BuildValue("i", SKLOG_FAILURE);
+		}
+		
+		rv = PyString_Check(item);
+		
+		if ( rv < 0 ) {
+			ERROR("PyString_Check() failure");
+			return Py_BuildValue("i", SKLOG_FAILURE);
+		}
+		
+		string = PyString_AsString(item);
+		
+		if ( string == NULL ) {
+			ERROR("PyString_AsString() failure");
+			return Py_BuildValue("i", SKLOG_FAILURE);
+		}
+		
+		memcpy(logentry, string, strlen(string));
+		
+		logs[i] = calloc(strlen(logentry)+1, sizeof(char));
+		
+		if ( logs[i] == NULL ) {
+			ERROR("calloc() failure");
+			return Py_BuildValue("i", SKLOG_FAILURE);
+		}
+		
+		memset(logs[i], 0, strlen(logentry)+1);
+		memcpy(logs[i], logentry, strlen(logentry));
+		memset(logentry, 0, BUF_8192);
+		
+	}	
+	
+    rv = SKLOG_T_ManageLogfileUpload(ctx, logfile_id, logs, logs_size);
+    
+    if ( rv == SKLOG_FAILURE ) {
+		ERROR("SKLOG_T_ManageLogfileVerify() failure");
+		return Py_BuildValue("i", rv);
+	}
+	
+	return Py_BuildValue("i", rv);
+}
+
 /*
  * V API bindings
  * 
@@ -728,6 +820,8 @@ static PyMethodDef pylibsklog_methods[] = {
 		py_SKLOG_T_ManageLogfileRetrieve, METH_VARARGS},
     {"SKLOG_T_ManageLogfileVerify",
 		py_SKLOG_T_ManageLogfileVerify, METH_VARARGS},
+	{"SKLOG_T_ManageLogfileUpload",
+		py_SKLOG_T_ManageLogfileUpload, METH_VARARGS},
 		
 	/* SKLOG_V */
 		

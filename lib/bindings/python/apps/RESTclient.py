@@ -53,7 +53,11 @@ if __name__ == '__main__':
 			
 		if log_entry is 'toRenew':
 			f.close()
+			
 			log_entry = u.close_logging_session()
+			
+			u.upload_logfile("localhost:9000")
+
 	
 			if log_entry is None:
 				print 'Error u.close_logging_session()'
@@ -66,7 +70,11 @@ if __name__ == '__main__':
 	
 	f.close()
 	
+	u.dump_logfile('fooDump.json')
+	
 	log_entry = u.close_logging_session()
+	
+	u.upload_logfile("localhost:9000")
 	
 	if log_entry is None:
 		print 'Error u.close_logging_session()'

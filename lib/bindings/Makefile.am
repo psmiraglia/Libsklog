@@ -5,4 +5,4 @@ install-data-local:
 	sed "s|%%%LIBDIR%%%|$(libdir)|g" $(srcdir)/python/apps/RESTserver.py > $(sysconfdir)/libsklog/python/apps/RESTserver.py ; \
 	sed "s|%%%LIBDIR%%%|$(libdir)|g" $(srcdir)/python/apps/RESTclient.py > $(sysconfdir)/libsklog/python/apps/RESTclient.py ; \
 	cp -vf $(srcdir)/python/apps/rawdata.dat $(sysconfdir)/libsklog/python/apps/ ; \
-	ln -s $(sysconfdir)/libsklog/python/pysklog.py $(sysconfdir)/libsklog/python/apps/pysklog.py
+	ln -s -f $(sysconfdir)/libsklog/python/pysklog.py $(sysconfdir)/libsklog/python/apps/pysklog.py

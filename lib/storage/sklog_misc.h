@@ -103,6 +103,10 @@ SKLOG_RETURN sklog_misc_t_retrieve_logfiles_v2(char *uuid_list[],
 
 SKLOG_RETURN sklog_misc_t_verify_logfile_v2(char *logfile_id);
 
+SKLOG_RETURN
+sklog_misc_t_store_logentry_v2 (char *logfile_id, char *logentry,
+								unsigned int logentry_len);
+
 /* ------------ */
 /*  deprecated  */
 /* ------------ */

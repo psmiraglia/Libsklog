@@ -88,6 +88,9 @@ struct sklog_t_storage_driver {
 		
     SKLOG_RETURN (*verify_logfile_v2)
 		(char *logfile_id);
+		
+	SKLOG_RETURN (*store_logentry_v2)
+		(char *logfile_id, char *logentry, unsigned int logentry_len);
 	
 	/* ------------ */
 	/*  deprecated  */

@@ -104,6 +104,10 @@ class Sklog_U(object):
 				return None
 				
 			return rv[1]
+			
+		def _SKLOG_U_DumpLogfile(self, filename=None):
+			print filename
+			return SKLOG_U_DumpLogfile(self.ctx, filename, 1)
 	
 	# methods
 	
@@ -178,6 +182,24 @@ class Sklog_U(object):
 			return None
 		
 		return log_entry
+	def upload_logfile(self, hostname=None):
+		
+		filename = 'dump.json'
+		self.__Instance._SKLOG_U_DumpLogfile(filename)
+		
+		fp = open(filename,'r')
+		dump = json.load(fp)
+		
+		blob = '{"operation": "uploadLogfile", "data": %s }' % json.dumps(dump)
+
+		c = httplib.HTTPConnection(hostname)
+		c.request("POST", "/logservice", blob,
+				  {"Content-type": "application/json"})
+		r = c.getresponse()
+		c.close()
+		
+	def dump_logfile(self, filename=None):
+		return self.__Instance._SKLOG_U_DumpLogfile(filename)
 
 """
 Class: Sklog_T
@@ -224,9 +246,9 @@ class Sklog_T(object):
 		def _SKLOG_T_ManageLogfileVerify(self, logfile_id = None):
 			return SKLOG_T_ManageLogfileVerify(self.ctx, logfile_id)
 			
+		def _SKLOG_T_ManageLogfileUpload(self, logfile_id=None, logs=None):
+			return SKLOG_T_ManageLogfileUpload(self.ctx, logfile_id, logs)
 			
-			return None
-	
 	# methods
 	
 	def __init__(self):
@@ -242,6 +264,9 @@ class Sklog_T(object):
 		
 	def manage_logfile_verify(self, logfile_id = None):
 		return self.__Instance._SKLOG_T_ManageLogfileVerify(logfile_id)
+		
+	def manage_logfile_upload(self, logfile_id = None, logs = None):
+		return self.__Instance._SKLOG_T_ManageLogfileUpload(logfile_id, logs)
 
 """
 Class: Sklog_V
