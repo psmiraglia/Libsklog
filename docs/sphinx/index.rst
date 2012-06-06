@@ -37,3 +37,4 @@ Contents
    _doc/api
    _doc/python_binding
    _doc/tutorial
+   _doc/todo

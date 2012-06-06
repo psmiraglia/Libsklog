@@ -37,6 +37,9 @@
           <a href="../genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
           <a href="configuration.html" title="Configuration"
              accesskey="N">next</a> |</li>
         <li class="right" >
@@ -59,12 +62,9 @@
 could not fit exactly the code</p>
 </div>
 <p>In this section is shown the procedure to install the library and to
-configure the API environment. All steps are described assuming that the
-library installation prefix is:</p>
-<div class="highlight-python"><pre>/usr/local</pre>
-</div>
-<div class="section" id="get-sources-and-install-library">
-<h2>Get Sources and Install Library<a class="headerlink" href="#get-sources-and-install-library" title="Permalink to this headline">¶</a></h2>
+configure the API environment.</p>
+<div class="section" id="dependencies-installation">
+<h2>Dependencies installation<a class="headerlink" href="#dependencies-installation" title="Permalink to this headline">¶</a></h2>
 <p>Before proceeding with the installation, several dependencies need to
 be resolved:</p>
 <div class="highlight-python"><pre>Libtool
@@ -73,34 +73,64 @@ OpenSSL &gt;= 1.0.0
 SQLite 3.x
 libuuid
 libconfig
-libjansson</pre>
+libjansson &gt;= 2.3.1
+libreadline</pre>
 </div>
 <p>Here the command to run in Debian/Ubuntu systems:</p>
-<div class="highlight-python"><pre>sudo aptitude install libtool autoconf libssl1.0.0 libssl-dev libsqlite3-0 libsqlite3-dev uuid-dev libconfig-dev libjansson-dev</pre>
+<div class="highlight-python"><pre>sudo aptitude install libtool autoconf libssl1.0.0 libssl-dev libsqlite3-0 libsqlite3-dev uuid-dev libconfig-dev libjansson-dev libreadline-dev</pre>
 </div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last"><tt class="docutils literal"><span class="pre">libjansson-dev</span></tt> (2.3.1) is <strong>only available</strong> for Wheezy (testing) and Sid (unstable) Debian releases. To install Libsklog on other systems you need to install it manually.</p>
+</div>
+</div>
+<div class="section" id="get-libsklog-sources">
+<h2>Get Libsklog sources<a class="headerlink" href="#get-libsklog-sources" title="Permalink to this headline">¶</a></h2>
 <p>Get the sources from <a class="reference external" href="https://github.com/psmiraglia/Libsklog">Libsklog GitHub repository</a>:</p>
-<div class="highlight-python"><pre>mkdir ~/temp
-cd ~/temp
+<div class="highlight-python"><pre>cd $HOME
+mkdir temp
+cd temp
 git clone https://github.com/psmiraglia/Libsklog.git libsklog</pre>
 </div>
-<p>Generate <tt class="docutils literal"><span class="pre">./configure</span></tt> script (usually only the first time):</p>
-<div class="highlight-python"><pre>cd libsklog
+<p>Get <a class="reference external" href="https://github.com/algernon/libumberlog">Libumberlog</a> sources</p>
+<div class="highlight-python"><pre>cd $HOME/temp
+git clone https://github.com/algernon/libumberlog.git libumberlog</pre>
+</div>
+<p>and install it</p>
+<blockquote>
+<div><div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The usage of <tt class="docutils literal"><span class="pre">--prefix</span></tt> option is mandatory</p>
+</div>
+</div></blockquote>
+<div class="highlight-python"><pre>cd libumberlog
+./configure --prefix=$HOME/temp/libsklog/lib/libumbelog
+make
+make install</pre>
+</div>
+</div>
+<div class="section" id="id1">
+<h2>Installation<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<p>Generate <tt class="docutils literal"><span class="pre">./configure</span></tt> script (usually only the first time) using
+<strong class="command">autoreconf</strong></p>
+<div class="highlight-python"><pre>cd $HOME/temp/libsklog
 git checkout --track origin/devel-rest
 autoreconf --install --force --verbose</pre>
 </div>
-<p>Run <tt class="docutils literal"><span class="pre">./configure</span></tt> script using the option <tt class="docutils literal"><span class="pre">--enable-debug</span></tt> (strongly
-recommended). Other options are available, to see them run:</p>
+<p>Run <tt class="docutils literal"><span class="pre">./configure</span></tt> script using the options <tt class="docutils literal"><span class="pre">--enable-debug</span></tt>
+(strongly recommended) and <tt class="docutils literal"><span class="pre">--enable-encryption=no</span></tt> (to have human
+readable logs). Other options are available, to see them run:</p>
 <div class="highlight-python"><pre>./configure --help</pre>
 </div>
 <p>Build and install the library:</p>
-<div class="highlight-python"><pre>./configure --enable-debug
+<div class="highlight-python"><pre>./configure --enable-debug --enable-encryption=no
 make
 make install (as root)</pre>
 </div>
 <p>If you are Debian addicted, you can use <tt class="docutils literal"><span class="pre">checkinstall</span></tt> instead
 of <tt class="docutils literal"><span class="pre">make</span> <span class="pre">install</span></tt>. In this way a .deb package will be created and
 installed.:</p>
-<div class="highlight-python"><pre>./configure --enable-debug
+<div class="highlight-python"><pre>./configure --enable-debug --enable-encryption=no
 make
 checkinstall (as root)</pre>
 </div>
@@ -116,7 +146,9 @@ checkinstall (as root)</pre>
   <h3><a href="../index.html">Table Of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">Installation</a><ul>
-<li><a class="reference internal" href="#get-sources-and-install-library">Get Sources and Install Library</a></li>
+<li><a class="reference internal" href="#dependencies-installation">Dependencies installation</a></li>
+<li><a class="reference internal" href="#get-libsklog-sources">Get Libsklog sources</a></li>
+<li><a class="reference internal" href="#id1">Installation</a></li>
 </ul>
 </li>
 </ul>
@@ -156,6 +188,9 @@ checkinstall (as root)</pre>
           <a href="../genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
           <a href="configuration.html" title="Configuration"
              >next</a> |</li>
         <li class="right" >
@@ -166,7 +201,7 @@ checkinstall (as root)</pre>
     </div>
     <div class="footer">
         &copy; Copyright 2012, Paolo Smiraglia.
-      Last updated on May 30, 2012.
+      Last updated on Jun 04, 2012.
       Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
     </div>
   </body>
