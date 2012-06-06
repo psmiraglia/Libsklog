@@ -1027,7 +1027,7 @@ SKLOG_RETURN sklog_misc_t_verify_logfile_v2(char *logfile_id)
 	
 	if ( fp == NULL ) {
 		ERROR("Unable to open file %s", filename);
-		goto error;
+		return SKLOG_NO_FILE;
 	}
 	
 	while ( !feof(fp) ) {

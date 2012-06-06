@@ -138,11 +138,13 @@ class Logservice():
 		
 		if r == 0:
 			return '{"operation":"verifyLogfile", "logfile_id": "%s", "result": "system error"}' % logfile_id
+		if r == 3:
+			return '{"operation":"verifyLogfile", "logfile_id": "%s", "result": "success"}' % logfile_id
 		elif r == -1:
 			return '{"operation":"verifyLogfile", "logfile_id": "%s", "result": "failure"}' % logfile_id
 		else:
 			return '{"operation":"verifyLogfile", "logfile_id": "%s", "result": "success"}' % logfile_id
-	
+			
 	def uploadLogfile(self, t, req_data):
 		
 		logs = []

@@ -167,6 +167,7 @@ msg_here(const char *source, const int lineno, const char *func);
 #define		STR_FORMAT_TIME				"%Y-%m-%d %H:%M:%S"
 
 #define		SKLOG_SESSION_TO_RENEW		2
+#define		SKLOG_NO_FILE		3
 
 /*
  * dump modes
